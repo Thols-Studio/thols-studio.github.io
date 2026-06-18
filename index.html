@@ -152,10 +152,19 @@
       <span class="add-url-location-dot" id="quickAddLocationDot"></span>
       <span id="quickAddLocationText">Saving to: Uncollected</span>
     </div>
-    <div class="add-url-bar">
+    <div class="add-url-bar" style="position:relative;">
       <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
       <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
+      <button class="browse-location-btn" onclick="toggleLocationPicker()" title="Choose collection / group to save into">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Location
+      </button>
+      <!-- Location picker dropdown -->
+      <div class="location-picker" id="locationPicker" style="display:none;">
+        <div class="location-picker-title">Save quick-add to…</div>
+        <div class="location-picker-body" id="locationPickerBody"></div>
+      </div>
     </div>
 
     <!-- Section header -->
@@ -182,6 +191,13 @@
           <div class="export-menu" id="exportMenu">
             <button class="export-menu-item" onclick="exportData()">Export as JSON</button>
             <button class="export-menu-item" onclick="exportCollectionsJs()">Export as collections.js</button>
+            <button class="export-menu-item" onclick="exportWatchedJs()">Export as watched.js</button>
+            <button class="export-menu-item" onclick="exportPlaylistJs()">Export as playlist.js</button>
+            <div class="export-menu-divider"></div>
+            <button class="export-menu-item export-menu-item-all" onclick="exportAllJs()">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export All JS Files
+            </button>
           </div>
         </div>
       </div>
@@ -407,6 +423,8 @@
 </div>
 
 <script src="collections.js"></script>
+<script src="playlist.js"></script>
+<script src="watched.js"></script>
 <script src="app.js"></script>
 
 </body>
