@@ -264,10 +264,13 @@ function renderPlaylistsSidebar() {
     btn.innerHTML = `
       <span class="collection-dot" style="background:${dotColor}"></span>
       <span class="col-name">${escHtml(pl.name)}</span>
-      <span class="count" style="visibility:${count ? 'visible' : 'hidden'}">${count}</span>
+      <span class="count${count ? '' : ' count-empty'}">${count}</span>
       <span class="col-actions" id="pl-actions-${pl.id}">
         <button class="col-action-btn" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();startPlaylistRename(event,'${pl.id}')" title="Rename playlist">
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="col-action-btn" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();clearPlaylist('${pl.id}')" title="Clear all items">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </button>
         <button class="col-action-btn danger" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();deletePlaylist('${pl.id}')" title="Delete playlist">
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -278,9 +281,6 @@ function renderPlaylistsSidebar() {
       if (btn.querySelector('.col-rename-input')) return;
       filterByCollection(`playlist:${pl.id}`, btn);
     };
-    // hover show/hide actions
-    btn.addEventListener('mouseenter', () => { btn.querySelector('.col-actions')?.style && (btn.querySelector('.col-actions').style.opacity = '1'); });
-    btn.addEventListener('mouseleave', () => { btn.querySelector('.col-actions')?.style && (btn.querySelector('.col-actions').style.opacity = ''); });
     list.appendChild(btn);
   });
 }
@@ -1222,6 +1222,18 @@ function savePlaylist() {
   showToast(`✓ "${name}" playlist created`);
 }
 
+function clearPlaylist(id) {
+  const pl = state.playlists.find(p => p.id === id);
+  if (!pl) return;
+  if (!pl.videoIds.length) { showToast('Playlist is already empty'); return; }
+  const count = pl.videoIds.length;
+  pl.videoIds = [];
+  save();
+  renderSidebar();
+  renderCards();
+  showToast(`✓ Cleared ${count} item${count !== 1 ? 's' : ''} from "${pl.name}"`);
+}
+
 function deletePlaylist(id) {
   state.playlists = state.playlists.filter(p => p.id !== id);
   // If currently viewing the deleted playlist, go back to All
@@ -1386,16 +1398,66 @@ function toggleSidebarSection(sectionId, chevEl) {
 }
 
 // ──────────────────────────────────────────────
+// EXPORT FOLDER (File System Access API)
+// ──────────────────────────────────────────────
+let exportFolderHandle = null; // FileSystemDirectoryHandle when selected
+
+async function browseExportFolder() {
+  if (!window.showDirectoryPicker) {
+    showToast('⚠️ Folder picker not supported in this browser — files will download normally');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    exportFolderHandle = handle;
+    const wrap = document.getElementById('exportLocationWrap');
+    const label = document.getElementById('exportLocationLabel');
+    if (wrap) wrap.style.display = 'flex';
+    if (label) label.textContent = handle.name;
+    showToast('✓ Export folder set to "' + handle.name + '"');
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('⚠️ Could not access folder: ' + e.message);
+  }
+}
+
+function clearExportFolder() {
+  exportFolderHandle = null;
+  const wrap = document.getElementById('exportLocationWrap');
+  if (wrap) wrap.style.display = 'none';
+  showToast('Export folder cleared — files will download normally');
+}
+
+// Write text content to the selected folder, or fall back to download
+async function saveToFolderOrDownload(filename, text, mimeType) {
+  if (exportFolderHandle) {
+    try {
+      const fileHandle = await exportFolderHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      return true; // saved to folder
+    } catch (e) {
+      showToast('⚠️ Could not write to folder: ' + e.message + ' — downloading instead');
+      // fall through to download
+    }
+  }
+  // Standard download fallback
+  const blob = new Blob([text], { type: mimeType });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  return false; // downloaded
+}
+
+// ──────────────────────────────────────────────
 // EXPORT
 // ──────────────────────────────────────────────
 function exportData() {
   const data = JSON.stringify(state, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'tubevault-export.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  showToast('✓ Exported as JSON');
+  saveToFolderOrDownload('tubevault-export.json', data, 'application/json').then(saved => {
+    showToast(saved ? '✓ Saved tubevault-export.json to folder' : '✓ Exported as JSON');
+  });
   closeExportMenu();
 }
 
@@ -1532,12 +1594,9 @@ ${colorsBlock}
 ${collectionsBlock}
 `;
 
-  const blob = new Blob([fileContents], { type: 'text/javascript' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'collections.js';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  showToast('✓ Exported as collections.js');
+  saveToFolderOrDownload('collections.js', fileContents, 'text/javascript').then(saved => {
+    showToast(saved ? '✓ Saved collections.js to folder' : '✓ Exported as collections.js');
+  });
   closeExportMenu();
 }
 
@@ -1589,19 +1648,77 @@ function exportWatchedJs() {
   (idLines.length ? idLines.join('\n') + '\n' : '') +
   '];\n';
 
-  const blob = new Blob([fileContents], { type: 'text/javascript' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'watched.js';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-
   const n = watchedVideoIds.length;
-  if (n === 0) {
-    showToast('\u26a0\ufe0f No watched videos — exported empty watched.js');
-  } else {
-    showToast('\u2713 Exported ' + n + ' watched video' + (n !== 1 ? 's' : '') + ' as watched.js');
-  }
+  saveToFolderOrDownload('watched.js', fileContents, 'text/javascript').then(saved => {
+    const dest = saved ? 'to folder' : 'as watched.js';
+    if (n === 0) showToast('\u26a0\ufe0f No watched videos — exported empty watched.js');
+    else showToast('\u2713 Saved ' + n + ' watched video' + (n !== 1 ? 's' : '') + ' ' + dest);
+  });
   closeExportMenu();
+}
+
+function exportPlaylistJs() {
+  const SEP = '// ' + '-'.repeat(62);
+
+  const blocks = state.playlists.map(function(pl) {
+    const videos = pl.videoIds
+      .map(function(id) { return state.videos.find(function(v) { return v.id === id; }); })
+      .filter(Boolean);
+
+    const videoLines = videos.map(function(v) {
+      const col = state.collections.find(function(c) { return c.id === v.collection; });
+      const path = col ? (v.group ? col.name + ' / ' + v.group : col.name) : '';
+      const L = [];
+      L.push('      url: ' + jsStr(v.url || '') + ',');
+      L.push('      videoId: ' + jsStr(v.videoId || '') + ',');
+      if (v.playlistId) L.push('      playlistId: ' + jsStr(v.playlistId) + ',');
+      L.push('      title: ' + jsStr(v.title || '') + ',');
+      L.push('      channel: ' + jsStr(v.channel || '') + ',');
+      if (path) L.push('      collectionPath: ' + jsStr(path) + ',');
+      L.push('      note: ' + jsStr(v.note || ''));
+      return '    {\n' + L.join('\n') + '\n    }';
+    });
+
+    return (
+      '  {\n' +
+      '    id: ' + jsStr(pl.id) + ',\n' +
+      '    name: ' + jsStr(pl.name) + ',\n' +
+      '    color: ' + jsStr(pl.color || '#78909C') + ',\n' +
+      '    videoIds: [' + pl.videoIds.map(jsStr).join(', ') + '],\n' +
+      '    videos: [\n' + videoLines.join(',\n') + '\n    ]\n' +
+      '  }'
+    );
+  });
+
+  const header = [
+    SEP,
+    '// PLAYLIST CONFIG',
+    '// Exported from TubeVault on ' + new Date().toLocaleString(),
+    '//',
+    '// Each playlist: id, name, color, videoIds, videos (full details)',
+    '// To apply as defaults: replace playlist.js and clear localStorage.',
+    SEP,
+    '',
+    'const DEFAULT_PLAYLISTS = ['
+  ].join('\n');
+
+  const fileContents = header + '\n' + blocks.join(',\n') + '\n];\n';
+  const n = state.playlists.length;
+  saveToFolderOrDownload('playlist.js', fileContents, 'text/javascript').then(saved => {
+    showToast('\u2713 ' + (saved ? 'Saved' : 'Exported') + ' ' + n + ' playlist' + (n !== 1 ? 's' : '') + ' ' + (saved ? 'to folder' : 'as playlist.js'));
+  });
+  closeExportMenu();
+}
+
+function exportAllJs() {
+  closeExportMenu();
+  exportCollectionsJs();
+  setTimeout(function() { exportPlaylistJs(); }, 300);
+  setTimeout(function() { exportWatchedJs(); }, 600);
+  setTimeout(function() {
+    const dest = exportFolderHandle ? 'to folder' : 'as downloads';
+    showToast('\u2713 Exported collections.js, playlist.js & watched.js ' + dest);
+  }, 700);
 }
 
 // ──────────────────────────────────────────────
@@ -2057,13 +2174,15 @@ function closePvView(restoreAll) {
   if (restoreAll === false) return; // called from filterByCollection, don't change filter
   // Restore All Videos view
   currentFilter = 'all';
-  const allBtn = document.querySelector('.sidebar-item.active') || document.querySelectorAll('.sidebar-item')[0];
-  if (allBtn) {
-    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-    allBtn.classList.add('active');
-  }
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  // Find and activate the "All Videos" button specifically
+  const allBtn = [...document.querySelectorAll('.sidebar-item')].find(
+    b => b.textContent.trim().startsWith('All Videos')
+  ) || document.querySelectorAll('.sidebar-item')[0];
+  if (allBtn) allBtn.classList.add('active');
   document.getElementById('sectionTitle').textContent = 'All Videos';
-  document.getElementById('playPlaylistBtn').style.display = 'none';
+  const playBtn = document.getElementById('playPlaylistBtn');
+  if (playBtn) playBtn.style.display = 'none';
   renderCards();
 }
 

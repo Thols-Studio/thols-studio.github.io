@@ -236,7 +236,10 @@
     margin-left: auto;
     padding: 0 4px;
     letter-spacing: 0;
+    visibility: visible;
   }
+  /* zero-count: hide the circle but keep space so layout doesn't shift */
+  .sidebar-item .count.count-empty { visibility: hidden; }
   .sidebar-item.active .count {
     background: rgba(92,107,192,0.3);
     color: var(--indigo-bright);
@@ -244,7 +247,7 @@
   }
   /* hide count on hover — replaced by action buttons (use visibility to avoid layout shift) */
   .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count { visibility: visible; }
+  .sidebar-item.active:not(:hover) .count:not(.count-empty) { visibility: visible; }
   .sidebar-divider {
     height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
   }
@@ -784,8 +787,6 @@
   .sidebar-item:hover .col-actions { opacity: 1; }
   .sidebar-item.active .col-actions { opacity: 1; }
   /* hide count circle on hover — show action buttons instead (use visibility to avoid layout shift) */
-  .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count { visibility: visible; }
   .col-action-btn {
     background: transparent; border: none;
     color: var(--text-dim); cursor: pointer;
@@ -1111,23 +1112,22 @@
 
   /* ── LOCATION BROWSE BUTTON & PICKER ── */
   .browse-location-btn {
-    display: inline-flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
     background: transparent;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text-muted);
-    font-size: 10px; font-family: var(--font);
-    padding: 4px 10px;
-    border-radius: 10px;
+    padding: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     flex-shrink: 0;
-    transition: border-color 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
-  .browse-location-btn:hover { border-color: var(--indigo); color: var(--indigo-bright); }
+  .browse-location-btn:hover { background: var(--surface-raised); color: var(--indigo-bright); }
 
   .location-picker {
     position: absolute;
     top: calc(100% + 6px);
-    right: 0;
+    left: 0;
     min-width: 260px;
     max-height: 320px;
     overflow-y: auto;
@@ -1191,6 +1191,37 @@
     font-weight: 500;
   }
   .export-menu-item-all:hover { background: var(--indigo-glow) !important; }
+
+  /* ── EXPORT FOLDER LOCATION LABEL ── */
+  .export-location-wrap {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    max-width: 220px;
+    min-width: 0;
+  }
+  .export-location-wrap svg { flex-shrink: 0; color: var(--indigo-bright); }
+  #exportLocationLabel {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+  }
+  .export-location-clear {
+    background: transparent; border: none;
+    color: var(--text-dim); cursor: pointer;
+    font-size: 13px; line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .export-location-clear:hover { color: var(--text); }
 
 </style>
 </head>
@@ -1334,22 +1365,21 @@
 
   <div class="main" id="mainView">
     <!-- Quick add bar -->
-    <div class="add-url-location" id="quickAddLocation">
+    <div class="add-url-location" id="quickAddLocation" style="position:relative;">
+      <button class="browse-location-btn" onclick="toggleLocationPicker()" title="Choose collection / group to save into">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      </button>
       <span class="add-url-location-dot" id="quickAddLocationDot"></span>
       <span id="quickAddLocationText">Saving to: Uncollected</span>
-    </div>
-    <div class="add-url-bar" style="position:relative;">
-      <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-      <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
-      <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
-      <button class="browse-location-btn" onclick="toggleLocationPicker()" title="Choose collection / group to save into">
-        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-        Location
-      </button>
       <!-- Location picker dropdown -->
       <div class="location-picker" id="locationPicker" style="display:none;">
         <div class="location-picker-title">Save quick-add to…</div>
         <div class="location-picker-body" id="locationPickerBody"></div>
+    </div>
+    <div class="add-url-bar">
+      <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
+      <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
       </div>
     </div>
 
@@ -1370,6 +1400,16 @@
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
           </button>
         </div>
+        <!-- Export folder location label -->
+        <div class="export-location-wrap" id="exportLocationWrap" style="display:none;">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span id="exportLocationLabel">No folder selected</span>
+          <button class="export-location-clear" onclick="clearExportFolder()" title="Clear folder">×</button>
+        </div>
+        <!-- Browse folder button -->
+        <button class="btn-icon" onclick="browseExportFolder()" title="Select export folder">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        </button>
         <div class="export-dropdown" id="exportDropdown">
           <button class="btn-icon" onclick="toggleExportMenu()" title="Export">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
@@ -2039,10 +2079,13 @@ function renderPlaylistsSidebar() {
     btn.innerHTML = `
       <span class="collection-dot" style="background:${dotColor}"></span>
       <span class="col-name">${escHtml(pl.name)}</span>
-      <span class="count" style="visibility:${count ? 'visible' : 'hidden'}">${count}</span>
+      <span class="count${count ? '' : ' count-empty'}">${count}</span>
       <span class="col-actions" id="pl-actions-${pl.id}">
         <button class="col-action-btn" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();startPlaylistRename(event,'${pl.id}')" title="Rename playlist">
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="col-action-btn" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();clearPlaylist('${pl.id}')" title="Clear all items">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </button>
         <button class="col-action-btn danger" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();deletePlaylist('${pl.id}')" title="Delete playlist">
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -2053,9 +2096,6 @@ function renderPlaylistsSidebar() {
       if (btn.querySelector('.col-rename-input')) return;
       filterByCollection(`playlist:${pl.id}`, btn);
     };
-    // hover show/hide actions
-    btn.addEventListener('mouseenter', () => { btn.querySelector('.col-actions')?.style && (btn.querySelector('.col-actions').style.opacity = '1'); });
-    btn.addEventListener('mouseleave', () => { btn.querySelector('.col-actions')?.style && (btn.querySelector('.col-actions').style.opacity = ''); });
     list.appendChild(btn);
   });
 }
@@ -2997,6 +3037,18 @@ function savePlaylist() {
   showToast(`✓ "${name}" playlist created`);
 }
 
+function clearPlaylist(id) {
+  const pl = state.playlists.find(p => p.id === id);
+  if (!pl) return;
+  if (!pl.videoIds.length) { showToast('Playlist is already empty'); return; }
+  const count = pl.videoIds.length;
+  pl.videoIds = [];
+  save();
+  renderSidebar();
+  renderCards();
+  showToast(`✓ Cleared ${count} item${count !== 1 ? 's' : ''} from "${pl.name}"`);
+}
+
 function deletePlaylist(id) {
   state.playlists = state.playlists.filter(p => p.id !== id);
   // If currently viewing the deleted playlist, go back to All
@@ -3161,16 +3213,66 @@ function toggleSidebarSection(sectionId, chevEl) {
 }
 
 // ──────────────────────────────────────────────
+// EXPORT FOLDER (File System Access API)
+// ──────────────────────────────────────────────
+let exportFolderHandle = null; // FileSystemDirectoryHandle when selected
+
+async function browseExportFolder() {
+  if (!window.showDirectoryPicker) {
+    showToast('⚠️ Folder picker not supported in this browser — files will download normally');
+    return;
+  }
+  try {
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    exportFolderHandle = handle;
+    const wrap = document.getElementById('exportLocationWrap');
+    const label = document.getElementById('exportLocationLabel');
+    if (wrap) wrap.style.display = 'flex';
+    if (label) label.textContent = handle.name;
+    showToast('✓ Export folder set to "' + handle.name + '"');
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('⚠️ Could not access folder: ' + e.message);
+  }
+}
+
+function clearExportFolder() {
+  exportFolderHandle = null;
+  const wrap = document.getElementById('exportLocationWrap');
+  if (wrap) wrap.style.display = 'none';
+  showToast('Export folder cleared — files will download normally');
+}
+
+// Write text content to the selected folder, or fall back to download
+async function saveToFolderOrDownload(filename, text, mimeType) {
+  if (exportFolderHandle) {
+    try {
+      const fileHandle = await exportFolderHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      return true; // saved to folder
+    } catch (e) {
+      showToast('⚠️ Could not write to folder: ' + e.message + ' — downloading instead');
+      // fall through to download
+    }
+  }
+  // Standard download fallback
+  const blob = new Blob([text], { type: mimeType });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  return false; // downloaded
+}
+
+// ──────────────────────────────────────────────
 // EXPORT
 // ──────────────────────────────────────────────
 function exportData() {
   const data = JSON.stringify(state, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'tubevault-export.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  showToast('✓ Exported as JSON');
+  saveToFolderOrDownload('tubevault-export.json', data, 'application/json').then(saved => {
+    showToast(saved ? '✓ Saved tubevault-export.json to folder' : '✓ Exported as JSON');
+  });
   closeExportMenu();
 }
 
@@ -3307,12 +3409,9 @@ ${colorsBlock}
 ${collectionsBlock}
 `;
 
-  const blob = new Blob([fileContents], { type: 'text/javascript' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'collections.js';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  showToast('✓ Exported as collections.js');
+  saveToFolderOrDownload('collections.js', fileContents, 'text/javascript').then(saved => {
+    showToast(saved ? '✓ Saved collections.js to folder' : '✓ Exported as collections.js');
+  });
   closeExportMenu();
 }
 
@@ -3364,19 +3463,77 @@ function exportWatchedJs() {
   (idLines.length ? idLines.join('\n') + '\n' : '') +
   '];\n';
 
-  const blob = new Blob([fileContents], { type: 'text/javascript' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'watched.js';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-
   const n = watchedVideoIds.length;
-  if (n === 0) {
-    showToast('\u26a0\ufe0f No watched videos — exported empty watched.js');
-  } else {
-    showToast('\u2713 Exported ' + n + ' watched video' + (n !== 1 ? 's' : '') + ' as watched.js');
-  }
+  saveToFolderOrDownload('watched.js', fileContents, 'text/javascript').then(saved => {
+    const dest = saved ? 'to folder' : 'as watched.js';
+    if (n === 0) showToast('\u26a0\ufe0f No watched videos — exported empty watched.js');
+    else showToast('\u2713 Saved ' + n + ' watched video' + (n !== 1 ? 's' : '') + ' ' + dest);
+  });
   closeExportMenu();
+}
+
+function exportPlaylistJs() {
+  const SEP = '// ' + '-'.repeat(62);
+
+  const blocks = state.playlists.map(function(pl) {
+    const videos = pl.videoIds
+      .map(function(id) { return state.videos.find(function(v) { return v.id === id; }); })
+      .filter(Boolean);
+
+    const videoLines = videos.map(function(v) {
+      const col = state.collections.find(function(c) { return c.id === v.collection; });
+      const path = col ? (v.group ? col.name + ' / ' + v.group : col.name) : '';
+      const L = [];
+      L.push('      url: ' + jsStr(v.url || '') + ',');
+      L.push('      videoId: ' + jsStr(v.videoId || '') + ',');
+      if (v.playlistId) L.push('      playlistId: ' + jsStr(v.playlistId) + ',');
+      L.push('      title: ' + jsStr(v.title || '') + ',');
+      L.push('      channel: ' + jsStr(v.channel || '') + ',');
+      if (path) L.push('      collectionPath: ' + jsStr(path) + ',');
+      L.push('      note: ' + jsStr(v.note || ''));
+      return '    {\n' + L.join('\n') + '\n    }';
+    });
+
+    return (
+      '  {\n' +
+      '    id: ' + jsStr(pl.id) + ',\n' +
+      '    name: ' + jsStr(pl.name) + ',\n' +
+      '    color: ' + jsStr(pl.color || '#78909C') + ',\n' +
+      '    videoIds: [' + pl.videoIds.map(jsStr).join(', ') + '],\n' +
+      '    videos: [\n' + videoLines.join(',\n') + '\n    ]\n' +
+      '  }'
+    );
+  });
+
+  const header = [
+    SEP,
+    '// PLAYLIST CONFIG',
+    '// Exported from TubeVault on ' + new Date().toLocaleString(),
+    '//',
+    '// Each playlist: id, name, color, videoIds, videos (full details)',
+    '// To apply as defaults: replace playlist.js and clear localStorage.',
+    SEP,
+    '',
+    'const DEFAULT_PLAYLISTS = ['
+  ].join('\n');
+
+  const fileContents = header + '\n' + blocks.join(',\n') + '\n];\n';
+  const n = state.playlists.length;
+  saveToFolderOrDownload('playlist.js', fileContents, 'text/javascript').then(saved => {
+    showToast('\u2713 ' + (saved ? 'Saved' : 'Exported') + ' ' + n + ' playlist' + (n !== 1 ? 's' : '') + ' ' + (saved ? 'to folder' : 'as playlist.js'));
+  });
+  closeExportMenu();
+}
+
+function exportAllJs() {
+  closeExportMenu();
+  exportCollectionsJs();
+  setTimeout(function() { exportPlaylistJs(); }, 300);
+  setTimeout(function() { exportWatchedJs(); }, 600);
+  setTimeout(function() {
+    const dest = exportFolderHandle ? 'to folder' : 'as downloads';
+    showToast('\u2713 Exported collections.js, playlist.js & watched.js ' + dest);
+  }, 700);
 }
 
 // ──────────────────────────────────────────────
@@ -3832,13 +3989,15 @@ function closePvView(restoreAll) {
   if (restoreAll === false) return; // called from filterByCollection, don't change filter
   // Restore All Videos view
   currentFilter = 'all';
-  const allBtn = document.querySelector('.sidebar-item.active') || document.querySelectorAll('.sidebar-item')[0];
-  if (allBtn) {
-    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-    allBtn.classList.add('active');
-  }
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  // Find and activate the "All Videos" button specifically
+  const allBtn = [...document.querySelectorAll('.sidebar-item')].find(
+    b => b.textContent.trim().startsWith('All Videos')
+  ) || document.querySelectorAll('.sidebar-item')[0];
+  if (allBtn) allBtn.classList.add('active');
   document.getElementById('sectionTitle').textContent = 'All Videos';
-  document.getElementById('playPlaylistBtn').style.display = 'none';
+  const playBtn = document.getElementById('playPlaylistBtn');
+  if (playBtn) playBtn.style.display = 'none';
   renderCards();
 }
 

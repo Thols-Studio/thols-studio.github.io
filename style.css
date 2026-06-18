@@ -227,7 +227,10 @@
     margin-left: auto;
     padding: 0 4px;
     letter-spacing: 0;
+    visibility: visible;
   }
+  /* zero-count: hide the circle but keep space so layout doesn't shift */
+  .sidebar-item .count.count-empty { visibility: hidden; }
   .sidebar-item.active .count {
     background: rgba(92,107,192,0.3);
     color: var(--indigo-bright);
@@ -235,7 +238,7 @@
   }
   /* hide count on hover — replaced by action buttons (use visibility to avoid layout shift) */
   .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count { visibility: visible; }
+  .sidebar-item.active:not(:hover) .count:not(.count-empty) { visibility: visible; }
   .sidebar-divider {
     height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
   }
@@ -775,8 +778,6 @@
   .sidebar-item:hover .col-actions { opacity: 1; }
   .sidebar-item.active .col-actions { opacity: 1; }
   /* hide count circle on hover — show action buttons instead (use visibility to avoid layout shift) */
-  .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count { visibility: visible; }
   .col-action-btn {
     background: transparent; border: none;
     color: var(--text-dim); cursor: pointer;
@@ -1102,23 +1103,22 @@
 
   /* ── LOCATION BROWSE BUTTON & PICKER ── */
   .browse-location-btn {
-    display: inline-flex; align-items: center; gap: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
     background: transparent;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text-muted);
-    font-size: 10px; font-family: var(--font);
-    padding: 4px 10px;
-    border-radius: 10px;
+    padding: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     flex-shrink: 0;
-    transition: border-color 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
-  .browse-location-btn:hover { border-color: var(--indigo); color: var(--indigo-bright); }
+  .browse-location-btn:hover { background: var(--surface-raised); color: var(--indigo-bright); }
 
   .location-picker {
     position: absolute;
     top: calc(100% + 6px);
-    right: 0;
+    left: 0;
     min-width: 260px;
     max-height: 320px;
     overflow-y: auto;
@@ -1182,3 +1182,34 @@
     font-weight: 500;
   }
   .export-menu-item-all:hover { background: var(--indigo-glow) !important; }
+
+  /* ── EXPORT FOLDER LOCATION LABEL ── */
+  .export-location-wrap {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    max-width: 220px;
+    min-width: 0;
+  }
+  .export-location-wrap svg { flex-shrink: 0; color: var(--indigo-bright); }
+  #exportLocationLabel {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+  }
+  .export-location-clear {
+    background: transparent; border: none;
+    color: var(--text-dim); cursor: pointer;
+    font-size: 13px; line-height: 1;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  .export-location-clear:hover { color: var(--text); }
