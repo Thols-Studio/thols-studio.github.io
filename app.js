@@ -1300,7 +1300,7 @@ function openCollectionPlaylistPicker(e, colId) {
       const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${colVideos.length}`;
       return `<button class="playlist-picker-item${allIn ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();addCollectionToPlaylist('${colId}','${pl.id}');document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        <svg width="11" height="11" fill="${allIn ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        ${allIn ? '<svg width="11" height="11" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>' : '<span style="width:11px;display:inline-block;"></span>'}
         ${escHtml(pl.name)} <span style="opacity:0.5;font-size:10px;margin-left:4px;">${label}</span>
       </button>`;
     }).join('')}`;
@@ -1353,7 +1353,7 @@ function openPlaylistPicker(videoId, anchorEl) {
       const has = pl.videoIds.includes(videoId);
       return `<button class="playlist-picker-item${has ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();${has ? `removeVideoFromPlaylist('${videoId}','${pl.id}')` : `addVideoToPlaylist('${videoId}','${pl.id}')`};document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        <svg width="11" height="11" fill="${has ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        ${has ? '<svg width="11" height="11" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>' : '<span style="width:11px;display:inline-block;"></span>'}
         ${escHtml(pl.name)}
       </button>`;
     }).join('')}`;
