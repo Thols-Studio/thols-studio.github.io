@@ -158,12 +158,12 @@
       <div class="location-picker" id="locationPicker" style="display:none;">
         <div class="location-picker-title">Save quick-add to…</div>
         <div class="location-picker-body" id="locationPickerBody"></div>
+      </div>
     </div>
     <div class="add-url-bar">
       <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
       <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
-      </div>
     </div>
 
     <!-- Section header -->
@@ -175,14 +175,6 @@
         Play
       </button>
       <div class="section-header-right">
-        <div class="view-toggle">
-          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          </button>
-          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
-          </button>
-        </div>
         <!-- Export folder location label -->
         <div class="export-location-wrap" id="exportLocationWrap" style="display:none;">
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
@@ -208,6 +200,14 @@
               Export All JS Files
             </button>
           </div>
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List view">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
+          </button>
         </div>
       </div>
     </div>

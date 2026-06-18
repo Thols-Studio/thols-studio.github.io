@@ -348,7 +348,7 @@
     font-family: var(--mono);
     color: var(--text-muted);
     padding: 0 4px;
-    margin-bottom: -8px;
+    margin-bottom: 6px;
   }
   .add-url-location-dot {
     width: 8px; height: 8px;
