@@ -1,19 +1,14 @@
-// ──────────────────────────────────────────────────────────────
-// WATCHED HISTORY CONFIG
-// This file tracks which YouTube videos you have watched.
+// --------------------------------------------------------------
+// WATCHED HISTORY
+// Exported from TubeVault on 20/6/2026, 10:53:03 am
 //
-// WATCHED_VIDEO_IDS: array of YouTube video IDs (11-char strings)
-// that will be pre-marked as "watched" on first load.
-//
-// This only affects FIRST LOAD — once the app has saved data to
-// localStorage, this file is ignored. To reset, clear localStorage
-// or open in a private window.
-//
-// To restore your watch history:
-//   1. Replace this file with an exported watched.js
-//   2. Clear localStorage (or open in a private window)
-// ──────────────────────────────────────────────────────────────
+// WATCHED_VIDEO_IDS: YouTube video IDs marked as watched.
+// To restore: replace watched.js with this file and clear localStorage.
+// --------------------------------------------------------------
 
 const WATCHED_VIDEO_IDS = [
-  // e.g. 'XtQMytORBmM', 'vFWnv9aRhT8'
+  'Tcvwh1tkyQw', // Curved Movement Patterns With Animation Curves
+  'fjOdtSu4Lm4', // YouTube Video
+  'XtQMytORBmM', // Unity Character Controller from Scratch
+  'bFOAipGJGA0', // Unity Physics — Rigidbody & Colliders
 ];

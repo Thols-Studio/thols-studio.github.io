@@ -236,9 +236,9 @@
     color: var(--indigo-bright);
     border-color: rgba(92,107,192,0.4);
   }
-  /* hide count on hover — replaced by action buttons (use visibility to avoid layout shift) */
+  /* hide count on hover, and whenever the item is active — action buttons take its place instead */
   .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count:not(.count-empty) { visibility: visible; }
+  .sidebar-item.active .count { visibility: hidden; }
   .sidebar-divider {
     height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
   }
@@ -277,12 +277,15 @@
     display: flex; align-items: center; gap: 7px;
     width: 100%; text-align: left;
     background: transparent; border: none;
-    color: var(--text-muted); font-size: 12px; font-family: var(--font);
+    color: var(--text-dim); font-size: 12px; font-family: var(--font);
     padding: 7px 8px; border-radius: var(--radius-sm);
-    cursor: pointer; transition: background 0.12s;
+    cursor: pointer; transition: background 0.12s, color 0.12s;
   }
-  .playlist-picker-item:hover { background: var(--surface); }
-  .playlist-picker-item.in-playlist { color: #fff; }
+  .playlist-picker-item:hover { background: var(--surface); color: var(--text); }
+  /* checked state: bright white text + visible tick */
+  .playlist-picker-item.in-playlist { color: var(--text); }
+  .playlist-picker-item .pp-check { color: var(--text-dim); opacity: 0.25; }
+  .playlist-picker-item.in-playlist .pp-check { color: #fff; opacity: 1; }
   .add-collection-btn {
     display: flex; align-items: center; gap: 8px;
     padding: 7px 10px; border-radius: var(--radius-sm);
@@ -348,7 +351,7 @@
     font-family: var(--mono);
     color: var(--text-muted);
     padding: 0 4px;
-    margin-bottom: 6px;
+    margin-bottom: -8px;
   }
   .add-url-location-dot {
     width: 8px; height: 8px;
@@ -476,6 +479,9 @@
     letter-spacing: 0.05em;
   }
   .tag-dot { width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0; }
+  .card-title-row {
+    display: flex; align-items: flex-start; gap: 4px;
+  }
   .card-title {
     font-size: 13px; font-weight: 500;
     color: var(--text);
@@ -484,6 +490,31 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    flex: 1; cursor: pointer;
+    min-width: 0;
+  }
+  .card-title:hover { color: var(--indigo-bright); }
+  .card-title-edit-btn {
+    display: none;
+    background: transparent; border: none;
+    color: var(--text-dim); cursor: pointer;
+    padding: 2px; flex-shrink: 0;
+    border-radius: 3px;
+    transition: color 0.15s;
+    margin-top: 1px;
+  }
+  .card-title-edit-btn:hover { color: var(--indigo-bright); }
+  .video-card:hover .card-title-edit-btn { display: flex; align-items: center; }
+  .title-edit-input {
+    width: 100%;
+    background: var(--surface-raised);
+    border: 1px solid var(--indigo);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 13px; font-weight: 500;
+    font-family: var(--font);
+    padding: 2px 6px;
+    outline: none;
   }
   .card-channel {
     font-size: 11px;
@@ -1074,7 +1105,7 @@
     border: none; display: block;
   }
   .pv-close-btn {
-    position: absolute; top: 14px; right: 14px;
+    position: absolute; top: 48px; right: 14px;
     z-index: 10;
     background: rgba(0,0,0,0.7);
     border: 1px solid rgba(255,255,255,0.15);

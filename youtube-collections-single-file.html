@@ -245,9 +245,9 @@
     color: var(--indigo-bright);
     border-color: rgba(92,107,192,0.4);
   }
-  /* hide count on hover — replaced by action buttons (use visibility to avoid layout shift) */
+  /* hide count on hover, and whenever the item is active — action buttons take its place instead */
   .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active:not(:hover) .count:not(.count-empty) { visibility: visible; }
+  .sidebar-item.active .count { visibility: hidden; }
   .sidebar-divider {
     height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
   }
@@ -286,12 +286,15 @@
     display: flex; align-items: center; gap: 7px;
     width: 100%; text-align: left;
     background: transparent; border: none;
-    color: var(--text); font-size: 12px; font-family: var(--font);
+    color: var(--text-dim); font-size: 12px; font-family: var(--font);
     padding: 7px 8px; border-radius: var(--radius-sm);
-    cursor: pointer; transition: background 0.12s;
+    cursor: pointer; transition: background 0.12s, color 0.12s;
   }
-  .playlist-picker-item:hover { background: var(--surface); }
-  .playlist-picker-item.in-playlist { color: var(--indigo-bright); }
+  .playlist-picker-item:hover { background: var(--surface); color: var(--text); }
+  /* checked state: bright white text + visible tick */
+  .playlist-picker-item.in-playlist { color: var(--text); }
+  .playlist-picker-item .pp-check { color: var(--text-dim); opacity: 0.25; }
+  .playlist-picker-item.in-playlist .pp-check { color: #fff; opacity: 1; }
   .add-collection-btn {
     display: flex; align-items: center; gap: 8px;
     padding: 7px 10px; border-radius: var(--radius-sm);
@@ -485,6 +488,9 @@
     letter-spacing: 0.05em;
   }
   .tag-dot { width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0; }
+  .card-title-row {
+    display: flex; align-items: flex-start; gap: 4px;
+  }
   .card-title {
     font-size: 13px; font-weight: 500;
     color: var(--text);
@@ -493,6 +499,31 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    flex: 1; cursor: pointer;
+    min-width: 0;
+  }
+  .card-title:hover { color: var(--indigo-bright); }
+  .card-title-edit-btn {
+    display: none;
+    background: transparent; border: none;
+    color: var(--text-dim); cursor: pointer;
+    padding: 2px; flex-shrink: 0;
+    border-radius: 3px;
+    transition: color 0.15s;
+    margin-top: 1px;
+  }
+  .card-title-edit-btn:hover { color: var(--indigo-bright); }
+  .video-card:hover .card-title-edit-btn { display: flex; align-items: center; }
+  .title-edit-input {
+    width: 100%;
+    background: var(--surface-raised);
+    border: 1px solid var(--indigo);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 13px; font-weight: 500;
+    font-family: var(--font);
+    padding: 2px 6px;
+    outline: none;
   }
   .card-channel {
     font-size: 11px;
@@ -1083,7 +1114,7 @@
     border: none; display: block;
   }
   .pv-close-btn {
-    position: absolute; top: 14px; right: 14px;
+    position: absolute; top: 48px; right: 14px;
     z-index: 10;
     background: rgba(0,0,0,0.7);
     border: 1px solid rgba(255,255,255,0.15);
@@ -1375,12 +1406,12 @@
       <div class="location-picker" id="locationPicker" style="display:none;">
         <div class="location-picker-title">Save quick-add to…</div>
         <div class="location-picker-body" id="locationPickerBody"></div>
+      </div>
     </div>
     <div class="add-url-bar">
       <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
       <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
       <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
-      </div>
     </div>
 
     <!-- Section header -->
@@ -1392,14 +1423,6 @@
         Play
       </button>
       <div class="section-header-right">
-        <div class="view-toggle">
-          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          </button>
-          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
-          </button>
-        </div>
         <!-- Export folder location label -->
         <div class="export-location-wrap" id="exportLocationWrap" style="display:none;">
           <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
@@ -1426,12 +1449,19 @@
             </button>
           </div>
         </div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List view">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Cards -->
     <div class="cards-grid-container" id="cardsGrid"></div>
-  </div>
   </div><!-- end #mainView -->
 </div>
 
@@ -2523,7 +2553,12 @@ function renderCard(v) {
   </div>
   <div class="card-body">
     ${colTag}
-    <div class="card-title">${escHtml(v.title || 'Untitled Video')}</div>
+    <div class="card-title-row">
+      <div class="card-title" id="title-${v.id}" onclick="startTitleEdit('${v.id}')" title="Click to edit title">${escHtml(v.title || 'Untitled Video')}</div>
+      <button class="card-title-edit-btn" onclick="startTitleEdit('${v.id}')" title="Edit title">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>
     ${v.channel ? `<div class="card-channel">${escHtml(v.channel)}</div>` : ''}
     ${noteHtml}
     <textarea class="note-edit" id="note-edit-${v.id}" rows="2" placeholder="Add a note…" onblur="saveNote('${v.id}', this.value)">${escHtml(v.note||'')}</textarea>
@@ -2745,6 +2780,34 @@ function addVideo(video) {
   save();
   renderSidebar();
   renderCards();
+  // Auto-fetch title if missing (uses noembed.com — no API key needed)
+  if (!video.title && video.videoId) {
+    fetchVideoTitle(video.id, video.videoId);
+  }
+}
+
+async function fetchVideoTitle(internalId, youtubeVideoId) {
+  try {
+    const url = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${youtubeVideoId}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data.title) {
+      const v = state.videos.find(v => v.id === internalId);
+      if (v) {
+        v.title = data.title;
+        if (data.author_name) v.channel = data.author_name;
+        save();
+        // Update the title in DOM without full re-render
+        const titleEl = document.getElementById('title-' + internalId);
+        if (titleEl && !titleEl.querySelector('input')) {
+          titleEl.textContent = v.title;
+        }
+        renderSidebar();
+      }
+    }
+  } catch (e) {
+    // Silent fail — user can edit title manually
+  }
 }
 
 function deleteVideo(id) {
@@ -2777,6 +2840,44 @@ function markWatched(id) {
     if (v.videoId && !state.watchedIds.includes(v.videoId)) state.watchedIds.push(v.videoId);
     save(); renderSidebar();
   }
+}
+
+function startTitleEdit(id) {
+  const titleEl = document.getElementById('title-' + id);
+  if (!titleEl || titleEl.querySelector('input')) return; // already editing
+  const v = state.videos.find(v => v.id === id);
+  if (!v) return;
+  const current = v.title || '';
+  const input = document.createElement('input');
+  input.className = 'title-edit-input';
+  input.value = current;
+  input.placeholder = 'Enter title…';
+  input.maxLength = 200;
+  titleEl.innerHTML = '';
+  titleEl.appendChild(input);
+  input.focus();
+  input.select();
+  const save = () => {
+    const newTitle = input.value.trim();
+    v.title = newTitle || v.title; // keep old if blank
+    state.videos[state.videos.findIndex(x => x.id === id)] = v;
+    saveState();
+    // Re-render just this title
+    titleEl.innerHTML = escHtml(v.title || 'Untitled Video');
+    // Also update playlist view track if visible
+    const pvTrack = document.querySelector('#pvTracks .pv-track-title');
+    if (pvTrack) pvRenderList();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { titleEl.innerHTML = escHtml(v.title || 'Untitled Video'); }
+  });
+}
+
+// save alias that doesn't conflict with the global save() name
+function saveState() {
+  localStorage.setItem('tholsstudio', JSON.stringify(state));
 }
 
 function toggleNote(id) {
@@ -3113,9 +3214,10 @@ function openCollectionPlaylistPicker(e, colId) {
       const allIn = colVideos.every(v => pl.videoIds.includes(v.id));
       const someIn = !allIn && colVideos.some(v => pl.videoIds.includes(v.id));
       const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${colVideos.length}`;
+      const checkIcon = allIn ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${allIn ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();addCollectionToPlaylist('${colId}','${pl.id}');document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        <svg width="11" height="11" fill="${allIn ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        ${checkIcon}
         ${escHtml(pl.name)} <span style="opacity:0.5;font-size:10px;margin-left:4px;">${label}</span>
       </button>`;
     }).join('')}`;
@@ -3166,9 +3268,10 @@ function openPlaylistPicker(videoId, anchorEl) {
     <div class="playlist-picker-title">Add to playlist</div>
     ${state.playlists.map(pl => {
       const has = pl.videoIds.includes(videoId);
+      const icon = has ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${has ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();${has ? `removeVideoFromPlaylist('${videoId}','${pl.id}')` : `addVideoToPlaylist('${videoId}','${pl.id}')`};document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        <svg width="11" height="11" fill="${has ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        ${icon}
         ${escHtml(pl.name)}
       </button>`;
     }).join('')}`;
