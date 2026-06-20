@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 21/06/2026, 03:47:24
+// Exported from TubeVault on 21/06/2026, 04:16:30
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -163,12 +163,44 @@ const DEFAULT_COLLECTIONS = [
     groups: {
       'Veena': [
         {
+          url: 'https://www.youtube.com/watch?v=URIGe3sZbQI&list=RDxOGOb8NFgoM&index=2',
+          videoId: 'URIGe3sZbQI',
+          playlistId: 'RDxOGOb8NFgoM',
+          title: 'Manasu Mayangum | Manasu palike | Sippikkul muthu| Swati Mutyam | Illayaraja hits | Veena cover |',
+          channel: 'Veena Ranjani Mahesh',
+          note: ''
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=xOGOb8NFgoM&list=RDxOGOb8NFgoM&start_radio=1',
+          videoId: 'xOGOb8NFgoM',
+          playlistId: 'RDxOGOb8NFgoM',
+          title: 'Ilamai Enum poongatru',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena cover by Ranjani Mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=YNmM2ylbpw0&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=22',
+          videoId: 'YNmM2ylbpw0',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'EllieGoulding|  FiftyShadesOfGrey',
+          channel: 'Veena Srivani',
+          note: 'Veena cover by Srivani'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=csD8r48xxTc&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=20',
+          videoId: 'csD8r48xxTc',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Oliyile therivathu | Azhagi',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena Cover by Ranjani mahesh'
+        },
+        {
           url: 'https://www.youtube.com/watch?v=Ms8-IZWSvvc&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=20',
           videoId: 'Ms8-IZWSvvc',
           playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
           title: 'Thalaiyai kuniyum thamaraiye | Veena cover | Illayaraja| oru odai nadhiyagirathu | Ranjani mahesh',
           channel: 'Veena Ranjani Mahesh',
-          note: ''
+          note: 'Veena Cover by Ranjani mahesh'
         },
         {
           url: 'https://www.youtube.com/watch?v=z5G1cVSniA8&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=18',
