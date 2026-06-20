@@ -708,7 +708,12 @@ function renderCard(v) {
   </div>
   <div class="card-body">
     ${colTag}
-    <div class="card-title">${escHtml(v.title || 'Untitled Video')}</div>
+    <div class="card-title-row">
+      <div class="card-title" id="title-${v.id}" onclick="startTitleEdit('${v.id}')" title="Click to edit title">${escHtml(v.title || 'Untitled Video')}</div>
+      <button class="card-title-edit-btn" onclick="startTitleEdit('${v.id}')" title="Edit title">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>
     ${v.channel ? `<div class="card-channel">${escHtml(v.channel)}</div>` : ''}
     ${noteHtml}
     <textarea class="note-edit" id="note-edit-${v.id}" rows="2" placeholder="Add a note…" onblur="saveNote('${v.id}', this.value)">${escHtml(v.note||'')}</textarea>
@@ -930,6 +935,34 @@ function addVideo(video) {
   save();
   renderSidebar();
   renderCards();
+  // Auto-fetch title if missing (uses noembed.com — no API key needed)
+  if (!video.title && video.videoId) {
+    fetchVideoTitle(video.id, video.videoId);
+  }
+}
+
+async function fetchVideoTitle(internalId, youtubeVideoId) {
+  try {
+    const url = `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${youtubeVideoId}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data && data.title) {
+      const v = state.videos.find(v => v.id === internalId);
+      if (v) {
+        v.title = data.title;
+        if (data.author_name) v.channel = data.author_name;
+        save();
+        // Update the title in DOM without full re-render
+        const titleEl = document.getElementById('title-' + internalId);
+        if (titleEl && !titleEl.querySelector('input')) {
+          titleEl.textContent = v.title;
+        }
+        renderSidebar();
+      }
+    }
+  } catch (e) {
+    // Silent fail — user can edit title manually
+  }
 }
 
 function deleteVideo(id) {
@@ -962,6 +995,44 @@ function markWatched(id) {
     if (v.videoId && !state.watchedIds.includes(v.videoId)) state.watchedIds.push(v.videoId);
     save(); renderSidebar();
   }
+}
+
+function startTitleEdit(id) {
+  const titleEl = document.getElementById('title-' + id);
+  if (!titleEl || titleEl.querySelector('input')) return; // already editing
+  const v = state.videos.find(v => v.id === id);
+  if (!v) return;
+  const current = v.title || '';
+  const input = document.createElement('input');
+  input.className = 'title-edit-input';
+  input.value = current;
+  input.placeholder = 'Enter title…';
+  input.maxLength = 200;
+  titleEl.innerHTML = '';
+  titleEl.appendChild(input);
+  input.focus();
+  input.select();
+  const save = () => {
+    const newTitle = input.value.trim();
+    v.title = newTitle || v.title; // keep old if blank
+    state.videos[state.videos.findIndex(x => x.id === id)] = v;
+    saveState();
+    // Re-render just this title
+    titleEl.innerHTML = escHtml(v.title || 'Untitled Video');
+    // Also update playlist view track if visible
+    const pvTrack = document.querySelector('#pvTracks .pv-track-title');
+    if (pvTrack) pvRenderList();
+  };
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { titleEl.innerHTML = escHtml(v.title || 'Untitled Video'); }
+  });
+}
+
+// save alias that doesn't conflict with the global save() name
+function saveState() {
+  localStorage.setItem('tholsstudio', JSON.stringify(state));
 }
 
 function toggleNote(id) {
@@ -1298,9 +1369,10 @@ function openCollectionPlaylistPicker(e, colId) {
       const allIn = colVideos.every(v => pl.videoIds.includes(v.id));
       const someIn = !allIn && colVideos.some(v => pl.videoIds.includes(v.id));
       const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${colVideos.length}`;
+      const checkIcon = allIn ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${allIn ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();addCollectionToPlaylist('${colId}','${pl.id}');document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        ${allIn ? '<svg width="11" height="11" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>' : '<span style="width:11px;display:inline-block;"></span>'}
+        ${checkIcon}
         ${escHtml(pl.name)} <span style="opacity:0.5;font-size:10px;margin-left:4px;">${label}</span>
       </button>`;
     }).join('')}`;
@@ -1351,9 +1423,10 @@ function openPlaylistPicker(videoId, anchorEl) {
     <div class="playlist-picker-title">Add to playlist</div>
     ${state.playlists.map(pl => {
       const has = pl.videoIds.includes(videoId);
+      const icon = has ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${has ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();${has ? `removeVideoFromPlaylist('${videoId}','${pl.id}')` : `addVideoToPlaylist('${videoId}','${pl.id}')`};document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
-        ${has ? '<svg width="11" height="11" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" stroke-width="2"/></svg>' : '<span style="width:11px;display:inline-block;"></span>'}
+        ${icon}
         ${escHtml(pl.name)}
       </button>`;
     }).join('')}`;
