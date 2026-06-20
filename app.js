@@ -714,8 +714,8 @@ function renderCard(v) {
   <div class="card-body">
     ${colTag}
     <div class="card-title-row">
-      <div class="card-title" id="title-${v.id}" onclick="startTitleEdit('${v.id}')" title="Click to edit title">${escHtml(v.title || 'Untitled Video')}</div>
-      <button class="card-title-edit-btn" onclick="startTitleEdit('${v.id}')" title="Edit title">
+      <div class="card-title" id="title-${v.id}" onclick="event.stopPropagation();startTitleEdit('${v.id}')" title="Click to edit title">${escHtml(v.title || 'Untitled Video')}</div>
+      <button class="card-title-edit-btn" onmousedown="event.stopPropagation();event.preventDefault();startTitleEdit('${v.id}')" title="Edit title">
         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
     </div>
@@ -962,7 +962,12 @@ async function fetchVideoTitle(internalId, youtubeVideoId) {
         if (titleEl && !titleEl.querySelector('input')) {
           titleEl.textContent = v.title;
         }
-        renderSidebar();
+        // Update channel in DOM if visible
+        const cardEl = document.getElementById('card-' + internalId);
+        if (cardEl && v.channel) {
+          const chEl = cardEl.querySelector('.card-channel');
+          if (chEl) chEl.textContent = v.channel;
+        }
       }
     }
   } catch (e) {
@@ -1017,21 +1022,21 @@ function startTitleEdit(id) {
   titleEl.appendChild(input);
   input.focus();
   input.select();
+  let saved = false;
   const save = () => {
+    if (saved) return;
+    saved = true;
     const newTitle = input.value.trim();
-    v.title = newTitle || v.title; // keep old if blank
-    state.videos[state.videos.findIndex(x => x.id === id)] = v;
+    v.title = newTitle || v.title;
     saveState();
-    // Re-render just this title
     titleEl.innerHTML = escHtml(v.title || 'Untitled Video');
-    // Also update playlist view track if visible
-    const pvTrack = document.querySelector('#pvTracks .pv-track-title');
-    if (pvTrack) pvRenderList();
+    if (document.getElementById('pvTracks')) pvRenderList();
   };
   input.addEventListener('blur', save);
+  input.addEventListener('click', e => e.stopPropagation());
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { titleEl.innerHTML = escHtml(v.title || 'Untitled Video'); }
+    if (e.key === 'Enter') { e.preventDefault(); save(); input.blur(); }
+    if (e.key === 'Escape') { saved = true; titleEl.innerHTML = escHtml(v.title || 'Untitled Video'); }
   });
 }
 
@@ -1056,7 +1061,17 @@ function saveNote(id, value) {
   if (v) {
     v.note = value.trim();
     save();
-    renderCards();
+    // Update the note text display in-place without re-rendering
+    const nt = document.getElementById('note-text-' + id);
+    if (nt) {
+      nt.textContent = v.note;
+      nt.style.display = v.note ? '' : 'none';
+    }
+    const ta = document.getElementById('note-edit-' + id);
+    if (ta) {
+      ta.classList.remove('visible');
+      if (nt) nt.style.display = v.note ? '' : 'none';
+    }
   }
 }
 
