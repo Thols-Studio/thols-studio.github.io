@@ -563,14 +563,14 @@ function buildCollectionBlock(colId, colName, colColor, colVids, isFirst, expand
   const chevClass = expanded ? 'group-chevron chev-up' : 'group-chevron collapsed';
   const bodyClass = expanded ? 'group-body' : 'group-body collapsed';
   let html = `<div class="group-section" style="${dividerStyle}">`;
-  html += `<div class="group-header" onclick="toggleGroup('col-${colId}')">
+  html += `<div class="group-header group-header--collection" onclick="toggleGroup('col-${colId}')">
     <span class="${chevClass}" id="chev-col-${colId}">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </span>
     <span class="collection-dot" style="background:${colColor};width:9px;height:9px;border-radius:50%;flex-shrink:0;"></span>
     <span class="group-title" style="color:${colColor};">${escHtml(colName)}</span>
     <span class="group-count">${colVids.length}</span>
-    <div class="group-header-line"></div>
+    <div class="group-header-line group-header-line--collection"></div>
   </div>`;
   html += `<div class="${bodyClass}" id="group-col-${colId}">`;
   html += renderGroupedByTitle(colVids, colId, colColor, true, expanded);
@@ -616,18 +616,23 @@ function renderGroupedByTitle(vids, colId, colColor, nested = false, expanded = 
         <span class="${gChevClass}" id="chev-${gKey}">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         </span>
-        <span class="group-title">${escHtml(gName)}</span>
-        <span class="group-count">${gVids.length}</span>
-        <div class="group-header-line"></div>
-        <div class="group-header-actions" onclick="event.stopPropagation()">
-          <button class="group-action-btn" onclick="renameGroupPrompt('${escAttr(colId)}','${escAttr(gName)}')" title="Rename group">
-            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Rename
-          </button>
-          <button class="group-action-btn danger" onclick="deleteGroupPrompt('${escAttr(colId)}','${escAttr(gName)}')" title="Delete group">
-            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-            Delete
-          </button>
+        <div class="group-title-wrap">
+          <div class="group-title-row">
+            <span class="group-title">${escHtml(gName)}</span>
+            <span class="group-count">${gVids.length}</span>
+            <div class="group-header-line"></div>
+          </div>
+          <div class="group-header-actions" onclick="event.stopPropagation()">
+            <button class="group-action-btn" onclick="openGroupPlaylistPicker(event,'${escAttr(colId)}','${escAttr(gName)}')" title="Add group to playlist">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+            <button class="group-action-btn" onclick="renameGroupPrompt('${escAttr(colId)}','${escAttr(gName)}')" title="Rename group">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="group-action-btn danger" onclick="deleteGroupPrompt('${escAttr(colId)}','${escAttr(gName)}')" title="Delete group">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </button>
+          </div>
         </div>
       </div>
       <div class="${gBodyClass}" id="group-${gKey}">
@@ -1342,6 +1347,68 @@ function removeFromCurrentPlaylist(videoId) {
   if (!currentFilter.startsWith('playlist:')) return;
   const plId = currentFilter.slice(9);
   removeVideoFromPlaylist(videoId, plId);
+}
+
+// Shows a playlist picker to add all videos in a GROUP to a chosen playlist
+function openGroupPlaylistPicker(e, colId, groupName) {
+  e.stopPropagation();
+  document.querySelectorAll('.playlist-picker').forEach(el => el.remove());
+
+  if (!state.playlists.length) {
+    showToast('⚠️ No playlists yet — create one in the Playlists section');
+    return;
+  }
+
+  const groupVids = state.videos.filter(v => v.collection === colId && v.group === groupName);
+  if (!groupVids.length) {
+    showToast('⚠️ This group has no videos');
+    return;
+  }
+
+  const col = state.collections.find(c => c.id === colId);
+  const picker = document.createElement('div');
+  picker.className = 'playlist-picker';
+  picker.innerHTML = `
+    <div class="playlist-picker-title">Add "${escHtml(groupName)}" to playlist</div>
+    ${state.playlists.map(pl => {
+      const allIn = groupVids.every(v => pl.videoIds.includes(v.id));
+      const someIn = !allIn && groupVids.some(v => pl.videoIds.includes(v.id));
+      const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${groupVids.length}`;
+      const checkIcon = allIn
+        ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>`
+        : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
+      return `<button class="playlist-picker-item${allIn ? ' in-playlist' : ''}"
+        onclick="event.stopPropagation();addGroupToPlaylist('${escAttr(colId)}','${escAttr(groupName)}','${pl.id}');document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
+        ${checkIcon}
+        ${escHtml(pl.name)} <span style="opacity:0.5;font-size:10px;margin-left:4px;">${label}</span>
+      </button>`;
+    }).join('')}`;
+
+  document.body.appendChild(picker);
+  const rect = e.currentTarget.getBoundingClientRect();
+  picker.style.cssText = `position:fixed;z-index:9999;top:${rect.bottom + 4}px;left:${rect.left}px`;
+  setTimeout(() => {
+    const pr = picker.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 8) picker.style.left = (window.innerWidth - pr.width - 8) + 'px';
+    if (pr.bottom > window.innerHeight - 8) picker.style.top = (rect.top - pr.height - 4) + 'px';
+  }, 0);
+  const close = (ev) => { if (!picker.contains(ev.target)) { picker.remove(); document.removeEventListener('click', close); } };
+  setTimeout(() => document.addEventListener('click', close), 0);
+}
+
+function addGroupToPlaylist(colId, groupName, playlistId) {
+  const pl = state.playlists.find(p => p.id === playlistId);
+  if (!pl) return;
+  const groupVids = state.videos.filter(v => v.collection === colId && v.group === groupName);
+  let added = 0;
+  groupVids.forEach(v => {
+    if (!pl.videoIds.includes(v.id)) { pl.videoIds.push(v.id); added++; }
+  });
+  save();
+  renderSidebar();
+  showToast(added > 0
+    ? `✓ Added ${added} video${added !== 1 ? 's' : ''} from "${groupName}" to "${pl.name}"`
+    : `"${groupName}" videos already in "${pl.name}"`);
 }
 
 // Shows a playlist picker to add ALL videos in a collection to a chosen playlist

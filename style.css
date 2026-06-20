@@ -581,10 +581,14 @@
   /* ── GROUP SECTION ── */
   .group-section { display: flex; flex-direction: column; gap: 6px; }
   .group-header {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: flex-start; gap: 10px;
     padding: 6px 0;
     cursor: pointer;
     user-select: none;
+  }
+  /* Collection-level header: simpler, no stacked actions row — keep vertically centered */
+  .group-header--collection {
+    align-items: center;
   }
   .group-header:hover .group-title { color: var(--text); }
   .group-chevron {
@@ -592,8 +596,18 @@
     transition: transform 0.2s;
     flex-shrink: 0;
     display: flex; align-items: center;
+    margin-top: 2px;
   }
+  .group-header--collection .group-chevron { margin-top: 0; }
   .group-chevron.collapsed { transform: rotate(-90deg); }
+  /* Wrapper column: title row + actions row stacked */
+  .group-title-wrap {
+    display: flex; flex-direction: column; gap: 3px;
+    min-width: 0; flex: 1;
+  }
+  .group-title-row {
+    display: flex; align-items: center; gap: 8px;
+  }
   .group-title {
     font-size: 13px; font-weight: 600;
     color: var(--text-muted);
@@ -601,6 +615,7 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     transition: color 0.15s;
+    white-space: nowrap;
   }
   .group-count {
     font-size: 10px;
@@ -609,24 +624,32 @@
     background: var(--surface-raised);
     padding: 1px 7px;
     border-radius: 20px;
+    flex-shrink: 0;
   }
   .group-header-line {
-    flex: 1;
+    flex: 1;              /* group line — stretches to fill, but stops a bit short */
     height: 1px;
     background: var(--border-subtle);
+    flex-shrink: 0;
+    margin-right: 32px;   /* group line ends slightly before the edge */
   }
+  .group-header-line--collection {
+    margin-right: 0;      /* collection line runs all the way to the edge */
+  }
+  /* Icon row — always reserves space, just invisible until hover */
   .group-header-actions {
-    display: flex; gap: 4px;
-    opacity: 0;
-    transition: opacity 0.15s;
+    display: flex; gap: 1px;
+    visibility: hidden;
+    transition: visibility 0s;
   }
-  .group-header:hover .group-header-actions { opacity: 1; }
+  .group-header:hover .group-header-actions {
+    visibility: visible;
+  }
   .group-action-btn {
     background: transparent; border: none;
     color: var(--text-dim); cursor: pointer;
-    padding: 2px 5px; border-radius: 4px;
-    font-size: 10px; font-family: var(--mono);
-    display: flex; align-items: center; gap: 3px;
+    padding: 3px 4px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
     transition: background 0.15s, color 0.15s;
   }
   .group-action-btn:hover { background: var(--surface-raised); color: var(--text); }

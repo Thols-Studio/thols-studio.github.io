@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 20/6/2026, 10:53:03 am
+// Exported from TubeVault on 21/06/2026, 03:47:24
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -39,6 +39,23 @@ const DEFAULT_COLLECTIONS = [
     name: 'Unity Tutorials',
     color: '#5C6BC0',
     groups: {
+      'Maths': [
+        {
+          url: 'https://www.youtube.com/watch?v=w2J_wG5oiNg',
+          videoId: 'w2J_wG5oiNg',
+          title: 'How to Calculate Direction in Unity -  A Unity Math Tutorial',
+          channel: 'gamedev:hq',
+          note: 'Direction'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=fjOdtSu4Lm4&list=PLImQaTpSAdsArRFFj8bIfqMk2X7Vlf3XF&index=1',
+          videoId: 'fjOdtSu4Lm4',
+          playlistId: 'PLImQaTpSAdsArRFFj8bIfqMk2X7Vlf3XF',
+          title: 'YouTube Video',
+          channel: '',
+          note: 'Basic to start learn Unity3D as a beginner. Starting Point'
+        },
+      ],
       'Animation Curves': [
         {
           url: 'https://www.youtube.com/watch?v=OPDl2uVaN_Q',
@@ -55,11 +72,11 @@ const DEFAULT_COLLECTIONS = [
           note: 'Animation Curves for 2D'
         },
         {
-          url: 'https://www.youtube.com/watch?v=Tcvwh1tkyQw',
-          videoId: 'Tcvwh1tkyQw',
-          title: 'Curved Movement Patterns With Animation Curves',
+          url: 'https://www.youtube.com/watch?v=Nc9x0LfvJhI&t=321s',
+          videoId: 'Nc9x0LfvJhI',
+          title: 'The Power of Animation Curves',
           channel: '',
-          note: 'Move a Kinematic Body with an Animation Curve |'
+          note: 'Basics of Animation Curves'
         },
         {
           url: 'https://www.youtube.com/watch?v=ajn9iMUXZYI',
@@ -69,18 +86,18 @@ const DEFAULT_COLLECTIONS = [
           note: 'A Cool Way to Move Your Player with Animation Curves'
         },
         {
+          url: 'https://www.youtube.com/watch?v=Tcvwh1tkyQw',
+          videoId: 'Tcvwh1tkyQw',
+          title: 'Curved Movement Patterns With Animation Curves',
+          channel: '',
+          note: 'Move a Kinematic Body with an Animation Curve |'
+        },
+        {
           url: 'https://www.youtube.com/watch?v=ddakS7BgHRI',
           videoId: 'ddakS7BgHRI',
           title: 'Moving Object Along a Parabola',
           channel: '',
           note: 'Moving Object Along A Parabola with path visualization'
-        },
-        {
-          url: 'https://www.youtube.com/watch?v=Nc9x0LfvJhI&t=321s',
-          videoId: 'Nc9x0LfvJhI',
-          title: 'The Power of Animation Curves',
-          channel: '',
-          note: 'Basics of Animation Curves'
         },
       ],
       'C Sharp': [
@@ -90,16 +107,6 @@ const DEFAULT_COLLECTIONS = [
           title: 'YouTube Video',
           channel: '',
           note: 'How to Write High Quality Code that doesn\'t fall apart.'
-        },
-      ],
-      'Maths': [
-        {
-          url: 'https://www.youtube.com/watch?v=fjOdtSu4Lm4&list=PLImQaTpSAdsArRFFj8bIfqMk2X7Vlf3XF&index=1',
-          videoId: 'fjOdtSu4Lm4',
-          playlistId: 'PLImQaTpSAdsArRFFj8bIfqMk2X7Vlf3XF',
-          title: 'YouTube Video',
-          channel: '',
-          note: 'Basic to start learn Unity3D as a beginner. Starting Point'
         },
       ],
       'Character Movement': [
@@ -153,7 +160,138 @@ const DEFAULT_COLLECTIONS = [
     id: 'music',
     name: 'Music',
     color: '#EC407A',
-    groups: {},
+    groups: {
+      'Veena': [
+        {
+          url: 'https://www.youtube.com/watch?v=Ms8-IZWSvvc&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=20',
+          videoId: 'Ms8-IZWSvvc',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Thalaiyai kuniyum thamaraiye | Veena cover | Illayaraja| oru odai nadhiyagirathu | Ranjani mahesh',
+          channel: 'Veena Ranjani Mahesh',
+          note: ''
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=z5G1cVSniA8&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=18',
+          videoId: 'z5G1cVSniA8',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Varathu vantha nayagan',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena cover by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=tIYnxMmP_UA&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=17',
+          videoId: 'tIYnxMmP_UA',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Ooru Sanam',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=plxf9jrzaL8&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=15',
+          videoId: 'plxf9jrzaL8',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Pudhumai Pen | Kadhal Mayakkam |',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=Bs3ehfffA5k&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=13',
+          videoId: 'Bs3ehfffA5k',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Oliyile Therivadhu | Azhagi',
+          channel: 'BandVisai',
+          note: 'Veena By Veenai Srinidhi'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=_XBHxWL18Mg&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=12',
+          videoId: '_XBHxWL18Mg',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: '|KEERAVANI |  NINAVALLE KANAVILE',
+          channel: 'Stringwings official',
+          note: 'Veena by Phani narayana'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=fqKzSgJDqME&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=10',
+          videoId: 'fqKzSgJDqME',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Kannana kanne',
+          channel: 'Veena Srivani',
+          note: 'Veena by Veena Srivani'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=AVF0_29_vDA&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=9',
+          videoId: 'AVF0_29_vDA',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Kattu malli | காட்டுமல்லி |',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=vq3amtfXZf4&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=8',
+          videoId: 'vq3amtfXZf4',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Vizhiyile',
+          channel: 'Voice Veena Twins ',
+          note: 'Veena by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=XBX2njcow8k&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=7',
+          videoId: 'XBX2njcow8k',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Kalyana Then Nila',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena by Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=wrqzXhA22D8&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=6',
+          videoId: 'wrqzXhA22D8',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Kadhal oviyam',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veen by Rangani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=hemrgMKNnPQ&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=5',
+          videoId: 'hemrgMKNnPQ',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Andhi mazhai pozhigirathu',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena by  Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=4jocU6ueaoM&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=4',
+          videoId: '4jocU6ueaoM',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Perai Sollava',
+          channel: 'INRECO Tamil Film Evergreen Nostalgic Songs',
+          note: 'Veena by Veenai Srinidhi'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=MTKBYTaMHvY&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=3',
+          videoId: 'MTKBYTaMHvY',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Germaniyin Senthen Malare',
+          channel: 'INRECO Tamil Film Evergreen Nostalgic Songs',
+          note: 'Veena by Veenai Srinidhi'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=vIDl1E26FpU&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY&index=2',
+          videoId: 'vIDl1E26FpU',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Azhagu Aayiram',
+          channel: 'INRECO Tamil Film Evergreen Nostalgic Songs',
+          note: 'Veena by Veenai Srinidhi'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=5ATSSUZuZNY&list=PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          videoId: '5ATSSUZuZNY',
+          playlistId: 'PLvGJzgY6LDpB2AZVXGhN60dR5QhffZrvY',
+          title: 'Paruvame Puthiya Paadal Paadu',
+          channel: '',
+          note: 'Veena by Veenai Srinidhi'
+        },
+      ]
+    },
     ungrouped: []
   }
 ];
