@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 21/06/2026, 04:16:30
+// Exported from TubeVault on 21/06/2026, 04:34:31
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -163,12 +163,35 @@ const DEFAULT_COLLECTIONS = [
     groups: {
       'Veena': [
         {
+          url: 'https://www.youtube.com/watch?v=aLSA8Su-3ag',
+          videoId: 'aLSA8Su-3ag',
+          title: 'Ponvaanam paneer',
+          channel: 'Veena Ranjani Mahesh',
+          note: 'Veena Cover by  Ranjani mahesh'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=WPk_ztNMlS4&list=RDxOGOb8NFgoM&index=4',
+          videoId: 'WPk_ztNMlS4',
+          playlistId: 'RDxOGOb8NFgoM',
+          title: 'Ithazhil Kathai Ezhuthum',
+          channel: 'Stringwings official',
+          note: 'Veena Cover Phaninarayana veena'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=xGzUq06oqIk&list=RDxOGOb8NFgoM&index=3',
+          videoId: 'xGzUq06oqIk',
+          playlistId: 'RDxOGOb8NFgoM',
+          title: 'Maalaiyil Yaro Manathodu Pesa | மாலையில் யாரோ மனதோடு பேச |',
+          channel: 'Veena-Meerakrishna',
+          note: 'Veena Cover by Veena Meerakrishna'
+        },
+        {
           url: 'https://www.youtube.com/watch?v=URIGe3sZbQI&list=RDxOGOb8NFgoM&index=2',
           videoId: 'URIGe3sZbQI',
           playlistId: 'RDxOGOb8NFgoM',
           title: 'Manasu Mayangum | Manasu palike | Sippikkul muthu| Swati Mutyam | Illayaraja hits | Veena cover |',
           channel: 'Veena Ranjani Mahesh',
-          note: ''
+          note: 'Veena Cover by Ranjani mahesh'
         },
         {
           url: 'https://www.youtube.com/watch?v=xOGOb8NFgoM&list=RDxOGOb8NFgoM&start_radio=1',
