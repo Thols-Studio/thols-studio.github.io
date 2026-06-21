@@ -257,7 +257,12 @@ function renderPlaylistsSidebar() {
   list.innerHTML = '';
   state.playlists.forEach(pl => {
     const isActive = currentFilter === `playlist:${pl.id}`;
-    const count = pl.videoIds ? pl.videoIds.length : 0;
+    
+    // Before
+    //const count = pl.videoIds ? pl.videoIds.length : 0;
+    // After
+    const count = pl.videoIds ? pl.videoIds.filter(id => state.videos.find(v => v.id === id)).length : 0;
+
     const btn = document.createElement('button');
     btn.className = 'sidebar-item' + (isActive ? ' active' : '');
     const dotColor = pl.color || '#78909C';
