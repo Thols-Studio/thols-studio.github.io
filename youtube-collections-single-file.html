@@ -2329,18 +2329,15 @@ function deleteCollection(e, colId) {
   if (!col) return;
   const count = state.videos.filter(v => v.collection === colId).length;
   const msg = count > 0
-    ? `Delete "${col.name}" and its ${count} video(s)?`
-    : `Delete empty collection "${col.name}"?`;
-  if (!confirm(msg)) return;
-
-  // Delete all videos in this collection
-  state.videos = state.videos.filter(v => v.collection !== colId);
-  state.collections = state.collections.filter(c => c.id !== colId);
-  if (currentFilter === colId) currentFilter = 'all';
-  save();
-  renderSidebar();
-  renderCards();
-  showToast(`"${col.name}" deleted`);
+    ? `"${col.name}" and its ${count} video${count !== 1 ? 's' : ''} will be permanently deleted.`
+    : `"${col.name}" will be permanently deleted.`;
+  showConfirm('Delete Collection', msg, 'Delete', () => {
+    state.videos = state.videos.filter(v => v.collection !== colId);
+    state.collections = state.collections.filter(c => c.id !== colId);
+    if (currentFilter === colId) currentFilter = 'all';
+    save(); renderSidebar(); renderCards();
+    showToast(`✓ "${col.name}" deleted`);
+  });
 }
 
 function getGroupsForCollection(colId) {
@@ -3916,6 +3913,29 @@ document.addEventListener('click', (e) => {
   const dropdown = document.getElementById('exportDropdown');
   if (dropdown && !dropdown.contains(e.target)) closeExportMenu();
 });
+
+// ──────────────────────────────────────────────
+// CONFIRM MODAL
+// ──────────────────────────────────────────────
+let _confirmCallback = null;
+
+function showConfirm(title, message, okLabel, callback) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmOkBtn').textContent = okLabel || 'Delete';
+  _confirmCallback = callback;
+  openModal('confirmModal');
+}
+
+function confirmOk() {
+  closeConfirmModal();
+  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+}
+
+function closeConfirmModal() {
+  closeModal('confirmModal');
+  _confirmCallback = null;
+}
 
 // ──────────────────────────────────────────────
 // MODAL HELPERS
