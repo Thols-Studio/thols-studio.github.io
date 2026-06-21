@@ -2079,7 +2079,6 @@ function seedData() {
   if (state.videos.length === 0) {
     let baseTime = Date.now();
     DEFAULT_COLLECTIONS.forEach(col => {
-      // Videos inside named groups
       Object.entries(col.groups || {}).forEach(([groupName, videos]) => {
         videos.forEach(v => {
           state.videos.push({
@@ -2092,7 +2091,6 @@ function seedData() {
           });
         });
       });
-      // Videos directly in the collection (no sub-group)
       (col.ungrouped || []).forEach(v => {
         state.videos.push({
           id: generateId(),
@@ -2104,7 +2102,6 @@ function seedData() {
         });
       });
     });
-    // Apply watched history from watched.js
     if (typeof WATCHED_VIDEO_IDS !== 'undefined' && WATCHED_VIDEO_IDS.length) {
       state.videos.forEach(v => {
         if (WATCHED_VIDEO_IDS.includes(v.videoId)) {
@@ -2113,8 +2110,26 @@ function seedData() {
         }
       });
     }
+    remapPlaylistIds();
     save();
   }
+}
+
+function remapPlaylistIds() {
+  const ytIdMap = {};
+  state.videos.forEach(v => { if (v.videoId) ytIdMap[v.videoId] = v.id; });
+  state.playlists.forEach(pl => {
+    const def = (typeof DEFAULT_PLAYLISTS !== 'undefined') && DEFAULT_PLAYLISTS.find(p => p.id === pl.id);
+    if (def && def.videos && def.videos.length) {
+      const mapped = def.videos.map(dv => ytIdMap[dv.videoId]).filter(Boolean);
+      if (mapped.length) { pl.videoIds = mapped; return; }
+    }
+    const valid = pl.videoIds.filter(id => state.videos.find(v => v.id === id));
+    if (!valid.length && pl.videoIds.length) {
+      const byYt = state.videos.filter(v => v.videoId && pl.videoIds.includes(v.videoId));
+      if (byYt.length) pl.videoIds = byYt.map(v => v.id);
+    }
+  });
 }
 
 // ──────────────────────────────────────────────
@@ -2338,36 +2353,61 @@ function pvPlayIndex(i) {
   markWatched(v.id);
 
   const container = document.getElementById('pvIframeContainer');
+
   if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
-    ytPlayer.loadVideoById(v.videoId);
+    try {
+      ytPlayer.loadVideoById(v.videoId);
+    } catch(e) {
+      ytPlayer = null;
+      pvPlayIndex(i);
+      return;
+    }
+  } else if (ytReady && window.YT && window.YT.Player) {
+    if (container) container.innerHTML = '<div id="ytPlayerEl" style="width:100%;height:100%;"></div>';
+    ytPlayer = new window.YT.Player('ytPlayerEl', {
+      width: '100%',
+      height: '100%',
+      videoId: v.videoId,
+      playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onReady: function() {
+          try { ytPlayer.playVideo(); } catch(e) {}
+        },
+        onStateChange: onYtPlayerStateChange,
+      }
+    });
   } else {
-    // Create or recreate the player
-    if (container) container.innerHTML = '<div id="ytPlayerEl"></div>';
-    if (window.YT && window.YT.Player) {
-      ytPlayer = new window.YT.Player('ytPlayerEl', {
-        width: '100%',
-        height: '100%',
-        videoId: v.videoId,
-        playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
-        events: {
-          onStateChange: onYtPlayerStateChange,
+    if (container) container.innerHTML =
+      `<iframe src="https://www.youtube.com/embed/${v.videoId}?autoplay=1&rel=0&enablejsapi=1"
+       style="width:100%;height:100%;border:none;position:absolute;inset:0;" allowfullscreen
+       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    if (!ytReady) {
+      const checkInterval = setInterval(() => {
+        if (ytReady && window.YT && window.YT.Player) {
+          clearInterval(checkInterval);
+          if (container) container.innerHTML = '<div id="ytPlayerEl" style="width:100%;height:100%;"></div>';
+          ytPlayer = new window.YT.Player('ytPlayerEl', {
+            width: '100%',
+            height: '100%',
+            videoId: v.videoId,
+            playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+            events: {
+              onReady: function() {
+                try { ytPlayer.playVideo(); } catch(e) {}
+              },
+              onStateChange: onYtPlayerStateChange,
+            }
+          });
         }
-      });
-    } else {
-      // YT API not loaded yet — fallback to iframe
-      if (container) container.innerHTML =
-        `<iframe src="https://www.youtube.com/embed/${v.videoId}?autoplay=1&rel=0&enablejsapi=1"
-         style="width:100%;height:100%;border:none;" allowfullscreen
-         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+      }, 500);
+      setTimeout(() => clearInterval(checkInterval), 15000);
     }
   }
 
-  // Update active track highlight
   document.querySelectorAll('.pv-track').forEach((el, idx) => {
     el.classList.toggle('active', idx === i);
   });
 
-  // Scroll active track into view
   const activeTrack = document.getElementById('pvt-' + i);
   if (activeTrack) activeTrack.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
