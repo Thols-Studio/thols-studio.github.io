@@ -2038,8 +2038,9 @@ function showConfirm(title, message, okLabel, callback) {
 }
 
 function confirmOk() {
+  const cb = _confirmCallback;
   closeConfirmModal();
-  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+  if (cb) { cb(); }
 }
 
 function closeConfirmModal() {
