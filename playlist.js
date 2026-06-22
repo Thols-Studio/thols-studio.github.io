@@ -1,6 +1,6 @@
 // --------------------------------------------------------------
 // PLAYLIST CONFIG
-// Exported from TubeVault on 21/6/2026, 8:46:32 pm
+// Exported from TubeVault on 22/06/2026, 09:50:03
 //
 // Each playlist: id, name, color, videoIds, videos (full details)
 // To apply as defaults: replace playlist.js and clear localStorage.
@@ -11,7 +11,7 @@ const DEFAULT_PLAYLISTS = [
     id: 'mqg221qxuem2',
     name: 'Unity',
     color: '#5C6BC0',
-    videoIds: ['mqej8mht4kkp', 'mqdvbkpn8a6m', 'mqi2gqn7agho', 'mqi0xeac0fdy', 'mqhztpiqud0a', 'mqhzfx2lx9t9', 'mqhz3e9uc8x5', 'mqhyjtnwfh0t', 'mqhy6b5wot1q', 'mqdvbkpo9c3m', 'mqnxg9i7iy6d', 'mqnxg9i773qg', 'mqnxg9i7hr82', 'mqnxg9i7t38v', 'mqnxg9i7kucb', 'mqnxg9i7a5ah', 'mqnxg9i7vc3d', 'mqnxg9i7axb7', 'mqnxg9i7cxas', 'mqnxg9i7k9zx', 'mqnxg9i895xc'],
+    videoIds: ['mqnngze6kfrn', 'mqnngze645ws', 'mqnngze6zem0', 'mqnngze6psq5', 'mqnngze68xpr', 'mqnngze61ln6', 'mqnngze6ct1d', 'mqnngze6ue94', 'mqnngze6mwd0', 'mqnngze6xf6q', 'mqnngze6nzxa'],
     videos: [
     {
       url: 'https://www.youtube.com/watch?v=w2J_wG5oiNg',
