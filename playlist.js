@@ -1,6 +1,6 @@
 // --------------------------------------------------------------
 // PLAYLIST CONFIG
-// Exported from TubeVault on 22/06/2026, 09:50:03
+// Exported from TubeVault on 24/06/2026, 10:11:38
 //
 // Each playlist: id, name, color, videoIds, videos (full details)
 // To apply as defaults: replace playlist.js and clear localStorage.
@@ -11,7 +11,7 @@ const DEFAULT_PLAYLISTS = [
     id: 'mqg221qxuem2',
     name: 'Unity',
     color: '#5C6BC0',
-    videoIds: ['mqnngze6kfrn', 'mqnngze645ws', 'mqnngze6zem0', 'mqnngze6psq5', 'mqnngze68xpr', 'mqnngze61ln6', 'mqnngze6ct1d', 'mqnngze6ue94', 'mqnngze6mwd0', 'mqnngze6xf6q', 'mqnngze6nzxa'],
+    videoIds: ['mqrl51vchkf1', 'mqrl51vc5zeo', 'mqrl51vczlfi', 'mqrl51vcky9u', 'mqrl51vc2hvq', 'mqrl51vckpii', 'mqrl51vcyb4l', 'mqrl51vc0sd9', 'mqrl51vc8jer', 'mqrl51vc41jx', 'mqrl51vcnshl'],
     videos: [
     {
       url: 'https://www.youtube.com/watch?v=w2J_wG5oiNg',
