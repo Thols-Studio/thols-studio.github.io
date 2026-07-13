@@ -1,0 +1,284 @@
+[
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 3,
+    "label": "Standard Pixel",
+    "file": "Level_Blockers_Overview/row3_Standard_Pixel.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 4,
+    "label": "Surprise Shooter",
+    "file": "Level_Blockers_Overview/row4_Surprise_Shooter.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 5,
+    "label": "Connected Shooters",
+    "file": "Level_Blockers_Overview/row5_Connected_Shooters.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 6,
+    "label": "Hard Pixels",
+    "file": "Level_Blockers_Overview/row6_Hard_Pixels.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 7,
+    "label": "Locks and Keys",
+    "file": "Level_Blockers_Overview/row7_Locks_and_Keys.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 8,
+    "label": "Door",
+    "file": "Level_Blockers_Overview/row8_Door.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 9,
+    "label": "Pixel Pipe",
+    "file": "Level_Blockers_Overview/row9_Pixel_Pipe.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 10,
+    "label": "Surprise Pixel",
+    "file": "Level_Blockers_Overview/row10_Surprise_Pixel.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 11,
+    "label": "Snake",
+    "file": "Level_Blockers_Overview/row11_Snake.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 12,
+    "label": "Wall",
+    "file": "Level_Blockers_Overview/row12_Wall.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 13,
+    "label": "Egg Box",
+    "file": "Level_Blockers_Overview/row13_Egg_Box.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 14,
+    "label": "Shooter Pipe",
+    "file": "Level_Blockers_Overview/row14_Shooter_Pipe.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 15,
+    "label": "Ice Blocks",
+    "file": "Level_Blockers_Overview/row15_Ice_Blocks.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 16,
+    "label": "Wooden Blocks and Hammers",
+    "file": "Level_Blockers_Overview/row16_Wooden_Blocks_and_Hammers.png"
+  },
+  {
+    "sheet": "Level Blockers Overview",
+    "row": 17,
+    "label": "Frozen Shooter",
+    "file": "Level_Blockers_Overview/row17_Frozen_Shooter.png"
+  },
+  {
+    "sheet": "Boosters Overview",
+    "row": 3,
+    "label": "Extra Tray Slot",
+    "file": "Boosters_Overview/row3_Extra_Tray_Slot.png"
+  },
+  {
+    "sheet": "Boosters Overview",
+    "row": 4,
+    "label": "Select Tool",
+    "file": "Boosters_Overview/row4_Select_Tool.png"
+  },
+  {
+    "sheet": "Boosters Overview",
+    "row": 5,
+    "label": "Shuffle",
+    "file": "Boosters_Overview/row5_Shuffle.png"
+  },
+  {
+    "sheet": "Boosters Overview",
+    "row": 6,
+    "label": "Super Shooter",
+    "file": "Boosters_Overview/row6_Super_Shooter.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 3,
+    "label": "Code_1.0",
+    "file": "Block_Colors/row3_Code_1_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 4,
+    "label": "Code_2.0",
+    "file": "Block_Colors/row4_Code_2_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 5,
+    "label": "Code_3.0",
+    "file": "Block_Colors/row5_Code_3_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 6,
+    "label": "Code_4.0",
+    "file": "Block_Colors/row6_Code_4_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 7,
+    "label": "Code_5.0",
+    "file": "Block_Colors/row7_Code_5_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 8,
+    "label": "Code_6.0",
+    "file": "Block_Colors/row8_Code_6_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 9,
+    "label": "Code_7.0",
+    "file": "Block_Colors/row9_Code_7_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 10,
+    "label": "Code_8.0",
+    "file": "Block_Colors/row10_Code_8_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 11,
+    "label": "Code_9.0",
+    "file": "Block_Colors/row11_Code_9_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 12,
+    "label": "Code_10.0",
+    "file": "Block_Colors/row12_Code_10_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 13,
+    "label": "Code_11.0",
+    "file": "Block_Colors/row13_Code_11_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 14,
+    "label": "Code_12.0",
+    "file": "Block_Colors/row14_Code_12_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 15,
+    "label": "Code_13.0",
+    "file": "Block_Colors/row15_Code_13_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 16,
+    "label": "Code_14.0",
+    "file": "Block_Colors/row16_Code_14_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 17,
+    "label": "Code_15.0",
+    "file": "Block_Colors/row17_Code_15_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 18,
+    "label": "Code_16.0",
+    "file": "Block_Colors/row18_Code_16_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 19,
+    "label": "Code_17.0",
+    "file": "Block_Colors/row19_Code_17_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 20,
+    "label": "Code_18.0",
+    "file": "Block_Colors/row20_Code_18_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 21,
+    "label": "Code_19.0",
+    "file": "Block_Colors/row21_Code_19_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 22,
+    "label": "Code_20.0",
+    "file": "Block_Colors/row22_Code_20_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 23,
+    "label": "Code_21.0",
+    "file": "Block_Colors/row23_Code_21_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 24,
+    "label": "Code_22.0",
+    "file": "Block_Colors/row24_Code_22_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 25,
+    "label": "Code_23.0",
+    "file": "Block_Colors/row25_Code_23_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 26,
+    "label": "Code_24.0",
+    "file": "Block_Colors/row26_Code_24_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 27,
+    "label": "Code_25.0",
+    "file": "Block_Colors/row27_Code_25_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 28,
+    "label": "Code_26.0",
+    "file": "Block_Colors/row28_Code_26_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 29,
+    "label": "Code_27.0",
+    "file": "Block_Colors/row29_Code_27_0.png"
+  },
+  {
+    "sheet": "Block Colors",
+    "row": 30,
+    "label": "Code_28.0",
+    "file": "Block_Colors/row30_Code_28_0.png"
+  }
+]
