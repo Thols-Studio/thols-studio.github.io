@@ -1,0 +1,7 @@
+{
+  "collections": [
+    { "id": "unity3d",       "name": "Unity3D",       "color": "#EC407A" },
+    { "id": "gamedesign", "name": "GameDesign", "color": "#29B6F6" },
+    { "id": "blender",   "name": "Blender",   "color": "#AB47BC" }
+  ]
+}
