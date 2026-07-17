@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TholsStudio — Your YouTube Collections</title>
+<title>TholsStudio — {{APP_LABEL}}</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23F5C518'/><polygon points='13,10 13,22 23,16' fill='%23111'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link href="style.css" rel="stylesheet">
@@ -17,7 +17,10 @@
     <div class="logo-icon">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/></svg>
     </div>
-    TholsStudio
+    <div class="logo-text-wrap">
+      <span class="logo-title">TholsStudio</span>
+      <span class="logo-subtitle" id="appSubtitle"></span>
+    </div>
   </div>
   <div class="search-bar">
     <span class="search-icon">
@@ -49,6 +52,7 @@
       </div>
       <div id="librarySection">
       <button class="sidebar-item active" onclick="filterByCollection('all', this)">
+        <span class="selected-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
         </svg>
@@ -56,6 +60,7 @@
         <span class="count" id="count-all">0</span>
       </button>
       <button class="sidebar-item" onclick="filterByCollection('recent', this)">
+        <span class="selected-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
@@ -63,6 +68,7 @@
         <span class="count" id="count-recent">0</span>
       </button>
       <button class="sidebar-item" onclick="filterByCollection('watched', this)">
+        <span class="selected-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
         </svg>
@@ -107,6 +113,8 @@
         </div>
       </div><!-- /playlistsSection -->
     </div><!-- /sidebar-section -->
+    <!-- CATEGORY SWITCHER (pinned to bottom) -->
+    <div class="sidebar-footer" id="categorySwitcher"></div>
   </div><!-- /sidebar -->
 
   <!-- MAIN -->
@@ -134,6 +142,12 @@
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="3" x2="19" y2="21"/></svg>
           </button>
         </div>
+      </div>
+      <div class="pv-search-wrap">
+        <span class="pv-search-icon">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </span>
+        <input type="text" id="pvSearchInput" placeholder="Search this playlist…" oninput="pvHandleSearch()">
       </div>
       <div class="pv-tracks" id="pvTracks"></div>
     </div>
@@ -172,10 +186,6 @@
     <div class="section-header">
       <span class="section-title" id="sectionTitle">All Videos</span>
       <span class="section-count" id="sectionCount">0 videos</span>
-      <button class="btn btn-primary" id="playPlaylistBtn" onclick="startPlaylistPlayer()" style="display:none;padding:5px 12px;font-size:12px;gap:6px;">
-        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Play
-      </button>
       <div class="section-header-right">
         <!-- Export folder location label -->
         <div class="export-location-wrap" id="exportLocationWrap" style="display:none;">
@@ -193,9 +203,9 @@
           </button>
           <div class="export-menu" id="exportMenu">
             <button class="export-menu-item" onclick="exportData()">Export as JSON</button>
-            <button class="export-menu-item" onclick="exportCollectionsJs()">Export as collections.js</button>
-            <button class="export-menu-item" onclick="exportWatchedJs()">Export as watched.js</button>
-            <button class="export-menu-item" onclick="exportPlaylistJs()">Export as playlist.js</button>
+            <button class="export-menu-item" onclick="exportCollectionsJs()" id="exportCollectionsLabel">Export as collections.js</button>
+            <button class="export-menu-item" onclick="exportWatchedJs()" id="exportWatchedLabel">Export as watched.js</button>
+            <button class="export-menu-item" onclick="exportPlaylistJs()" id="exportPlaylistLabel">Export as playlist.js</button>
             <div class="export-menu-divider"></div>
             <button class="export-menu-item export-menu-item-all" onclick="exportAllJs()">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -229,7 +239,8 @@
     </div>
     <div class="field">
       <label>YouTube URL *</label>
-      <input type="url" id="addUrl" placeholder="https://youtube.com/watch?v=..." oninput="previewUrl()">
+      <input type="text" id="addUrl" placeholder="https://youtube.com/watch?v=..." oninput="previewUrl();checkAddDuplicate()" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="field-error" id="addUrlDuplicateMsg" style="display:none;">Duplicate</div>
     </div>
     <div class="field">
       <label>Title (auto-detected or custom)</label>
@@ -237,17 +248,17 @@
     </div>
     <div class="field">
       <label>Collection</label>
-      <select id="addCollection" onchange="refreshGroupSelect('addCollection','addGroup')">
+      <select id="addCollection" onchange="refreshGroupSelect('addCollection','addGroup');checkAddDuplicate()">
         <option value="">— No collection —</option>
       </select>
     </div>
     <div class="field">
       <label>Group / Topic <span style="color:var(--text-dim);font-weight:400;">(optional sub-section)</span></label>
       <div style="display:flex;gap:8px;">
-        <select id="addGroup" style="flex:1;">
+        <select id="addGroup" style="flex:1;" onchange="checkAddDuplicate()">
           <option value="">— No group —</option>
         </select>
-        <input type="text" id="addGroupNew" placeholder="Or type new group…" style="flex:1;">
+        <input type="text" id="addGroupNew" placeholder="Or type new group…" style="flex:1;" oninput="checkAddDuplicate()">
       </div>
     </div>
     <div class="field">
@@ -256,7 +267,7 @@
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
       <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveVideo()">Save to Vault</button>
+      <button class="btn btn-primary" id="saveVideoBtn" onclick="saveVideo()">Save to Vault</button>
     </div>
   </div>
 </div>
@@ -302,6 +313,26 @@
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
       <button class="btn btn-ghost" onclick="closeModal('playlistModal')">Cancel</button>
       <button class="btn btn-primary" onclick="savePlaylist()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW GROUP MODAL -->
+<div class="modal-overlay" id="groupModal">
+  <div class="modal" style="width:360px;">
+    <div class="modal-title">
+      <svg width="16" height="16" fill="none" stroke="var(--indigo-bright)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      New Group
+      <button class="modal-close" onclick="closeModal('groupModal')">×</button>
+    </div>
+    <div class="field">
+      <label>Group name</label>
+      <input type="text" id="groupName" placeholder="e.g. Physics, AI, Shaders…"
+        onkeydown="if(event.key==='Enter') saveGroup()">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+      <button class="btn btn-ghost" onclick="closeModal('groupModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGroup()">Create</button>
     </div>
   </div>
 </div>
@@ -380,6 +411,33 @@
   </div>
 </div>
 
+<!-- CREATE CATEGORY MODAL -->
+<div class="modal-overlay" id="createCategoryModal">
+  <div class="modal" style="width:380px;">
+    <div class="modal-title">
+      <svg width="16" height="16" fill="none" stroke="var(--indigo-bright)" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Category
+      <button class="modal-close" onclick="closeModal('createCategoryModal')">×</button>
+    </div>
+    <div class="field">
+      <label>Category name</label>
+      <input type="text" id="newCategoryName" placeholder="e.g. Cooking, Gaming, Fitness…"
+        onkeydown="if(event.key==='Enter') createCategory()">
+    </div>
+    <div class="field">
+      <label>Color</label>
+      <div class="color-picker-row" id="categoryColorPicker"></div>
+    </div>
+    <p style="margin:0;font-size:12px;color:var(--text-muted);line-height:1.6;">
+      This downloads 4 starter files (a new page + 3 config files). Save them into the same folder as your other TholsStudio pages, then open the new page from there.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+      <button class="btn btn-ghost" onclick="closeModal('createCategoryModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCategory()">Create &amp; Download</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -398,76 +456,17 @@
   </div>
 </div>
 
-<!-- PLAYLIST PLAYER BAR -->
-<div class="playlist-player-bar" id="playlistPlayerBar" style="display:none;">
-
-  <!-- Left: playlist name + current video info -->
-  <div class="ppb-left">
-    <span class="ppb-dot" id="ppbDot"></span>
-    <div class="ppb-info">
-      <span class="ppb-playlist-name" id="ppbName">Playlist</span>
-      <span class="ppb-video-title" id="ppbVideoTitle">—</span>
-    </div>
-  </div>
-
-  <!-- Centre: mode selectors + playback controls -->
-  <div class="ppb-centre">
-    <!-- Mode group -->
-    <div class="ppb-mode-group">
-      <!-- Sequential -->
-      <button class="ppb-mode-btn active" id="ppbSeqBtn" onclick="setPlaylistMode('sequential')" title="Sequential — play in order">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <line x1="5" y1="12" x2="19" y2="12"/>
-          <polyline points="15 8 19 12 15 16"/>
-        </svg>
-        <span>Sequential</span>
-      </button>
-      <!-- Random -->
-      <button class="ppb-mode-btn" id="ppbRndBtn" onclick="setPlaylistMode('random')" title="Random — shuffle order">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polyline points="16 3 21 3 21 8"/>
-          <line x1="4" y1="20" x2="21" y2="3"/>
-          <polyline points="21 16 21 21 16 21"/>
-          <line x1="15" y1="15" x2="21" y2="21"/>
-        </svg>
-        <span>Random</span>
-      </button>
-    </div>
-
-    <!-- Playback controls -->
-    <div class="ppb-controls">
-      <button class="ppb-btn" onclick="playlistStep(-1)" title="Previous">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/>
-        </svg>
-      </button>
-      <button class="ppb-btn ppb-play" onclick="openCurrentPlaylistVideo()" title="Open in YouTube">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </button>
-      <button class="ppb-btn" onclick="playlistStep(1)" title="Next">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Right: counter + close -->
-  <div class="ppb-right">
-    <span class="ppb-track" id="ppbTrack">1 / 5</span>
-    <button class="ppb-btn ppb-close" onclick="closePlaylistPlayer()" title="Stop playlist">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
-  </div>
-
-</div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
-<script src="collections.js"></script>
-<script src="playlist.js"></script>
-<script src="watched.js"></script>
+<script>
+  // Identifies this page to the shared engine (app.js): namespaces
+  // localStorage + the export-folder IndexedDB store, and drives branding.
+  const APP_NAME = '{{APP_NAME}}';
+  const APP_LABEL = '{{APP_LABEL}}';
+  const APP_COLOR = '{{APP_COLOR}}';
+</script>
+<script src="{{JS_DIR}}page-template.js"></script>
+{{SCRIPT_TAGS}}
 <script src="app.js"></script>
 
 </body>

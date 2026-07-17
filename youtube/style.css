@@ -15,6 +15,8 @@
     --indigo-bright: #7986CB;
     --indigo-glow: rgba(92,107,192,0.15);
     --green: #4CAF7D;
+    --green-bright: #6FE0A3;
+    --violet-light: #A78BFA;
     --amber: #FFA726;
     --mono: 'Space Mono', monospace;
     --sans: 'Inter', sans-serif;
@@ -46,21 +48,41 @@
     z-index: 100;
   }
   .logo {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--red);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 16px; height: 16px; fill: white; }
+  .logo-text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.2;
+  }
+  .logo-title {
     font-family: var(--mono);
     font-size: 15px;
     font-weight: 700;
     color: var(--text);
-    white-space: nowrap;
   }
-  .logo-icon {
-    width: 26px; height: 26px;
-    background: var(--red);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+  .logo-subtitle {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-height: 12px;
   }
-  .logo-icon svg { width: 14px; height: 14px; fill: white; }
+
   .search-bar {
     flex: 1;
     max-width: 480px;
@@ -94,12 +116,15 @@
     border: none; cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
   }
-  .btn-primary { background: var(--indigo); color: white; }
-  .btn-primary:hover { background: var(--indigo-bright); }
+  .btn-primary { background: var(--violet-light); color: white; }
+  .btn-primary:hover { background: var(--green); }
   .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
   .btn-ghost:hover { background: var(--surface); color: var(--text); }
   .btn-danger { background: var(--red); color: white; border: none; }
   .btn-danger:hover { background: #ff4d4d; }
+  .btn:disabled,
+  .btn-danger:disabled { opacity: 0.85; cursor: not-allowed; }
+  .btn-danger:disabled:hover { background: var(--red); }
   .btn-icon {
     background: transparent; border: none;
     color: var(--text-muted); cursor: pointer;
@@ -201,7 +226,19 @@
     position: relative; overflow: hidden; min-width: 0;
   }
   .sidebar-item:hover { background: var(--surface); color: var(--text); }
-  .sidebar-item.active { background: var(--indigo-glow); color: var(--indigo-bright); }
+  /* Selected item uses the normal (non-selected) style; selection is shown by the tick at the start */
+  .sidebar-item.active { color: var(--text-muted); }
+  /* Tick mark shown at the start of the selected item — absolutely positioned in the same
+     left slot as the drag handle so it never shifts the dot/name alignment */
+  .selected-tick {
+    position: absolute; left: 5px; top: 50%; transform: translateY(-50%);
+    color: var(--indigo-bright);
+    display: none; align-items: center;
+    z-index: 2; pointer-events: none;
+  }
+  .sidebar-item.active .selected-tick { display: flex; }
+  /* on hover of a draggable selected item, swap the tick for the drag handle */
+  .sidebar-item.draggable.active:hover .selected-tick { display: none; }
   /* SVG icons in library items — fixed 14px slot so text aligns with collection items */
   .sidebar-item > svg { width: 14px; height: 14px; flex-shrink: 0; }
   /* collection color — circle, same 14px as icon slot */
@@ -218,9 +255,9 @@
   /* count badge — circle, pushed to far right */
   .sidebar-item .count {
     min-width: 22px; height: 22px;
-    font-size: 11px; font-weight: 600;
+    font-size: 11px; font-weight: 700;
     font-family: var(--mono);
-    color: var(--text-muted);
+    color: var(--text);
     background: var(--surface-raised);
     border: 1px solid var(--border);
     border-radius: 50%;
@@ -230,20 +267,87 @@
     padding: 0 4px;
     letter-spacing: 0;
     visibility: visible;
+    opacity: 0.82;
   }
   /* zero-count: hide the circle but keep space so layout doesn't shift */
   .sidebar-item .count.count-empty { visibility: hidden; }
-  .sidebar-item.active .count {
-    background: rgba(92,107,192,0.3);
-    color: var(--indigo-bright);
-    border-color: rgba(92,107,192,0.4);
-  }
-  /* hide count on hover, and whenever the item is active — action buttons take its place instead */
+  /* hide count on hover — action buttons take its place instead */
   .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active .count { visibility: hidden; }
   .sidebar-divider {
     height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
   }
+
+  /* ── CATEGORY SWITCHER (pinned to sidebar bottom) ── */
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 10px 8px 4px;
+    border-top: 1px solid var(--border-subtle);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .category-toggle-btn {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .category-toggle-btn:hover { background: var(--surface); border-color: var(--indigo); }
+  .category-toggle-btn.menu-open { background: var(--surface); border-color: var(--indigo); }
+  .category-toggle-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .category-toggle-label {
+    flex: 1; text-align: left;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .category-toggle-chev { color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; }
+  .category-toggle-btn.menu-open .category-toggle-chev { transform: rotate(180deg); }
+
+  .category-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 8px; right: 8px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.4);
+    padding: 5px;
+    z-index: 300;
+    display: none;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .category-menu.open { display: flex; }
+  .category-menu-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .category-menu-item:hover { background: var(--surface); color: var(--text); }
+  .category-menu-item.active { background: var(--indigo-glow); color: var(--indigo-bright); }
+  .category-menu-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .category-menu-divider { height: 1px; background: var(--border-subtle); margin: 4px 2px; }
+  .category-menu-create { color: var(--indigo-bright); }
+  .category-menu-create:hover { background: var(--indigo-glow); }
 
   /* ── COLLAPSIBLE SIDEBAR SECTIONS ── */
   .sidebar-label-toggle {
@@ -284,10 +388,14 @@
     cursor: pointer; transition: background 0.12s, color 0.12s;
   }
   .playlist-picker-item:hover { background: var(--surface); color: var(--text); }
-  /* checked state: bright white text + visible tick */
-  .playlist-picker-item.in-playlist { color: var(--text); }
+  /* Already-in-this-playlist state — left accent bar only (no background tint) */
+  .playlist-picker-item.in-playlist {
+    color: var(--indigo-bright);
+    border-left: 2px solid var(--indigo-bright);
+    padding-left: 6px;
+  }
   .playlist-picker-item .pp-check { color: var(--text-dim); opacity: 0.25; }
-  .playlist-picker-item.in-playlist .pp-check { color: #fff; opacity: 1; }
+  .playlist-picker-item.in-playlist .pp-check { color: var(--indigo-bright); opacity: 1; }
   .add-collection-btn {
     display: flex; align-items: center; gap: 8px;
     padding: 7px 10px; border-radius: var(--radius-sm);
@@ -296,7 +404,7 @@
     background: transparent; transition: all 0.15s; font-family: var(--sans);
     margin-top: 3px;
   }
-  .add-collection-btn:hover { color: var(--indigo-bright); border-color: var(--indigo); }
+  .add-collection-btn:hover { color: var(--green-bright); border-color: var(--green); }
 
   /* ── MAIN CONTENT ── */
   .main {
@@ -621,12 +729,14 @@
   }
   .group-count {
     font-size: 10px;
+    font-weight: 700;
     font-family: var(--mono);
-    color: var(--text-dim);
+    color: var(--text);
     background: var(--surface-raised);
     padding: 1px 7px;
     border-radius: 20px;
     flex-shrink: 0;
+    opacity: 0.82;
   }
   .group-header-line {
     flex: 1;              /* group line — stretches to fill, but stops a bit short */
@@ -660,23 +770,8 @@
   .group-body.collapsed { display: none; }
   .group-body .cards-grid { margin: 0; }
   .add-group-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 0 2px;
+    padding: 4px 0 2px;
   }
-  .add-group-input {
-    background: var(--surface);
-    border: 1px solid var(--indigo);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 5px 10px;
-    outline: none;
-    flex: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .add-group-input::placeholder { color: var(--text-dim); text-transform: none; letter-spacing: 0; }
   .ungrouped-label {
     font-size: 11px;
     color: var(--text-dim);
@@ -760,6 +855,18 @@
     transition: border-color 0.2s;
   }
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--indigo); }
+  .field input.field-invalid { border-color: var(--red); box-shadow: none; }
+  .field input.field-valid { border-color: var(--green); box-shadow: none; }
+  /* Suppress the browser's own native red "invalid URL" outline/glow (Firefox in
+     particular applies this by default to type="url" inputs) — we drive the
+     red/green border state ourselves via .field-invalid / .field-valid above. */
+  .field input:invalid { box-shadow: none; }
+  .field-error {
+    font-size: 11px;
+    color: var(--red);
+    font-weight: 500;
+    margin-top: -2px;
+  }
   .field input::placeholder, .field textarea::placeholder { color: var(--text-dim); }
   .field select option { background: var(--surface); }
   .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
@@ -832,7 +939,7 @@
     right: 8px; top: 50%; transform: translateY(-50%);
   }
   .sidebar-item:hover .col-actions { opacity: 1; }
-  .sidebar-item.active .col-actions { opacity: 1; }
+
   /* hide count circle on hover — show action buttons instead (use visibility to avoid layout shift) */
   .col-action-btn {
     background: transparent; border: none;
@@ -871,141 +978,7 @@
   }
   .col-rename-confirm:hover { background: var(--indigo-bright); }
 
-  /* ── NEW COLLECTION INLINE ── */
-  .new-collection-input {
-    background: var(--surface);
-    border: 1px solid var(--indigo);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    padding: 6px 10px;
-    outline: none;
-    width: 100%;
-    margin: 4px 8px;
-    width: calc(100% - 16px);
-  }
 
-  /* ── PLAYLIST PLAYER BAR ── */
-  .playlist-player-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 56px;
-    background: var(--surface-raised);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 20px;
-    z-index: 500;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 -6px 24px rgba(0,0,0,0.35);
-  }
-
-  /* Left — playlist + current video name */
-  .ppb-left {
-    display: flex; align-items: center; gap: 10px;
-    min-width: 0; flex: 1;
-  }
-  .ppb-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%; flex-shrink: 0;
-  }
-  .ppb-info {
-    display: flex; flex-direction: column; gap: 2px;
-    min-width: 0;
-  }
-  .ppb-playlist-name {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .ppb-video-title {
-    font-size: 12px; font-weight: 500;
-    color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 260px;
-  }
-
-  /* Centre — mode + controls */
-  .ppb-centre {
-    display: flex; align-items: center; gap: 16px;
-    flex-shrink: 0;
-  }
-
-  /* Mode selector group */
-  .ppb-mode-group {
-    display: flex; align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2px;
-    gap: 2px;
-  }
-  .ppb-mode-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: transparent; border: none;
-    color: var(--text-dim);
-    font-size: 11px; font-family: var(--font);
-    padding: 4px 10px;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
-  .ppb-mode-btn:hover { color: var(--text); }
-  .ppb-mode-btn.active {
-    background: var(--indigo);
-    color: #fff;
-  }
-  .ppb-mode-btn.active:hover { background: var(--indigo-bright); }
-
-  /* Playback controls */
-  .ppb-controls {
-    display: flex; align-items: center; gap: 4px;
-  }
-  .ppb-btn {
-    background: transparent; border: none;
-    color: var(--text-muted); cursor: pointer;
-    padding: 6px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .ppb-btn:hover { background: var(--surface); color: var(--text); }
-  .ppb-play {
-    background: var(--indigo);
-    color: #fff !important;
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    padding: 0;
-  }
-  .ppb-play:hover { background: var(--indigo-bright) !important; }
-
-  /* Right — counter + close */
-  .ppb-right {
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  .ppb-track {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    min-width: 36px;
-    text-align: right;
-  }
-  .ppb-close { color: var(--text-dim); }
-
-  /* Push main content up when bar is visible */
-  .main.has-player-bar { padding-bottom: 68px; }
-
-  /* Currently playing card highlight */
-  .video-card.pp-active {
-    box-shadow: 0 0 0 2px var(--indigo);
-    outline: none;
-  }
-  .video-card.pp-active .card-play-overlay { opacity: 1; }
 
   /* ── PLAYLIST SPLIT VIEW ── */
   .playlist-view {
@@ -1062,7 +1035,41 @@
     transition: background 0.15s, color 0.15s;
   }
   .pv-mode-btn:hover { color: var(--text); }
-  .pv-mode-btn.active { background: var(--indigo); color: #fff; }
+  .pv-mode-btn.active { background: var(--green); color: #fff; }
+  .pv-mode-btn.active:hover { background: var(--green-bright); }
+
+  /* Search bar — filters the current playlist's tracks only */
+  .pv-search-wrap {
+    position: relative;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .pv-search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 7px 10px 7px 30px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .pv-search-wrap input:focus { border-color: var(--green); }
+  .pv-search-wrap input::placeholder { color: var(--text-dim); }
+  .pv-search-icon {
+    position: absolute; left: 24px; top: 50%; transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+  .pv-search-empty {
+    padding: 24px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
 
   /* Track list */
   .pv-tracks {
@@ -1116,6 +1123,27 @@
     font-size: 10px; color: var(--text-dim); font-family: var(--mono);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     margin-top: 2px;
+  }
+  .pv-track-drag-handle {
+    flex-shrink: 0;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.15s;
+    cursor: grab;
+    display: flex; align-items: center;
+  }
+  .pv-track:hover .pv-track-drag-handle { opacity: 0.6; }
+  .pv-track-drag-handle:hover { opacity: 1 !important; }
+  .pv-track.pv-track-dragging {
+    opacity: 0.4;
+  }
+  .pv-track.pv-track-drag-over-top {
+    border-top: 2px solid var(--indigo-bright);
+    margin-top: -2px;
+  }
+  .pv-track.pv-track-drag-over-bottom {
+    border-bottom: 2px solid var(--indigo-bright);
+    margin-bottom: -2px;
   }
 
   /* Right panel — iframe */

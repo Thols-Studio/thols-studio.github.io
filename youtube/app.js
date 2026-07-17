@@ -1,1898 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TholsStudio — Your YouTube Collections</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23F5C518'/><polygon points='13,10 13,22 23,16' fill='%23111'/></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0F0F14;
-    --surface: #1A1A24;
-    --surface-hover: #252535;
-    --surface-raised: #2D2D40;
-    --border: #2A2A3E;
-    --border-subtle: #1F1F2E;
-    --text: #F0F0FF;
-    --text-muted: #7A7A9A;
-    --text-dim: #4A4A6A;
-    --red: #FF3040;
-    --indigo: #5C6BC0;
-    --indigo-bright: #7986CB;
-    --indigo-glow: rgba(92,107,192,0.15);
-    --green: #4CAF7D;
-    --amber: #FFA726;
-    --mono: 'Space Mono', monospace;
-    --sans: 'Inter', sans-serif;
-    --radius: 10px;
-    --radius-sm: 6px;
-  }
-
-  html, body { height: 100%; }
-  body {
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: 100vh;
-  }
-
-  /* ── TOPBAR ── */
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 0 20px;
-    height: 52px;
-    background: #0A0A10;
-    border-bottom: 1px solid var(--border-subtle);
-    flex-shrink: 0;
-    z-index: 100;
-  }
-  .logo {
-    display: flex; align-items: center; gap: 8px;
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-  }
-  .logo-icon {
-    width: 26px; height: 26px;
-    background: var(--red);
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .logo-icon svg { width: 14px; height: 14px; fill: white; }
-  .search-bar {
-    flex: 1;
-    max-width: 480px;
-    position: relative;
-  }
-  .search-bar input {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    padding: 6px 12px 6px 34px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .search-bar input:focus { border-color: var(--indigo); }
-  .search-bar input::placeholder { color: var(--text-dim); }
-  .search-bar .search-icon {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    color: var(--text-dim);
-    pointer-events: none;
-  }
-  .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px;
-    font-family: var(--sans); font-size: 13px; font-weight: 500;
-    border-radius: var(--radius-sm);
-    border: none; cursor: pointer;
-    transition: background 0.15s, opacity 0.15s;
-  }
-  .btn-primary { background: var(--indigo); color: white; }
-  .btn-primary:hover { background: var(--indigo-bright); }
-  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
-  .btn-ghost:hover { background: var(--surface); color: var(--text); }
-  .btn-danger { background: var(--red); color: white; border: none; }
-  .btn-danger:hover { background: #ff4d4d; }
-  .btn-icon {
-    background: transparent; border: none;
-    color: var(--text-muted); cursor: pointer;
-    padding: 6px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .btn-icon:hover { background: var(--surface); color: var(--text); }
-
-  /* ── EXPORT DROPDOWN ── */
-  .export-dropdown {
-    position: relative;
-  }
-  .export-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    min-width: 190px;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-    z-index: 300;
-    overflow: hidden;
-    padding: 4px;
-  }
-  .export-menu.open { display: block; }
-  .export-menu-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-size: 12px;
-    font-family: var(--font);
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .export-menu-item:hover { background: var(--surface); }
-
-  /* ── LAYOUT ── */
-  .app-body {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* ── SIDEBAR ── */
-  .sidebar {
-    width: var(--sidebar-w, 220px);
-    min-width: 160px;
-    max-width: 380px;
-    background: #0A0A10;
-    border-right: 1px solid var(--border-subtle);
-    display: flex;
-    flex-direction: column;
-    padding: 12px 0;
-    flex-shrink: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-    transition: none;
-  }
-  /* Resize handle strip */
-  .sidebar-resizer {
-    position: absolute;
-    top: 0; right: 0;
-    width: 5px; height: 100%;
-    cursor: col-resize;
-    z-index: 50;
-    background: transparent;
-    transition: background 0.2s;
-  }
-  .sidebar-resizer:hover,
-  .sidebar-resizer.dragging { background: var(--indigo); opacity: 0.5; }
-
-  .sidebar-section { padding: 0 8px 8px; }
-  .sidebar-label {
-    font-size: 10px; font-weight: 600;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 4px 8px 8px;
-    font-family: var(--mono);
-  }
-  .sidebar-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 8px;
-    margin-bottom: 6px;
-    border-radius: var(--radius-sm);
-    cursor: pointer; font-size: 12px; color: var(--text-muted);
-    transition: background 0.15s, color 0.15s;
-    border: none; background: transparent; width: 100%; text-align: left;
-    position: relative; overflow: hidden; min-width: 0;
-  }
-  .sidebar-item:hover { background: var(--surface); color: var(--text); }
-  .sidebar-item.active { background: var(--indigo-glow); color: var(--indigo-bright); }
-  /* SVG icons in library items — fixed 14px slot so text aligns with collection items */
-  .sidebar-item > svg { width: 14px; height: 14px; flex-shrink: 0; }
-  /* collection color — circle, same 14px as icon slot */
-  .collection-dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  /* name truncates cleanly */
-  .col-name {
-    flex: 1; min-width: 0;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  /* count badge — circle, pushed to far right */
-  .sidebar-item .count {
-    min-width: 22px; height: 22px;
-    font-size: 11px; font-weight: 600;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    margin-left: auto;
-    padding: 0 4px;
-    letter-spacing: 0;
-    visibility: visible;
-  }
-  /* zero-count: hide the circle but keep space so layout doesn't shift */
-  .sidebar-item .count.count-empty { visibility: hidden; }
-  .sidebar-item.active .count {
-    background: rgba(92,107,192,0.3);
-    color: var(--indigo-bright);
-    border-color: rgba(92,107,192,0.4);
-  }
-  /* hide count on hover, and whenever the item is active — action buttons take its place instead */
-  .sidebar-item:hover .count { visibility: hidden; }
-  .sidebar-item.active .count { visibility: hidden; }
-  .sidebar-divider {
-    height: 1px; background: var(--border-subtle); margin: 6px 16px 9px;
-  }
-
-  /* ── COLLAPSIBLE SIDEBAR SECTIONS ── */
-  .sidebar-label-toggle {
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; user-select: none;
-    border-radius: var(--radius-sm);
-    transition: color 0.15s;
-  }
-  .sidebar-label-toggle:hover { color: var(--text-muted); }
-  .section-chev {
-    flex-shrink: 0; opacity: 0.5;
-    transition: transform 0.2s;
-  }
-  .section-chev.chev-up { transform: rotate(0deg); }
-  .section-chev.chev-down { transform: rotate(180deg); }
-  .section-collapsed { display: none; }
-
-  /* ── PLAYLIST PICKER (floating) ── */
-  .playlist-picker {
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    padding: 4px;
-    min-width: 170px;
-  }
-  .playlist-picker-title {
-    font-size: 10px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--text-dim);
-    padding: 6px 8px 4px; font-family: var(--mono);
-  }
-  .playlist-picker-item {
-    display: flex; align-items: center; gap: 7px;
-    width: 100%; text-align: left;
-    background: transparent; border: none;
-    color: var(--text-dim); font-size: 12px; font-family: var(--font);
-    padding: 7px 8px; border-radius: var(--radius-sm);
-    cursor: pointer; transition: background 0.12s, color 0.12s;
-  }
-  .playlist-picker-item:hover { background: var(--surface); color: var(--text); }
-  /* checked state: bright white text + visible tick */
-  .playlist-picker-item.in-playlist { color: var(--text); }
-  .playlist-picker-item .pp-check { color: var(--text-dim); opacity: 0.25; }
-  .playlist-picker-item.in-playlist .pp-check { color: #fff; opacity: 1; }
-  .add-collection-btn {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 10px; border-radius: var(--radius-sm);
-    cursor: pointer; font-size: 12px; color: var(--text-dim);
-    width: 100%; border: 1px dashed var(--border);
-    background: transparent; transition: all 0.15s; font-family: var(--sans);
-    margin-top: 3px;
-  }
-  .add-collection-btn:hover { color: var(--indigo-bright); border-color: var(--indigo); }
-
-  /* ── MAIN CONTENT ── */
-  .main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
-    display: flex; align-items: center; gap: 12px;
-  }
-  .section-title {
-    font-size: 18px; font-weight: 600;
-    color: var(--text);
-  }
-  .section-count {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--surface);
-    padding: 2px 8px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-  }
-  .section-header-right {
-    margin-left: auto;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .view-toggle {
-    display: flex; gap: 2px;
-    background: var(--surface);
-    padding: 3px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-  }
-  .view-btn {
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    padding: 4px 7px; border-radius: 4px;
-    transition: all 0.15s;
-    display: flex; align-items: center;
-  }
-  .view-btn.active { background: var(--surface-raised); color: var(--text); }
-  .view-btn:hover:not(.active) { color: var(--text-muted); }
-
-  /* ── ADD URL LOCATION LABEL ── */
-  .add-url-location {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    padding: 0 4px;
-    margin-bottom: -8px;
-  }
-  .add-url-location-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--text-dim);
-    flex-shrink: 0;
-  }
-
-  /* ── ADD URL BAR ── */
-  .add-url-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    display: flex; gap: 10px; align-items: center;
-    transition: border-color 0.2s;
-  }
-  .add-url-bar:focus-within { border-color: var(--indigo); }
-  .add-url-bar input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-  }
-  .add-url-bar input::placeholder { color: var(--text-dim); }
-
-  /* ── CARDS GRID ── */
-  .cards-grid-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
-  }
-  .cards-grid.list-view {
-    grid-template-columns: 1fr;
-  }
-
-  /* ── VIDEO CARD ── */
-  .video-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    transition: border-color 0.2s, transform 0.15s;
-    cursor: default;
-    position: relative;
-  }
-  .video-card:hover { border-color: var(--indigo); transform: translateY(-1px); }
-  .video-card.list-view {
-    display: flex; flex-direction: row;
-  }
-
-  .card-thumb {
-    position: relative;
-    aspect-ratio: 16/9;
-    background: var(--bg);
-    overflow: hidden;
-  }
-  .list-view .card-thumb {
-    width: 200px;
-    aspect-ratio: unset;
-    height: 120px;
-    flex-shrink: 0;
-  }
-  .card-thumb img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: opacity 0.3s;
-  }
-  .card-thumb-placeholder {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg);
-    color: var(--text-dim);
-  }
-  .card-duration {
-    position: absolute; bottom: 6px; right: 6px;
-    background: rgba(0,0,0,0.82);
-    color: white;
-    font-family: var(--mono);
-    font-size: 10px;
-    padding: 1px 5px;
-    border-radius: 3px;
-  }
-  .card-play-overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0);
-    transition: background 0.2s;
-  }
-  .card-thumb:hover .card-play-overlay { background: rgba(0,0,0,0.45); }
-  .play-btn {
-    width: 40px; height: 40px;
-    background: var(--red);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0;
-    transform: scale(0.7);
-    transition: opacity 0.2s, transform 0.2s;
-    text-decoration: none;
-  }
-  .card-thumb:hover .play-btn { opacity: 1; transform: scale(1); }
-  .play-btn svg { width: 16px; height: 16px; fill: white; margin-left: 2px; }
-
-  .card-body {
-    padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 6px;
-    flex: 1;
-    min-width: 0;
-  }
-  .card-collection-tag {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .tag-dot { width: 6px; height: 6px; border-radius: 1px; flex-shrink: 0; }
-  .card-title-row {
-    display: flex; align-items: flex-start; gap: 4px;
-  }
-  .card-title {
-    font-size: 13px; font-weight: 500;
-    color: var(--text);
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    flex: 1; cursor: pointer;
-    min-width: 0;
-  }
-  .card-title:hover { color: var(--indigo-bright); }
-  .card-title-edit-btn {
-    display: none;
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    padding: 2px; flex-shrink: 0;
-    border-radius: 3px;
-    transition: color 0.15s;
-    margin-top: 1px;
-  }
-  .card-title-edit-btn:hover { color: var(--indigo-bright); }
-  .video-card:hover .card-title-edit-btn { display: flex; align-items: center; }
-  .title-edit-input {
-    width: 100%;
-    background: var(--surface-raised);
-    border: 1px solid var(--indigo);
-    border-radius: 4px;
-    color: var(--text);
-    font-size: 13px; font-weight: 500;
-    font-family: var(--font);
-    padding: 2px 6px;
-    outline: none;
-  }
-  .card-channel {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .card-note {
-    font-size: 11px;
-    color: var(--text-muted);
-    background: var(--surface-raised);
-    border-left: 2px solid var(--indigo);
-    padding: 5px 8px;
-    border-radius: 0 4px 4px 0;
-    font-style: italic;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .card-meta {
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 2px;
-  }
-  .card-date {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    margin-left: auto;
-  }
-  .card-actions {
-    display: flex; gap: 2px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .video-card:hover .card-actions { opacity: 1; }
-  .card-action-btn {
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    padding: 3px 5px; border-radius: 4px;
-    font-size: 11px;
-    transition: background 0.15s, color 0.15s;
-    display: flex; align-items: center;
-  }
-  .card-action-btn:hover { background: var(--surface-raised); color: var(--text); }
-  .card-action-btn.danger:hover { background: rgba(255,48,64,0.15); color: var(--red); }
-
-  /* ── NOTE EDIT AREA ── */
-  .note-edit {
-    width: 100%;
-    background: var(--surface-raised);
-    border: 1px solid var(--indigo);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 12px;
-    padding: 6px 8px;
-    resize: none;
-    outline: none;
-    line-height: 1.4;
-    display: none;
-  }
-  .note-edit.visible { display: block; }
-
-  /* ── GROUP SECTION ── */
-  .group-section { display: flex; flex-direction: column; gap: 6px; }
-  .group-header {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 6px 0;
-    cursor: pointer;
-    user-select: none;
-  }
-  /* Collection-level header: simpler, no stacked actions row — keep vertically centered */
-  .group-header--collection {
-    align-items: center;
-  }
-  .group-header:hover .group-title { color: var(--text); }
-  .group-chevron {
-    color: var(--text-dim);
-    transition: transform 0.2s;
-    flex-shrink: 0;
-    display: flex; align-items: center;
-    margin-top: 2px;
-  }
-  .group-header--collection .group-chevron { margin-top: 0; }
-  .group-chevron.collapsed { transform: rotate(-90deg); }
-  /* Wrapper column: title row + actions row stacked */
-  .group-title-wrap {
-    display: flex; flex-direction: column; gap: 3px;
-    min-width: 0; flex: 1;
-  }
-  .group-title-row {
-    display: flex; align-items: center; gap: 8px;
-  }
-  .group-title {
-    font-size: 13px; font-weight: 600;
-    color: var(--text-muted);
-    font-family: var(--mono);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    transition: color 0.15s;
-    white-space: nowrap;
-  }
-  .group-count {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    background: var(--surface-raised);
-    padding: 1px 7px;
-    border-radius: 20px;
-    flex-shrink: 0;
-  }
-  .group-header-line {
-    flex: 1;              /* group line — stretches to fill, but stops a bit short */
-    height: 1px;
-    background: var(--border-subtle);
-    flex-shrink: 0;
-    margin-right: 32px;   /* group line ends slightly before the edge */
-  }
-  .group-header-line--collection {
-    margin-right: 0;      /* collection line runs all the way to the edge */
-  }
-  /* Icon row — always reserves space, just invisible until hover */
-  .group-header-actions {
-    display: flex; gap: 1px;
-    visibility: hidden;
-    transition: visibility 0s;
-  }
-  .group-header:hover .group-header-actions {
-    visibility: visible;
-  }
-  .group-action-btn {
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    padding: 3px 4px; border-radius: 4px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .group-action-btn:hover { background: var(--surface-raised); color: var(--text); }
-  .group-action-btn.danger:hover { background: rgba(255,48,64,0.1); color: var(--red); }
-  .group-body { display: flex; flex-direction: column; gap: 10px; }
-  .group-body.collapsed { display: none; }
-  .group-body .cards-grid { margin: 0; }
-  .add-group-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 0 2px;
-  }
-  .add-group-input {
-    background: var(--surface);
-    border: 1px solid var(--indigo);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 5px 10px;
-    outline: none;
-    flex: 1;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .add-group-input::placeholder { color: var(--text-dim); text-transform: none; letter-spacing: 0; }
-  .ungrouped-label {
-    font-size: 11px;
-    color: var(--text-dim);
-    font-family: var(--mono);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 4px 0;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .ungrouped-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border-subtle);
-  }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 64px 32px;
-    text-align: center;
-    color: var(--text-dim);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-    grid-column: 1 / -1;
-  }
-  .empty-state svg { opacity: 0.3; }
-  .empty-state p { font-size: 13px; max-width: 260px; line-height: 1.5; }
-
-  /* ── MODAL ── */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 28px;
-    width: 420px;
-    max-width: 90vw;
-    display: flex; flex-direction: column; gap: 18px;
-    transform: translateY(10px);
-    transition: transform 0.2s;
-  }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal-title {
-    font-size: 16px; font-weight: 600;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .modal-close {
-    margin-left: auto;
-    background: transparent; border: none;
-    color: var(--text-muted); cursor: pointer;
-    padding: 4px; border-radius: 4px;
-    font-size: 18px; line-height: 1;
-    transition: color 0.15s;
-  }
-  .modal-close:hover { color: var(--text); }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-  .field input, .field select, .field textarea {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    padding: 8px 12px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--indigo); }
-  .field input::placeholder, .field textarea::placeholder { color: var(--text-dim); }
-  .field select option { background: var(--surface); }
-  .field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
-  .color-picker-row {
-    display: flex; gap: 8px; flex-wrap: wrap;
-  }
-  .color-chip {
-    width: 24px; height: 24px;
-    border-radius: 4px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .color-chip.selected { border-color: white; }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 16px;
-    font-size: 13px; color: var(--text);
-    z-index: 999;
-    display: flex; align-items: center; gap: 8px;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.25s;
-    pointer-events: none;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-
-  /* ── SCROLLBAR ── */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-  /* ── SIDEBAR DRAG AND DROP ── */
-  .sidebar-item.draggable { cursor: pointer; }
-  .sidebar-item.dragging { opacity: 0.35; background: var(--surface) !important; cursor: grabbing; }
-  .sidebar-item.drag-over-top { border-top: 2px solid var(--indigo-bright); margin-top: -2px; }
-  .sidebar-item.drag-over-bottom { border-bottom: 2px solid var(--indigo-bright); margin-bottom: -2px; }
-
-  /* Absolutely positioned — completely out of flex flow.
-     Dot + text now start at same X as Library svg icons. */
-  .drag-handle {
-    position: absolute;
-    left: 5px; top: 50%; transform: translateY(-50%);
-    color: var(--text-dim);
-    opacity: 0;
-    transition: opacity 0.18s, color 0.18s;
-    display: flex; align-items: center;
-    cursor: grab;
-    padding: 2px 3px;
-    border-radius: 3px;
-    z-index: 2;
-  }
-  .sidebar-item:hover .drag-handle { opacity: 1; }
-  .drag-handle:hover { color: var(--indigo-bright) !important; background: var(--surface-raised); }
-  .sidebar-item.dragging .drag-handle { opacity: 0.4; cursor: grabbing; }
-
-  /* ── COLLECTION ITEM CONTEXT ACTIONS ── */
-  .col-actions {
-    display: flex; align-items: center; gap: 1px;
-    flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
-    position: absolute;
-    right: 8px; top: 50%; transform: translateY(-50%);
-  }
-  .sidebar-item:hover .col-actions { opacity: 1; }
-  .sidebar-item.active .col-actions { opacity: 1; }
-  /* hide count circle on hover — show action buttons instead (use visibility to avoid layout shift) */
-  .col-action-btn {
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    padding: 2px 4px; border-radius: 3px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.12s, color 0.12s;
-  }
-  .col-action-btn:hover { background: var(--surface-raised); color: var(--text); }
-  .col-action-btn.danger:hover { background: rgba(255,48,64,0.12); color: var(--red); }
-
-  /* Inline rename input inside sidebar */
-  .col-rename-wrap {
-    display: flex; align-items: center; gap: 4px;
-    flex: 1; min-width: 0;
-  }
-  .col-rename-input {
-    background: var(--bg);
-    border: 1px solid var(--indigo);
-    border-radius: 4px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 12px;
-    padding: 2px 6px;
-    outline: none;
-    width: 100%;
-    min-width: 0;
-  }
-  .col-rename-confirm {
-    background: var(--indigo); border: none;
-    color: white; cursor: pointer;
-    padding: 2px 6px; border-radius: 3px;
-    font-size: 11px; font-family: var(--sans);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .col-rename-confirm:hover { background: var(--indigo-bright); }
-
-  /* ── NEW COLLECTION INLINE ── */
-  .new-collection-input {
-    background: var(--surface);
-    border: 1px solid var(--indigo);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    padding: 6px 10px;
-    outline: none;
-    width: 100%;
-    margin: 4px 8px;
-    width: calc(100% - 16px);
-  }
-
-  /* ── PLAYLIST PLAYER BAR ── */
-  .playlist-player-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 56px;
-    background: var(--surface-raised);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-    gap: 20px;
-    z-index: 500;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 -6px 24px rgba(0,0,0,0.35);
-  }
-
-  /* Left — playlist + current video name */
-  .ppb-left {
-    display: flex; align-items: center; gap: 10px;
-    min-width: 0; flex: 1;
-  }
-  .ppb-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%; flex-shrink: 0;
-  }
-  .ppb-info {
-    display: flex; flex-direction: column; gap: 2px;
-    min-width: 0;
-  }
-  .ppb-playlist-name {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .ppb-video-title {
-    font-size: 12px; font-weight: 500;
-    color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 260px;
-  }
-
-  /* Centre — mode + controls */
-  .ppb-centre {
-    display: flex; align-items: center; gap: 16px;
-    flex-shrink: 0;
-  }
-
-  /* Mode selector group */
-  .ppb-mode-group {
-    display: flex; align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2px;
-    gap: 2px;
-  }
-  .ppb-mode-btn {
-    display: flex; align-items: center; gap: 5px;
-    background: transparent; border: none;
-    color: var(--text-dim);
-    font-size: 11px; font-family: var(--font);
-    padding: 4px 10px;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    white-space: nowrap;
-  }
-  .ppb-mode-btn:hover { color: var(--text); }
-  .ppb-mode-btn.active {
-    background: var(--indigo);
-    color: #fff;
-  }
-  .ppb-mode-btn.active:hover { background: var(--indigo-bright); }
-
-  /* Playback controls */
-  .ppb-controls {
-    display: flex; align-items: center; gap: 4px;
-  }
-  .ppb-btn {
-    background: transparent; border: none;
-    color: var(--text-muted); cursor: pointer;
-    padding: 6px; border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .ppb-btn:hover { background: var(--surface); color: var(--text); }
-  .ppb-play {
-    background: var(--indigo);
-    color: #fff !important;
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    padding: 0;
-  }
-  .ppb-play:hover { background: var(--indigo-bright) !important; }
-
-  /* Right — counter + close */
-  .ppb-right {
-    display: flex; align-items: center; gap: 10px;
-    flex-shrink: 0;
-  }
-  .ppb-track {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text-dim);
-    min-width: 36px;
-    text-align: right;
-  }
-  .ppb-close { color: var(--text-dim); }
-
-  /* Push main content up when bar is visible */
-  .main.has-player-bar { padding-bottom: 68px; }
-
-  /* Currently playing card highlight */
-  .video-card.pp-active {
-    box-shadow: 0 0 0 2px var(--indigo);
-    outline: none;
-  }
-  .video-card.pp-active .card-play-overlay { opacity: 1; }
-
-  /* ── PLAYLIST SPLIT VIEW ── */
-  .playlist-view {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
-
-  /* Left panel — track list */
-  .pv-list {
-    width: 320px;
-    min-width: 260px;
-    max-width: 360px;
-    background: #0A0A10;
-    border-right: 1px solid var(--border-subtle);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .pv-list-header {
-    padding: 16px 14px 12px;
-    border-bottom: 1px solid var(--border-subtle);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-  .pv-list-meta {
-    display: flex; align-items: center; gap: 10px; min-width: 0;
-  }
-  .pv-list-dot {
-    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-  }
-  .pv-list-name {
-    font-size: 13px; font-weight: 600; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .pv-list-count {
-    font-size: 10px; color: var(--text-dim); font-family: var(--mono);
-    margin-top: 2px;
-  }
-  .pv-list-modes {
-    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 6px; padding: 2px;
-  }
-  .pv-mode-btn {
-    background: transparent; border: none; cursor: pointer;
-    color: var(--text-dim); padding: 4px 7px;
-    border-radius: 4px;
-    display: flex; align-items: center;
-    transition: background 0.15s, color 0.15s;
-  }
-  .pv-mode-btn:hover { color: var(--text); }
-  .pv-mode-btn.active { background: var(--indigo); color: #fff; }
-
-  /* Track list */
-  .pv-tracks {
-    flex: 1; overflow-y: auto;
-    padding: 6px 0;
-  }
-  .pv-track {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 14px;
-    cursor: pointer;
-    transition: background 0.12s;
-    border-left: 2px solid transparent;
-    min-width: 0;
-  }
-  .pv-track:hover { background: var(--surface); }
-  .pv-track.active {
-    background: var(--indigo-glow);
-    border-left-color: var(--indigo-bright);
-  }
-  .pv-track-num {
-    font-size: 10px; font-family: var(--mono);
-    color: var(--text-dim); width: 18px; text-align: right;
-    flex-shrink: 0;
-  }
-  .pv-track.active .pv-track-num {
-    display: none;
-  }
-  .pv-track-play-icon {
-    display: none;
-    width: 18px; flex-shrink: 0;
-    color: var(--indigo-bright);
-  }
-  .pv-track.active .pv-track-play-icon { display: flex; align-items: center; }
-  .pv-track-thumb {
-    width: 56px; height: 36px;
-    border-radius: 4px;
-    object-fit: cover;
-    background: var(--surface-raised);
-    flex-shrink: 0;
-  }
-  .pv-track-info {
-    flex: 1; min-width: 0;
-  }
-  .pv-track-title {
-    font-size: 12px; font-weight: 500; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    line-height: 1.3;
-  }
-  .pv-track.active .pv-track-title { color: var(--indigo-bright); }
-  .pv-track-path {
-    font-size: 10px; color: var(--text-dim); font-family: var(--mono);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-top: 2px;
-  }
-
-  /* Right panel — iframe */
-  .pv-player {
-    flex: 1; position: relative;
-    background: #000;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-  }
-  .pv-player iframe {
-    width: 100%; height: 100%;
-    border: none; display: block;
-  }
-  .pv-close-btn {
-    position: absolute; top: 48px; right: 14px;
-    z-index: 10;
-    background: rgba(0,0,0,0.7);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #fff;
-    width: 34px; height: 34px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s;
-    backdrop-filter: blur(8px);
-  }
-  .pv-close-btn:hover { background: rgba(255,255,255,0.15); }
-
-  /* ── CARD DRAG-AND-DROP ── */
-  .video-card[draggable="true"] { cursor: grab; }
-  .video-card[draggable="true"]:active { cursor: grabbing; }
-  .video-card.card-dragging {
-    opacity: 0.4;
-    outline: 2px dashed var(--indigo);
-    outline-offset: 2px;
-  }
-  .video-card.card-drag-over {
-    outline: 2px solid var(--indigo-bright);
-    outline-offset: 2px;
-    background: var(--indigo-glow);
-  }
-
-  /* ── LOCATION BROWSE BUTTON & PICKER ── */
-  .browse-location-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.15s, color 0.15s;
-  }
-  .browse-location-btn:hover { background: var(--surface-raised); color: var(--indigo-bright); }
-
-  .location-picker {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    min-width: 260px;
-    max-height: 320px;
-    overflow-y: auto;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
-    z-index: 400;
-    padding: 6px 0;
-  }
-  .location-picker-title {
-    font-size: 10px; font-family: var(--mono);
-    color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 4px 12px 8px;
-    border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 4px;
-  }
-  .lp-collection {
-    padding: 0;
-  }
-  .lp-col-header {
-    display: flex; align-items: center; gap: 7px;
-    padding: 6px 12px;
-    font-size: 12px; font-weight: 500; color: var(--text);
-    cursor: pointer;
-    transition: background 0.12s;
-  }
-  .lp-col-header:hover { background: var(--surface); }
-  .lp-col-header.selected { color: var(--indigo-bright); background: var(--indigo-glow); }
-  .lp-col-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .lp-group-item {
-    display: flex; align-items: center; gap: 7px;
-    padding: 5px 12px 5px 28px;
-    font-size: 11px; color: var(--text-muted); font-family: var(--mono);
-    cursor: pointer;
-    transition: background 0.12s;
-  }
-  .lp-group-item:hover { background: var(--surface); color: var(--text); }
-  .lp-group-item.selected { color: var(--indigo-bright); background: var(--indigo-glow); }
-  .lp-uncollected {
-    display: flex; align-items: center; gap: 7px;
-    padding: 6px 12px;
-    font-size: 11px; color: var(--text-muted); font-family: var(--mono);
-    cursor: pointer;
-    border-top: 1px solid var(--border-subtle);
-    margin-top: 4px;
-    transition: background 0.12s;
-  }
-  .lp-uncollected:hover { background: var(--surface); color: var(--text); }
-  .lp-uncollected.selected { color: var(--indigo-bright); background: var(--indigo-glow); }
-
-  /* ── EXPORT MENU DIVIDER + ALL ── */
-  .export-menu-divider {
-    height: 1px; background: var(--border-subtle);
-    margin: 4px 0;
-  }
-  .export-menu-item-all {
-    display: flex; align-items: center; gap: 6px;
-    color: var(--indigo-bright) !important;
-    font-weight: 500;
-  }
-  .export-menu-item-all:hover { background: var(--indigo-glow) !important; }
-
-  /* ── EXPORT FOLDER LOCATION LABEL ── */
-  .export-location-wrap {
-    display: flex; align-items: center; gap: 5px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 3px 8px;
-    max-width: 220px;
-    min-width: 0;
-  }
-  .export-location-wrap svg { flex-shrink: 0; color: var(--indigo-bright); }
-  #exportLocationLabel {
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    flex: 1;
-  }
-  .export-location-clear {
-    background: transparent; border: none;
-    color: var(--text-dim); cursor: pointer;
-    font-size: 13px; line-height: 1;
-    padding: 0 2px;
-    flex-shrink: 0;
-    transition: color 0.15s;
-  }
-  .export-location-clear:hover { color: var(--text); }
-
-  /* Autoplay label in playlist header */
-  .pv-autoplay-label {
-    font-size: 9px; font-family: var(--mono);
-    color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 0.05em; margin-top: 1px;
-  }
-
-</style>
-</head>
-<body>
-
-<!-- TOPBAR -->
-<div class="topbar">
-  <div class="logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/></svg>
-    </div>
-    TholsStudio
-  </div>
-  <div class="search-bar">
-    <span class="search-icon">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    </span>
-    <input type="text" placeholder="Search videos, channels, notes…" id="searchInput" oninput="handleSearch()">
-  </div>
-  <div class="topbar-actions">
-    <button class="btn btn-ghost" onclick="openImportModal()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Import
-    </button>
-    <button class="btn btn-primary" onclick="openAddModal()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add Video
-    </button>
-  </div>
-</div>
-
-<!-- APP BODY -->
-<div class="app-body">
-  <!-- SIDEBAR -->
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-resizer" id="sidebarResizer" title="Drag to resize · Double-click to reset"></div>
-    <div class="sidebar-section">
-      <div class="sidebar-label sidebar-label-toggle" onclick="toggleSidebarSection('librarySection', this.querySelector('.section-chev'))">
-        Library
-        <svg class="section-chev chev-up" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-      </div>
-      <div id="librarySection">
-      <button class="sidebar-item active" onclick="filterByCollection('all', this)">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-        </svg>
-        <span class="col-name">All Videos</span>
-        <span class="count" id="count-all">0</span>
-      </button>
-      <button class="sidebar-item" onclick="filterByCollection('recent', this)">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <span class="col-name">Recently Added</span>
-        <span class="count" id="count-recent">0</span>
-      </button>
-      <button class="sidebar-item" onclick="filterByCollection('watched', this)">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-        </svg>
-        <span class="col-name">Watched</span>
-        <span class="count" id="count-watched">0</span>
-      </button>
-      </div><!-- /librarySection -->
-    </div><!-- /sidebar-section -->
-
-    <div class="sidebar-divider"></div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label sidebar-label-toggle" onclick="toggleSidebarSection('collectionsSection', this.querySelector('.section-chev'))">
-        Collections
-        <svg class="section-chev chev-up" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-      </div>
-      <div id="collectionsSection">
-      <div id="collectionsList"></div>
-      <div style="padding: 0 0 0 0; margin-top: 4px;">
-        <button class="add-collection-btn" onclick="startNewCollection()">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New collection
-        </button>
-      </div>
-      </div><!-- /collectionsSection -->
-    </div><!-- /sidebar-section -->
-
-    <div class="sidebar-divider"></div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-label sidebar-label-toggle" onclick="toggleSidebarSection('playlistsSection', this.querySelector('.section-chev'))">
-        Playlists
-        <svg class="section-chev chev-up" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
-      </div>
-      <div id="playlistsSection">
-        <div id="playlistsList"></div>
-        <div style="padding:0; margin-top:4px;">
-          <button class="add-collection-btn" onclick="openPlaylistModal()">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New playlist
-          </button>
-        </div>
-      </div><!-- /playlistsSection -->
-    </div><!-- /sidebar-section -->
-  </div><!-- /sidebar -->
-
-  <!-- MAIN -->
-  <!-- PLAYLIST SPLIT VIEW (shown instead of .main when a playlist is clicked) -->
-  <div class="playlist-view" id="playlistView" style="display:none;">
-
-    <!-- Left panel: playlist track list -->
-    <div class="pv-list" id="pvList">
-      <div class="pv-list-header">
-        <div class="pv-list-meta">
-          <span class="pv-list-dot" id="pvDot"></span>
-          <div>
-            <div class="pv-list-name" id="pvName">Playlist</div>
-            <div class="pv-list-count" id="pvCount">0 videos</div>
-          </div>
-        </div>
-        <div class="pv-list-modes">
-          <button class="pv-mode-btn active" id="pvSeqBtn" onclick="pvSetMode('sequential')" title="Sequential">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="15 8 19 12 15 16"/></svg>
-          </button>
-          <button class="pv-mode-btn" id="pvRndBtn" onclick="pvSetMode('random')" title="Random">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-          </button>
-          <button class="pv-mode-btn active" id="pvAutoBtn" onclick="pvToggleAutoplay()" title="Auto-play next">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/><line x1="19" y1="3" x2="19" y2="21"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="pv-tracks" id="pvTracks"></div>
-    </div>
-
-    <!-- Right panel: iframe player -->
-    <div class="pv-player" id="pvPlayer">
-      <button class="pv-close-btn" onclick="closePvView()" title="Close playlist view">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-      <div id="pvIframeContainer" style="width:100%;height:100%;"></div>
-    </div>
-
-  </div>
-
-  <div class="main" id="mainView">
-    <!-- Quick add bar -->
-    <div class="add-url-location" id="quickAddLocation" style="position:relative;">
-      <button class="browse-location-btn" onclick="toggleLocationPicker()" title="Choose collection / group to save into">
-        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      </button>
-      <span class="add-url-location-dot" id="quickAddLocationDot"></span>
-      <span id="quickAddLocationText">Saving to: Uncollected</span>
-      <!-- Location picker dropdown -->
-      <div class="location-picker" id="locationPicker" style="display:none;">
-        <div class="location-picker-title">Save quick-add to…</div>
-        <div class="location-picker-body" id="locationPickerBody"></div>
-      </div>
-    </div>
-    <div class="add-url-bar">
-      <svg width="16" height="16" fill="none" stroke="var(--text-dim)" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-      <input type="text" id="quickAddInput" placeholder="Paste a YouTube URL and press Enter to save…" onkeydown="if(event.key==='Enter') quickAdd()">
-      <button class="btn btn-primary" onclick="quickAdd()" style="flex-shrink:0;">Save</button>
-    </div>
-
-    <!-- Section header -->
-    <div class="section-header">
-      <span class="section-title" id="sectionTitle">All Videos</span>
-      <span class="section-count" id="sectionCount">0 videos</span>
-      <button class="btn btn-primary" id="playPlaylistBtn" onclick="startPlaylistPlayer()" style="display:none;padding:5px 12px;font-size:12px;gap:6px;">
-        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Play
-      </button>
-      <div class="section-header-right">
-        <!-- Export folder location label -->
-        <div class="export-location-wrap" id="exportLocationWrap" style="display:none;">
-          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-          <span id="exportLocationLabel">No folder selected</span>
-          <button class="export-location-clear" onclick="clearExportFolder()" title="Clear folder">×</button>
-        </div>
-        <!-- Browse folder button -->
-        <button class="btn-icon" onclick="browseExportFolder()" title="Select export folder">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-        </button>
-        <div class="export-dropdown" id="exportDropdown">
-          <button class="btn-icon" onclick="toggleExportMenu()" title="Export">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
-          </button>
-          <div class="export-menu" id="exportMenu">
-            <button class="export-menu-item" onclick="exportData()">Export as JSON</button>
-            <button class="export-menu-item" onclick="exportCollectionsJs()">Export as collections.js</button>
-            <button class="export-menu-item" onclick="exportWatchedJs()">Export as watched.js</button>
-            <button class="export-menu-item" onclick="exportPlaylistJs()">Export as playlist.js</button>
-            <div class="export-menu-divider"></div>
-            <button class="export-menu-item export-menu-item-all" onclick="exportAllJs()">
-              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export All JS Files
-            </button>
-          </div>
-        </div>
-        <div class="view-toggle">
-          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          </button>
-          <button class="view-btn" id="listBtn" onclick="setView('list')" title="List view">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="2"/><rect x="3" y="11" width="18" height="2"/><rect x="3" y="18" width="18" height="2"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cards -->
-    <div class="cards-grid-container" id="cardsGrid"></div>
-  </div><!-- end #mainView -->
-</div>
-
-<!-- ADD VIDEO MODAL -->
-<div class="modal-overlay" id="addModal">
-  <div class="modal">
-    <div class="modal-title">
-      <svg width="18" height="18" fill="none" stroke="var(--indigo-bright)" stroke-width="2" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
-      Add YouTube Video
-      <button class="modal-close" onclick="closeModal('addModal')">×</button>
-    </div>
-    <div class="field">
-      <label>YouTube URL *</label>
-      <input type="url" id="addUrl" placeholder="https://youtube.com/watch?v=..." oninput="previewUrl()">
-    </div>
-    <div class="field">
-      <label>Title (auto-detected or custom)</label>
-      <input type="text" id="addTitle" placeholder="Video title">
-    </div>
-    <div class="field">
-      <label>Collection</label>
-      <select id="addCollection" onchange="refreshGroupSelect('addCollection','addGroup')">
-        <option value="">— No collection —</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Group / Topic <span style="color:var(--text-dim);font-weight:400;">(optional sub-section)</span></label>
-      <div style="display:flex;gap:8px;">
-        <select id="addGroup" style="flex:1;">
-          <option value="">— No group —</option>
-        </select>
-        <input type="text" id="addGroupNew" placeholder="Or type new group…" style="flex:1;">
-      </div>
-    </div>
-    <div class="field">
-      <label>Note</label>
-      <textarea id="addNote" placeholder="Your thoughts, timestamps, why you saved this…"></textarea>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveVideo()">Save to Vault</button>
-    </div>
-  </div>
-</div>
-
-<!-- NEW COLLECTION MODAL -->
-<div class="modal-overlay" id="collectionModal">
-  <div class="modal" style="width:360px;">
-    <div class="modal-title">
-      New Collection
-      <button class="modal-close" onclick="closeModal('collectionModal')">×</button>
-    </div>
-    <div class="field">
-      <label>Collection name</label>
-      <input type="text" id="collectionName" placeholder="e.g. Unity Tutorials, Game Design…">
-    </div>
-    <div class="field">
-      <label>Color</label>
-      <div class="color-picker-row" id="colorPicker"></div>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="closeModal('collectionModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCollection()">Create</button>
-    </div>
-  </div>
-</div>
-
-<!-- PLAYLIST MODAL -->
-<div class="modal-overlay" id="playlistModal">
-  <div class="modal" style="width:360px;">
-    <div class="modal-title">
-      New Playlist
-      <button class="modal-close" onclick="closeModal('playlistModal')">×</button>
-    </div>
-    <div class="field">
-      <label>Playlist name</label>
-      <input type="text" id="playlistName" placeholder="e.g. Watch Later, Favourites…"
-        onkeydown="if(event.key==='Enter') savePlaylist()">
-    </div>
-    <div class="field">
-      <label>Color</label>
-      <div class="color-picker-row" id="playlistColorPicker"></div>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="closeModal('playlistModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="savePlaylist()">Create</button>
-    </div>
-  </div>
-</div>
-
-<!-- IMPORT MODAL -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal">
-    <div class="modal-title">
-      Import URLs
-      <button class="modal-close" onclick="closeModal('importModal')">×</button>
-    </div>
-    <div class="field">
-      <label>Paste YouTube URLs (one per line)</label>
-      <textarea id="importText" placeholder="https://youtube.com/watch?v=abc&#10;https://youtu.be/xyz&#10;…" style="min-height:120px;"></textarea>
-    </div>
-    <div class="field">
-      <label>Add to collection (optional)</label>
-      <select id="importCollection" onchange="refreshGroupSelect('importCollection','importGroup')">
-        <option value="">— No collection —</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Group / Topic <span style="color:var(--text-dim);font-weight:400;">(optional)</span></label>
-      <div style="display:flex;gap:8px;">
-        <select id="importGroup" style="flex:1;"><option value="">— No group —</option></select>
-        <input type="text" id="importGroupNew" placeholder="Or type new group…" style="flex:1;">
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="closeModal('importModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="importUrls()">Import All</button>
-    </div>
-  </div>
-</div>
-
-<!-- MOVE TO GROUP MODAL -->
-<div class="modal-overlay" id="moveGroupModal">
-  <div class="modal" style="width:380px;">
-    <div class="modal-title">
-      <svg width="16" height="16" fill="none" stroke="var(--indigo-bright)" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-      Move to Group
-      <button class="modal-close" onclick="closeModal('moveGroupModal')">×</button>
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);background:var(--surface-raised);padding:8px 12px;border-radius:6px;border-left:2px solid var(--indigo);" id="moveGroupVideoTitle"></div>
-    <div class="field">
-      <label>Choose existing group</label>
-      <select id="moveGroupSelect">
-        <option value="">— No group (ungrouped) —</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Or create a new group</label>
-      <input type="text" id="moveGroupNewInput" placeholder="Type new group name…">
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
-      <button class="btn btn-ghost" onclick="closeModal('moveGroupModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveMoveGroup()">Move</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
-<!-- CONFIRM MODAL -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal" style="width:380px;">
-    <div class="modal-title">
-      <span id="confirmTitle">Confirm</span>
-      <button class="modal-close" onclick="closeConfirmModal()">×</button>
-    </div>
-    <p id="confirmMessage" style="margin:0 0 20px;font-size:13px;color:var(--text-muted);line-height:1.6;"></p>
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
-      <button class="btn btn-danger" id="confirmOkBtn" onclick="confirmOk()">Delete</button>
-    </div>
-  </div>
-</div>
-
-<!-- PLAYLIST PLAYER BAR -->
-<div class="playlist-player-bar" id="playlistPlayerBar" style="display:none;">
-
-  <!-- Left: playlist name + current video info -->
-  <div class="ppb-left">
-    <span class="ppb-dot" id="ppbDot"></span>
-    <div class="ppb-info">
-      <span class="ppb-playlist-name" id="ppbName">Playlist</span>
-      <span class="ppb-video-title" id="ppbVideoTitle">—</span>
-    </div>
-  </div>
-
-  <!-- Centre: mode selectors + playback controls -->
-  <div class="ppb-centre">
-    <!-- Mode group -->
-    <div class="ppb-mode-group">
-      <!-- Sequential -->
-      <button class="ppb-mode-btn active" id="ppbSeqBtn" onclick="setPlaylistMode('sequential')" title="Sequential — play in order">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <line x1="5" y1="12" x2="19" y2="12"/>
-          <polyline points="15 8 19 12 15 16"/>
-        </svg>
-        <span>Sequential</span>
-      </button>
-      <!-- Random -->
-      <button class="ppb-mode-btn" id="ppbRndBtn" onclick="setPlaylistMode('random')" title="Random — shuffle order">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polyline points="16 3 21 3 21 8"/>
-          <line x1="4" y1="20" x2="21" y2="3"/>
-          <polyline points="21 16 21 21 16 21"/>
-          <line x1="15" y1="15" x2="21" y2="21"/>
-        </svg>
-        <span>Random</span>
-      </button>
-    </div>
-
-    <!-- Playback controls -->
-    <div class="ppb-controls">
-      <button class="ppb-btn" onclick="playlistStep(-1)" title="Previous">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/>
-        </svg>
-      </button>
-      <button class="ppb-btn ppb-play" onclick="openCurrentPlaylistVideo()" title="Open in YouTube">
-        <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </button>
-      <button class="ppb-btn" onclick="playlistStep(1)" title="Next">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- Right: counter + close -->
-  <div class="ppb-right">
-    <span class="ppb-track" id="ppbTrack">1 / 5</span>
-    <button class="ppb-btn ppb-close" onclick="closePlaylistPlayer()" title="Stop playlist">
-      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
-  </div>
-
-</div>
-
-<script src="https://www.youtube.com/iframe_api"></script>
-<script>
-// ──────────────────────────────────────────────────────────────
-// COLLECTIONS CONFIG
-// Edit this file to change the default collections, colors, and
-// the starter ("seed") videos that appear on first load.
-//
-// STRUCTURE — easy to browse/edit in any JSON editor:
-//   DEFAULT_COLLECTIONS
-//     └─ collection (e.g. "Unity Tutorials")
-//          ├─ groups: { "Character Movement": [ ...videos ], "Performance": [ ...videos ] }
-//          └─ ungrouped: [ ...videos ]   (videos with no sub-group)
-//
-// This only affects FIRST LOAD — once the app has saved data to
-// localStorage, this file is ignored. To reset and re-apply your
-// changes, clear the site's localStorage (or use a private window).
-// ──────────────────────────────────────────────────────────────
-
-// Color swatches offered in the "New Collection" color picker.
-const COLLECTION_COLORS = [
-  '#5C6BC0', '#EF5350', '#26A69A', '#FFA726',
-  '#66BB6A', '#AB47BC', '#29B6F6', '#FF7043',
-  '#78909C', '#EC407A'
-];
-
-// Default collections + their videos, shown in the sidebar on first load.
-//
-// Each collection:
-// - id:        unique, lowercase, no spaces (used internally)
-// - name:      display name shown in the sidebar
-// - color:     hex color for the collection's dot / accent
-// - groups:    { "Group Name": [ video, video, ... ], ... }
-//              — each key becomes a sub-section inside the collection
-// - ungrouped: [ video, video, ... ] — videos with no sub-group
-//
-// Each video:
-// - url:        full YouTube URL (watch, youtu.be, or shorts link)
-// - videoId:    the 11-character YouTube video ID
-// - title:      display title
-// - channel:    channel name (optional)
-// - note:       personal note shown on the card (optional)
-// - playlistId: optional — if the original URL had a "?list=" param,
-//               the play button will open it within that playlist
-const DEFAULT_COLLECTIONS = [
-  {
-    id: 'unity',
-    name: 'Unity Tutorials',
-    color: '#5C6BC0',
-    groups: {
-      'Character Movement': [
-        {
-          url: 'https://www.youtube.com/watch?v=XtQMytORBmM',
-          videoId: 'XtQMytORBmM',
-          title: 'Unity Character Controller from Scratch',
-          channel: 'Brackeys',
-          note: 'Great foundation for the platformer project. Check timestamp 12:30 for slope handling.'
-        }
-      ],
-      'Performance': [
-        {
-          url: 'https://www.youtube.com/watch?v=vFWnv9aRhT8',
-          videoId: 'vFWnv9aRhT8',
-          title: 'Unity Mobile Performance Deep Dive',
-          channel: 'Unity',
-          note: ''
-        }
-      ],
-      'Physics': [
-        {
-          url: 'https://www.youtube.com/watch?v=bFOAipGJGA0',
-          videoId: 'bFOAipGJGA0',
-          title: 'Unity Physics — Rigidbody & Colliders',
-          channel: 'Unity',
-          note: 'Revisit for slope controller refactor'
-        }
-      ]
-    },
-    ungrouped: []
-  },
-  {
-    id: 'gamedesign',
-    name: 'Game Design',
-    color: '#26A69A',
-    groups: {
-      'Polish': [
-        {
-          url: 'https://www.youtube.com/watch?v=K0fbBFKuMoE',
-          videoId: 'K0fbBFKuMoE',
-          title: 'Game Feel — How to Make Games Fun',
-          channel: 'Extra Credits',
-          note: 'Must revisit for juice/polish pass'
-        }
-      ],
-      'Level Design': [
-        {
-          url: 'https://www.youtube.com/watch?v=9tFSyMdnuQk',
-          videoId: '9tFSyMdnuQk',
-          title: 'Level Design Patterns for Platformers',
-          channel: 'GMTK',
-          note: ''
-        }
-      ]
-    },
-    ungrouped: []
-  },
-  {
-    id: 'music',
-    name: 'Music',
-    color: '#EC407A',
-    groups: {},
-    ungrouped: []
-  },
-];
-
-// ──────────────────────────────────────────────────────────────
-// PLAYLIST CONFIG
-// Edit this file to define default playlists that appear on
-// first load (when localStorage is empty).
-//
-// Each playlist:
-// - id:       unique slug (lowercase, hyphens)
-// - name:     display name shown in the sidebar
-// - color:    hex color for the playlist dot
-// - videoIds: array of videoId strings (YouTube 11-char IDs)
-//             matching videos already in collections.js
-//
-// This only affects FIRST LOAD — once the app has saved data
-// to localStorage, this file is ignored. To reset, clear
-// localStorage or open in a private window.
-// ──────────────────────────────────────────────────────────────
-
-const DEFAULT_PLAYLISTS = [
-  {
-    id: 'watch-later',
-    name: 'Watch Later',
-    color: '#5C6BC0',
-    videoIds: []
-  },
-  {
-    id: 'favourites',
-    name: 'Favourites',
-    color: '#EC407A',
-    videoIds: []
-  },
-];
-
-// ──────────────────────────────────────────────────────────────
-// WATCHED HISTORY CONFIG
-// This file tracks which YouTube videos you have watched.
-//
-// WATCHED_VIDEO_IDS: array of YouTube video IDs (11-char strings)
-// that will be pre-marked as "watched" on first load.
-//
-// This only affects FIRST LOAD — once the app has saved data to
-// localStorage, this file is ignored. To reset, clear localStorage
-// or open in a private window.
-//
-// To restore your watch history:
-//   1. Replace this file with an exported watched.js
-//   2. Clear localStorage (or open in a private window)
-// ──────────────────────────────────────────────────────────────
-
-const WATCHED_VIDEO_IDS = [
-  // e.g. 'XtQMytORBmM', 'vFWnv9aRhT8'
-];
-
 // ──────────────────────────────────────────────
 // STATE
 // (COLLECTION_COLORS and DEFAULT_COLLECTIONS come from collections.js.
@@ -1900,7 +5,13 @@ const WATCHED_VIDEO_IDS = [
 //  state.collections only stores {id, name, color}; the nested
 //  video data is flattened into state.videos by seedData() below.)
 // ──────────────────────────────────────────────
-let state = JSON.parse(localStorage.getItem('tholsstudio') || 'null') || {
+// APP_NAME / APP_LABEL / APP_COLOR are defined in a small inline <script>
+// block in each app's HTML file (music.html, electronics.html, astrology.html)
+// BEFORE this file is loaded. They namespace localStorage + the export-folder
+// IndexedDB store per app, and drive the branding (title/logo subtitle).
+const STORAGE_KEY = 'tholsstudio_' + (typeof APP_NAME !== 'undefined' ? APP_NAME : 'default');
+
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || {
   videos: [],
   collections: DEFAULT_COLLECTIONS.map(c => ({ id: c.id, name: c.name, color: c.color })),
   playlists: DEFAULT_PLAYLISTS.map(p => ({ id: p.id, name: p.name, color: p.color, videoIds: [...p.videoIds] })),
@@ -1909,6 +20,7 @@ let state = JSON.parse(localStorage.getItem('tholsstudio') || 'null') || {
   lastUsedGroup: '',
   videoOrder: {},
   watchedIds: [],   // YouTube videoId strings of watched videos
+  expandedGroups: [],
 };
 
 // Ensure older saved states have all fields
@@ -1927,13 +39,15 @@ if (!state.playlists) {
 state.playlists.forEach((pl, i) => {
   if (!pl.color) pl.color = COLLECTION_COLORS[i % COLLECTION_COLORS.length];
 });
+if (!state.expandedGroups) state.expandedGroups = [];
 
 let currentFilter = 'all';
 let currentView = 'grid';
 let searchQuery = '';
+let newGroupColId = null;
 
 function save() {
-  localStorage.setItem('tholsstudio', JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 // ──────────────────────────────────────────────
@@ -1998,8 +112,6 @@ function formatDate(ts) {
 // ──────────────────────────────────────────────
 // RENDER SIDEBAR
 // ──────────────────────────────────────────────
-let dragSrcIndex = null;
-
 function renderSidebar() {
   const list = document.getElementById('collectionsList');
   list.innerHTML = '';
@@ -2015,6 +127,7 @@ function renderSidebar() {
     if (currentFilter === col.id) btn.classList.add('active');
 
     btn.innerHTML = `
+      <span class="selected-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
       <span class="drag-handle" title="Drag to reorder">
         <svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor">
           <rect x="0" y="0" width="12" height="1.5" rx="1"/>
@@ -2047,82 +160,36 @@ function renderSidebar() {
       filterByCollection(col.id, btn);
     });
 
-    // ── Drag events ──
-    btn.addEventListener('dragstart', (e) => {
-      dragSrcIndex = index;
-      btn.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', index);
-      // Small delay so the drag ghost renders before opacity drops
-      setTimeout(() => btn.classList.add('dragging'), 0);
-    });
+    list.appendChild(btn);
+  });
 
-    btn.addEventListener('dragend', () => {
-      btn.classList.remove('dragging');
-      btn.classList.add('was-dragging');
-      clearDropIndicators();
-    });
-
-    btn.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const targetIndex = parseInt(btn.dataset.index);
-      if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
-      clearDropIndicators();
-      // Determine top/bottom half
-      const rect = btn.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-      if (e.clientY < midY) {
-        btn.classList.add('drag-over-top');
-      } else {
-        btn.classList.add('drag-over-bottom');
-      }
-    });
-
-    btn.addEventListener('dragleave', () => {
-      btn.classList.remove('drag-over-top', 'drag-over-bottom');
-    });
-
-    btn.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      clearDropIndicators();
-      const targetIndex = parseInt(btn.dataset.index);
-      if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
-
-      // Determine insert position
-      const rect = btn.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-      let insertAt = e.clientY < midY ? targetIndex : targetIndex + 1;
-
-      // Reorder
-      const moved = state.collections.splice(dragSrcIndex, 1)[0];
-      if (insertAt > dragSrcIndex) insertAt--;
+  // Drag-and-drop reordering is handled by the shared makeSortable() helper
+  makeSortable(list, '.sidebar-item.draggable', {
+    dragClass: 'dragging',
+    overTopClass: 'drag-over-top',
+    overBottomClass: 'drag-over-bottom',
+    wasDraggingClass: 'was-dragging',
+    stopPropagation: true,
+    onDrop: (srcEl, targetEl, position) => {
+      const srcIndex = parseInt(srcEl.dataset.index);
+      const targetIndex = parseInt(targetEl.dataset.index);
+      let insertAt = position === 'top' ? targetIndex : targetIndex + 1;
+      const moved = state.collections.splice(srcIndex, 1)[0];
+      if (insertAt > srcIndex) insertAt--;
       state.collections.splice(insertAt, 0, moved);
-
-      dragSrcIndex = null;
       save();
       renderSidebar();
       renderCards();
       showToast(`↕ "${moved.name}" reordered`);
-    });
-
-    list.appendChild(btn);
-  });
-
-  // Drop on the list container itself (drop below all items)
-  list.addEventListener('dragover', (e) => e.preventDefault());
-  list.addEventListener('drop', (e) => {
-    // Only fires if not caught by a child item (i.e. dropped on empty space)
-    if (dragSrcIndex === null) return;
-    const moved = state.collections.splice(dragSrcIndex, 1)[0];
-    state.collections.push(moved);
-    dragSrcIndex = null;
-    clearDropIndicators();
-    save();
-    renderSidebar();
-    renderCards();
-    showToast(`↕ "${moved.name}" moved to bottom`);
+    },
+    onDropToEnd: (srcEl) => {
+      const moved = state.collections.splice(parseInt(srcEl.dataset.index), 1)[0];
+      state.collections.push(moved);
+      save();
+      renderSidebar();
+      renderCards();
+      showToast(`↕ "${moved.name}" moved to bottom`);
+    }
   });
 
   document.getElementById('count-all').textContent = state.videos.length;
@@ -2150,13 +217,24 @@ function renderPlaylistsSidebar() {
   const list = document.getElementById('playlistsList');
   if (!list) return;
   list.innerHTML = '';
-  state.playlists.forEach(pl => {
+  state.playlists.forEach((pl, index) => {
     const isActive = currentFilter === `playlist:${pl.id}`;
-    const count = pl.videoIds ? pl.videoIds.length : 0;
+    const count = pl.videoIds ? pl.videoIds.filter(id => state.videos.find(v => v.id === id)).length : 0;
+
     const btn = document.createElement('button');
-    btn.className = 'sidebar-item' + (isActive ? ' active' : '');
+    btn.className = 'sidebar-item draggable' + (isActive ? ' active' : '');
+    btn.dataset.index = index;
+    btn.draggable = true;
     const dotColor = pl.color || '#78909C';
     btn.innerHTML = `
+      <span class="selected-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <span class="drag-handle" title="Drag to reorder">
+        <svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor">
+          <rect x="0" y="0" width="12" height="1.5" rx="1"/>
+          <rect x="0" y="4" width="12" height="1.5" rx="1"/>
+          <rect x="0" y="8" width="12" height="1.5" rx="1"/>
+        </svg>
+      </span>
       <span class="collection-dot" style="background:${dotColor}"></span>
       <span class="col-name">${escHtml(pl.name)}</span>
       <span class="count${count ? '' : ' count-empty'}">${count}</span>
@@ -2171,12 +249,44 @@ function renderPlaylistsSidebar() {
           <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
         </button>
       </span>`;
-    btn.onclick = (e) => {
-      // If rename UI is active inside this button, ignore the click
+
+    btn.addEventListener('click', (e) => {
+      if (btn.classList.contains('was-dragging')) {
+        btn.classList.remove('was-dragging');
+        return;
+      }
       if (btn.querySelector('.col-rename-input')) return;
       filterByCollection(`playlist:${pl.id}`, btn);
-    };
+    });
+
     list.appendChild(btn);
+  });
+
+  // Drag-and-drop reordering is handled by the shared makeSortable() helper
+  makeSortable(list, '.sidebar-item.draggable', {
+    dragClass: 'dragging',
+    overTopClass: 'drag-over-top',
+    overBottomClass: 'drag-over-bottom',
+    wasDraggingClass: 'was-dragging',
+    stopPropagation: true,
+    onDrop: (srcEl, targetEl, position) => {
+      const srcIndex = parseInt(srcEl.dataset.index);
+      const targetIndex = parseInt(targetEl.dataset.index);
+      let insertAt = position === 'top' ? targetIndex : targetIndex + 1;
+      const moved = state.playlists.splice(srcIndex, 1)[0];
+      if (insertAt > srcIndex) insertAt--;
+      state.playlists.splice(insertAt, 0, moved);
+      save();
+      renderSidebar();
+      showToast(`↕ "${moved.name}" reordered`);
+    },
+    onDropToEnd: (srcEl) => {
+      const moved = state.playlists.splice(parseInt(srcEl.dataset.index), 1)[0];
+      state.playlists.push(moved);
+      save();
+      renderSidebar();
+      showToast(`↕ "${moved.name}" moved to bottom`);
+    }
   });
 }
 
@@ -2203,12 +313,6 @@ function renderQuickAddLocation() {
     textEl.textContent = `Saving to: ${path}`;
     dotEl.style.background = 'var(--text-dim)';
   }
-}
-
-function clearDropIndicators() {
-  document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
-    el.classList.remove('drag-over-top', 'drag-over-bottom');
-  });
 }
 
 // ── Collection rename (inline) ──
@@ -2342,11 +446,14 @@ function deleteCollection(e, colId) {
 
 function getGroupsForCollection(colId) {
   if (!colId) return [];
-  return [...new Set(
+  const fromVideos = new Set(
     state.videos
       .filter(v => v.collection === colId && v.group && v.group.trim())
       .map(v => v.group.trim())
-  )].sort();
+  );
+  const fromPending = state.pendingGroups?.[colId] || [];
+  fromPending.forEach(g => fromVideos.add(g));
+  return [...fromVideos].sort();
 }
 
 function refreshGroupSelect(collectionSelectId, groupSelectId) {
@@ -2368,11 +475,6 @@ function getFilteredVideos() {
   if (currentFilter === 'all') { /* all */ }
   else if (currentFilter === 'recent') { vids = vids.filter(v => now - v.added < 7*24*3600*1000); }
   else if (currentFilter === 'watched') { vids = vids.filter(v => v.watched); }
-  else if (currentFilter.startsWith('playlist:')) {
-    const plId = currentFilter.slice(9);
-    const pl = state.playlists.find(p => p.id === plId);
-    vids = pl ? vids.filter(v => pl.videoIds.includes(v.id)) : [];
-  }
   else { vids = vids.filter(v => v.collection === currentFilter); }
 
   if (searchQuery) {
@@ -2452,11 +554,13 @@ function buildCollectionBlock(colId, colName, colColor, colVids, isFirst, expand
   const dividerStyle = isFirst
     ? 'margin-bottom:12px;'
     : 'margin-bottom:12px; padding-top:14px; margin-top:2px; border-top:1px solid var(--border-subtle);';
-  const chevClass = expanded ? 'group-chevron chev-up' : 'group-chevron collapsed';
-  const bodyClass = expanded ? 'group-body' : 'group-body collapsed';
+  const colKey = `col-${colId}`;
+  const isExpanded = expanded || state.expandedGroups.includes(colKey);
+  const chevClass = isExpanded ? 'group-chevron chev-up' : 'group-chevron collapsed';
+  const bodyClass = isExpanded ? 'group-body' : 'group-body collapsed';
   let html = `<div class="group-section" style="${dividerStyle}">`;
-  html += `<div class="group-header group-header--collection" onclick="toggleGroup('col-${colId}')">
-    <span class="${chevClass}" id="chev-col-${colId}">
+  html += `<div class="group-header group-header--collection" onclick="toggleGroup('${colKey}')">
+    <span class="${chevClass}" id="chev-${colKey}">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
     </span>
     <span class="collection-dot" style="background:${colColor};width:9px;height:9px;border-radius:50%;flex-shrink:0;"></span>
@@ -2485,6 +589,13 @@ function renderGroupedByTitle(vids, colId, colColor, nested = false, expanded = 
     }
   });
 
+  // Show empty pending groups so they appear even with 0 videos
+  if (!nested && state.pendingGroups?.[colId]) {
+    state.pendingGroups[colId].forEach(gName => {
+      if (!grouped[gName]) grouped[gName] = [];
+    });
+  }
+
   const groupNames = Object.keys(grouped).sort();
   let html = '';
 
@@ -2501,8 +612,9 @@ function renderGroupedByTitle(vids, colId, colColor, nested = false, expanded = 
       });
     }
     const gKey = `${colId}__${gName}`.replace(/[^a-z0-9_]/gi, '_');
-    const gChevClass = expanded ? 'group-chevron chev-up' : 'group-chevron collapsed';
-    const gBodyClass = expanded ? 'group-body' : 'group-body collapsed';
+    const gIsExpanded = expanded || state.expandedGroups.includes(gKey);
+    const gChevClass = gIsExpanded ? 'group-chevron chev-up' : 'group-chevron collapsed';
+    const gBodyClass = gIsExpanded ? 'group-body' : 'group-body collapsed';
     html += `<div class="group-section">
       <div class="group-header" onclick="toggleGroup('${gKey}')">
         <span class="${gChevClass}" id="chev-${gKey}">
@@ -2558,18 +670,10 @@ function renderGroupedByTitle(vids, colId, colColor, nested = false, expanded = 
   // Add new group button (only in single-collection view)
   if (!nested) {
     html += `<div class="add-group-row" id="addGroupRow-${colId}">
-      <button class="add-collection-btn" style="width:auto;padding:5px 12px;" onclick="showAddGroupInput('${escAttr(colId)}')">
-        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <button class="add-collection-btn" onclick="openGroupModal('${escAttr(colId)}')">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New group
       </button>
-    </div>
-    <div id="newGroupInputRow-${colId}" style="display:none;padding:4px 0;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="add-group-input" id="newGroupInput-${colId}" placeholder="Group name (e.g. Physics, AI, Shaders…)"
-          onkeydown="if(event.key==='Enter') confirmNewGroup('${escAttr(colId)}'); if(event.key==='Escape') hideAddGroupInput('${escAttr(colId)}')">
-        <button class="btn btn-primary" style="padding:5px 12px;font-size:12px;" onclick="confirmNewGroup('${escAttr(colId)}')">Add</button>
-        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;" onclick="hideAddGroupInput('${escAttr(colId)}')">Cancel</button>
-      </div>
     </div>`;
   }
 
@@ -2578,12 +682,11 @@ function renderGroupedByTitle(vids, colId, colColor, nested = false, expanded = 
 
 function renderCard(v) {
   const col = state.collections.find(c => c.id === v.collection);
-  const isPlaylistView = currentFilter.startsWith('playlist:');
   // In single-collection view, don't show the collection tag — group header handles it
-  const showColTag = currentFilter === 'all' || currentFilter === 'recent' || currentFilter === 'watched' || isPlaylistView;
+  const showColTag = currentFilter === 'all' || currentFilter === 'recent' || currentFilter === 'watched';
   // Build breadcrumb: Collection / Group
   const colPath = col ? (v.group ? `${col.name} / ${v.group}` : col.name) : (v.collection ? '' : (v.group ? v.group : ''));
-  const colTag = (showColTag && colPath) ? `<span class="card-collection-tag" title="${colPath}"><span class="tag-dot" style="background:${col ? col.color : 'var(--text-dim)'}"></span>${colPath}</span>` : '';
+  const colTag = (showColTag && colPath) ? `<span class="card-collection-tag" title="${escHtml(colPath)}"><span class="tag-dot" style="background:${col ? col.color : 'var(--text-dim)'}"></span>${escHtml(colPath)}</span>` : '';
   const noteHtml = v.note ? `<div class="card-note" id="note-text-${v.id}">${escHtml(v.note)}</div>` : '';
   const watchedStyle = v.watched ? 'opacity:0.6;' : '';
 
@@ -2636,9 +739,6 @@ function renderCard(v) {
             <line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
         </button>
-        ${isPlaylistView ? `<button class="card-action-btn danger" onclick="removeFromCurrentPlaylist('${v.id}')" title="Remove from playlist">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>` : ''}
         <button class="card-action-btn danger" onclick="deleteVideo('${v.id}')" title="Delete video">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
         </button>
@@ -2658,34 +758,33 @@ function toggleGroup(key) {
   if (!body) return;
   body.classList.toggle('collapsed');
   chev?.classList.toggle('collapsed');
-}
-
-function showAddGroupInput(colId) {
-  document.getElementById(`addGroupRow-${colId}`).style.display = 'none';
-  const row = document.getElementById(`newGroupInputRow-${colId}`);
-  row.style.display = 'block';
-  document.getElementById(`newGroupInput-${colId}`)?.focus();
-}
-
-function hideAddGroupInput(colId) {
-  document.getElementById(`addGroupRow-${colId}`).style.display = 'flex';
-  const row = document.getElementById(`newGroupInputRow-${colId}`);
-  row.style.display = 'none';
-  if (document.getElementById(`newGroupInput-${colId}`))
-    document.getElementById(`newGroupInput-${colId}`).value = '';
-}
-
-function confirmNewGroup(colId) {
-  const input = document.getElementById(`newGroupInput-${colId}`);
-  const name = input?.value.trim();
-  if (!name) { showToast('⚠️ Enter a group name'); return; }
-  // Group is just a label — no video assigned yet; just re-render with the knowledge it exists
-  // We store "pending groups" in state so they show even with 0 videos
-  if (!state.pendingGroups) state.pendingGroups = {};
-  if (!state.pendingGroups[colId]) state.pendingGroups[colId] = [];
-  if (!state.pendingGroups[colId].includes(name)) state.pendingGroups[colId].push(name);
+  const idx = state.expandedGroups.indexOf(key);
+  if (idx === -1) {
+    state.expandedGroups.push(key);
+  } else {
+    state.expandedGroups.splice(idx, 1);
+  }
   save();
-  hideAddGroupInput(colId);
+}
+
+function openGroupModal(colId) {
+  newGroupColId = colId;
+  document.getElementById('groupName').value = '';
+  openModal('groupModal');
+  setTimeout(() => document.getElementById('groupName')?.focus(), 100);
+}
+
+function saveGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  if (!name) { showToast('⚠️ Enter a group name'); return; }
+  if (!state.pendingGroups) state.pendingGroups = {};
+  if (!state.pendingGroups[newGroupColId]) state.pendingGroups[newGroupColId] = [];
+  if (state.pendingGroups[newGroupColId].includes(name)) {
+    showToast('⚠️ Group already exists'); return;
+  }
+  state.pendingGroups[newGroupColId].push(name);
+  save();
+  closeModal('groupModal');
   renderCards();
   showToast(`✓ Group "${name}" created`);
 }
@@ -2783,15 +882,7 @@ function filterByCollection(id, btn) {
 
   currentFilter = id;
   const titles = { all: 'All Videos', recent: 'Recently Added', watched: 'Watched' };
-  const playBtn = document.getElementById('playPlaylistBtn');
-  if (titles[id]) {
-    document.getElementById('sectionTitle').textContent = titles[id];
-    if (playBtn) playBtn.style.display = 'none';
-  } else {
-    const col = state.collections.find(c => c.id === id);
-    document.getElementById('sectionTitle').textContent = col ? col.name : 'Collection';
-    if (playBtn) playBtn.style.display = 'none';
-  }
+  document.getElementById('sectionTitle').textContent = titles[id] || (state.collections.find(c => c.id === id)?.name || 'Collection');
   renderCards();
 }
 
@@ -2821,6 +912,15 @@ async function quickAdd() {
   const colId = state.lastUsedCollection || '';
   const col = state.collections.find(c => c.id === colId);
   const group = state.lastUsedGroup || '';
+
+  const existing = state.videos.find(v => v.videoId === videoId);
+  if (existing) {
+    const existingCol = state.collections.find(c => c.id === existing.collection);
+    const location = existingCol ? (existing.group ? `${existingCol.name} / ${existing.group}` : existingCol.name) : (existing.group || 'Uncollected');
+    const title = existing.title || 'Untitled';
+    showConfirm('Duplicate Found', `"${title}" already exists in "${location}".`, 'OK', null);
+    return;
+  }
 
   addVideo({ url, videoId, playlistId, title: '', channel: '', note: '', collection: colId, group, added: Date.now(), watched: false, id: generateId() });
   input.value = '';
@@ -2916,26 +1016,21 @@ function startTitleEdit(id) {
   input.focus();
   input.select();
   let saved = false;
-  const save = () => {
+  const commitTitle = () => {
     if (saved) return;
     saved = true;
     const newTitle = input.value.trim();
     v.title = newTitle || v.title;
-    saveState();
+    save();
     titleEl.innerHTML = escHtml(v.title || 'Untitled Video');
     if (document.getElementById('pvTracks')) pvRenderList();
   };
-  input.addEventListener('blur', save);
+  input.addEventListener('blur', commitTitle);
   input.addEventListener('click', e => e.stopPropagation());
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); save(); input.blur(); }
+    if (e.key === 'Enter') { e.preventDefault(); commitTitle(); input.blur(); }
     if (e.key === 'Escape') { saved = true; titleEl.innerHTML = escHtml(v.title || 'Untitled Video'); }
   });
-}
-
-// save alias that doesn't conflict with the global save() name
-function saveState() {
-  localStorage.setItem('tholsstudio', JSON.stringify(state));
 }
 
 function toggleNote(id) {
@@ -3009,6 +1104,7 @@ function openAddModal() {
     colSel.value = '';
     groupSel.innerHTML = '<option value="">— No group —</option>';
   }
+  checkAddDuplicate();
   openModal('addModal');
 }
 
@@ -3019,6 +1115,71 @@ function previewUrl() {
     const titleInput = document.getElementById('addTitle');
     if (!titleInput.value) titleInput.placeholder = `YouTube video (${videoId})`;
   }
+}
+
+// Live validation for the Add Video modal — runs on every keystroke/change
+// of the URL, collection, and group fields. Turns the URL field's outline
+// green once it's a recognized YouTube link that isn't already saved, red
+// if the link can't be parsed or is a duplicate of an existing video, and
+// leaves it neutral while the field is empty. Also toggles the inline
+// "Duplicate" message and disables/reddens the Save button on duplicates.
+// Returns the matching existing video (or null) so saveVideo() can reuse it.
+function checkAddDuplicate() {
+  const urlInput = document.getElementById('addUrl');
+  const msgEl = document.getElementById('addUrlDuplicateMsg');
+  const btn = document.getElementById('saveVideoBtn');
+  if (!urlInput || !msgEl || !btn) return null;
+
+  const url = urlInput.value.trim();
+  const videoId = extractVideoId(url);
+
+  // Check against the WHOLE saved vault (all collections/groups), not just
+  // the collection/group currently selected in this modal — a video already
+  // saved anywhere counts as "already in the collections".
+  const existing = videoId
+    ? state.videos.find(v => v.videoId === videoId)
+    : null;
+
+  // Reset both states before deciding which (if any) applies
+  urlInput.classList.remove('field-invalid', 'field-valid');
+
+  if (!url) {
+    // Empty field — neutral, no message, Save enabled (native check catches empty on submit)
+    msgEl.style.display = 'none';
+    btn.disabled = false;
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+    return null;
+  }
+
+  if (existing) {
+    // Valid YouTube link, but already saved somewhere in the vault
+    const existingCol = state.collections.find(c => c.id === existing.collection);
+    const where = existingCol
+      ? (existing.group ? `${existingCol.name} / ${existing.group}` : existingCol.name)
+      : (existing.group || 'Uncollected');
+    msgEl.textContent = `Already saved — in "${where}"`;
+    msgEl.style.display = '';
+    urlInput.classList.add('field-invalid');
+    btn.disabled = true;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-danger');
+  } else if (!isYouTubeUrl(url) || !videoId) {
+    // Not a recognizable YouTube URL
+    msgEl.style.display = 'none';
+    urlInput.classList.add('field-invalid');
+    btn.disabled = false;
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+  } else {
+    // Valid YouTube URL, not a duplicate anywhere in the vault
+    msgEl.style.display = 'none';
+    urlInput.classList.add('field-valid');
+    btn.disabled = false;
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-primary');
+  }
+  return existing || null;
 }
 
 function saveVideo() {
@@ -3033,7 +1194,14 @@ function saveVideo() {
   const groupSel = document.getElementById('addGroup').value;
   const group = groupNew || groupSel;
 
-  // Register group as pending if new
+  // Safety net — the Save button is disabled while a duplicate is detected,
+  // but re-check here in case this was reached another way (e.g. Enter key).
+  if (checkAddDuplicate()) return;
+
+  doSaveVideo(url, videoId, playlistId, colId, group);
+}
+
+function doSaveVideo(url, videoId, playlistId, colId, group) {
   if (group && colId) {
     if (!state.pendingGroups) state.pendingGroups = {};
     if (!state.pendingGroups[colId]) state.pendingGroups[colId] = [];
@@ -3052,7 +1220,6 @@ function saveVideo() {
     watched: false,
   });
 
-  // Remember this collection + group so quick-add (and the location label) use it next time
   state.lastUsedCollection = colId;
   state.lastUsedGroup = group || '';
   save();
@@ -3242,13 +1409,27 @@ function deletePlaylist(id) {
   });
 }
 
+// Checks whether a playlist already contains a given video — matching not
+// just by internal video id, but also by the underlying YouTube videoId.
+// This catches the case where the same YouTube video exists as two separate
+// library entries (e.g. saved into two different collections) and prevents
+// it from being added to the same playlist twice under a different id.
+function isVideoInPlaylist(pl, v) {
+  if (!pl || !v) return false;
+  return pl.videoIds.some(id => {
+    if (id === v.id) return true;
+    const ev = state.videos.find(ev => ev.id === id);
+    return !!(ev && v.videoId && ev.videoId === v.videoId);
+  });
+}
+
 function addVideoToPlaylist(videoId, playlistId) {
   const pl = state.playlists.find(p => p.id === playlistId);
   if (!pl) return;
-  if (!pl.videoIds.includes(videoId)) {
+  const v = state.videos.find(v => v.id === videoId);
+  if (!isVideoInPlaylist(pl, v)) {
     pl.videoIds.push(videoId);
     save(); renderSidebar();
-    const v = state.videos.find(v => v.id === videoId);
     showToast(`✓ Added to "${pl.name}"`);
   } else {
     showToast(`Already in "${pl.name}"`);
@@ -3260,15 +1441,19 @@ function addVideoToPlaylist(videoId, playlistId) {
 function removeVideoFromPlaylist(videoId, playlistId) {
   const pl = state.playlists.find(p => p.id === playlistId);
   if (!pl) return;
-  pl.videoIds = pl.videoIds.filter(id => id !== videoId);
+  // Remove by internal id, and also any other entry sharing the same
+  // underlying YouTube video (covers legacy duplicate library entries).
+  const v = state.videos.find(v => v.id === videoId);
+  pl.videoIds = pl.videoIds.filter(id => {
+    if (id === videoId) return false;
+    if (v && v.videoId) {
+      const ev = state.videos.find(ev => ev.id === id);
+      if (ev && ev.videoId === v.videoId) return false;
+    }
+    return true;
+  });
   save(); renderSidebar(); renderCards();
   showToast(`✓ Removed from "${pl.name}"`);
-}
-
-function removeFromCurrentPlaylist(videoId) {
-  if (!currentFilter.startsWith('playlist:')) return;
-  const plId = currentFilter.slice(9);
-  removeVideoFromPlaylist(videoId, plId);
 }
 
 // Shows a playlist picker to add all videos in a GROUP to a chosen playlist
@@ -3293,8 +1478,8 @@ function openGroupPlaylistPicker(e, colId, groupName) {
   picker.innerHTML = `
     <div class="playlist-picker-title">Add "${escHtml(groupName)}" to playlist</div>
     ${state.playlists.map(pl => {
-      const allIn = groupVids.every(v => pl.videoIds.includes(v.id));
-      const someIn = !allIn && groupVids.some(v => pl.videoIds.includes(v.id));
+      const allIn = groupVids.every(v => isVideoInPlaylist(pl, v));
+      const someIn = !allIn && groupVids.some(v => isVideoInPlaylist(pl, v));
       const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${groupVids.length}`;
       const checkIcon = allIn
         ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>`
@@ -3324,7 +1509,7 @@ function addGroupToPlaylist(colId, groupName, playlistId) {
   const groupVids = state.videos.filter(v => v.collection === colId && v.group === groupName);
   let added = 0;
   groupVids.forEach(v => {
-    if (!pl.videoIds.includes(v.id)) { pl.videoIds.push(v.id); added++; }
+    if (!isVideoInPlaylist(pl, v)) { pl.videoIds.push(v.id); added++; }
   });
   save();
   renderSidebar();
@@ -3355,8 +1540,8 @@ function openCollectionPlaylistPicker(e, colId) {
   picker.innerHTML = `
     <div class="playlist-picker-title">Add "${escHtml(col?.name || colId)}" to playlist</div>
     ${state.playlists.map(pl => {
-      const allIn = colVideos.every(v => pl.videoIds.includes(v.id));
-      const someIn = !allIn && colVideos.some(v => pl.videoIds.includes(v.id));
+      const allIn = colVideos.every(v => isVideoInPlaylist(pl, v));
+      const someIn = !allIn && colVideos.some(v => isVideoInPlaylist(pl, v));
       const label = allIn ? 'All added' : someIn ? 'Add remaining' : `Add all ${colVideos.length}`;
       const checkIcon = allIn ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${allIn ? ' in-playlist' : ''}"
@@ -3385,7 +1570,7 @@ function addCollectionToPlaylist(colId, playlistId) {
   const colVideos = state.videos.filter(v => v.collection === colId);
   let added = 0;
   colVideos.forEach(v => {
-    if (!pl.videoIds.includes(v.id)) { pl.videoIds.push(v.id); added++; }
+    if (!isVideoInPlaylist(pl, v)) { pl.videoIds.push(v.id); added++; }
   });
   save();
   renderSidebar();
@@ -3411,7 +1596,7 @@ function openPlaylistPicker(videoId, anchorEl) {
   picker.innerHTML = `
     <div class="playlist-picker-title">Add to playlist</div>
     ${state.playlists.map(pl => {
-      const has = pl.videoIds.includes(videoId);
+      const has = isVideoInPlaylist(pl, v);
       const icon = has ? `<span class="pp-check"><svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm-1.5 14.5l-4-4 1.41-1.41L10.5 13.67l5.59-5.59L17.5 9.5l-7 7z"/></svg></span>` : `<span class="pp-check"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg></span>`;
       return `<button class="playlist-picker-item${has ? ' in-playlist' : ''}"
         onclick="event.stopPropagation();${has ? `removeVideoFromPlaylist('${videoId}','${pl.id}')` : `addVideoToPlaylist('${videoId}','${pl.id}')`};document.querySelectorAll('.playlist-picker').forEach(e=>e.remove())">
@@ -3459,9 +1644,66 @@ function toggleSidebarSection(sectionId, chevEl) {
   chevEl.classList.toggle('chev-down', isCollapsed);
 }
 
+function getAppName() {
+  return typeof APP_NAME !== 'undefined' ? APP_NAME : 'unknown';
+}
+
 // ──────────────────────────────────────────────
-// EXPORT FOLDER (File System Access API)
+// EXPORT FOLDER (File System Access API + IndexedDB persistence)
 // ──────────────────────────────────────────────
+const DB_NAME = 'TubeVaultExportFolders';
+const DB_VERSION = 1;
+const DB_STORE = 'folders';
+
+function openExportFolderDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => req.result.createObjectStore(DB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveExportFolderHandle(appName, handle) {
+  try {
+    const db = await openExportFolderDb();
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(handle, appName);
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn('Could not persist export folder handle:', e);
+  }
+}
+
+async function loadExportFolderHandle(appName) {
+  try {
+    const db = await openExportFolderDb();
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const store = tx.objectStore(DB_STORE);
+    const req = store.get(appName);
+    return new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearExportFolderHandle(appName) {
+  return openExportFolderDb().then(db => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(appName);
+    return new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }).catch(() => {});
+}
+
 let exportFolderHandle = null; // FileSystemDirectoryHandle when selected
 
 async function browseExportFolder() {
@@ -3472,6 +1714,7 @@ async function browseExportFolder() {
   try {
     const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
     exportFolderHandle = handle;
+    saveExportFolderHandle(getAppName(), handle);
     const wrap = document.getElementById('exportLocationWrap');
     const label = document.getElementById('exportLocationLabel');
     if (wrap) wrap.style.display = 'flex';
@@ -3484,9 +1727,32 @@ async function browseExportFolder() {
 
 function clearExportFolder() {
   exportFolderHandle = null;
+  clearExportFolderHandle(getAppName());
   const wrap = document.getElementById('exportLocationWrap');
   if (wrap) wrap.style.display = 'none';
   showToast('Export folder cleared — files will download normally');
+}
+
+async function restoreExportFolder() {
+  const appName = getAppName();
+  const handle = await loadExportFolderHandle(appName);
+  if (handle) {
+    try {
+      const opts = { mode: 'readwrite' };
+      const ok = await handle.queryPermission(opts) === 'granted' || await handle.requestPermission(opts) === 'granted';
+      if (ok) {
+        exportFolderHandle = handle;
+        const wrap = document.getElementById('exportLocationWrap');
+        const label = document.getElementById('exportLocationLabel');
+        if (wrap) wrap.style.display = 'flex';
+        if (label) label.textContent = handle.name;
+      } else {
+        clearExportFolderHandle(appName);
+      }
+    } catch (e) {
+      clearExportFolderHandle(appName);
+    }
+  }
 }
 
 // Write text content to the selected folder, or fall back to download
@@ -3515,18 +1781,45 @@ async function saveToFolderOrDownload(filename, text, mimeType) {
 // ──────────────────────────────────────────────
 // EXPORT
 // ──────────────────────────────────────────────
+let _exportCallback = null;
+
+function showExportConfirm(title, message, details, callback) {
+  document.getElementById('exportConfirmTitle').textContent = title;
+  document.getElementById('exportConfirmMessage').textContent = message;
+  const appName = getAppName();
+  const folderLine = exportFolderHandle
+    ? '\n\nTarget folder: ' + appName + '/'
+    : '\n\nTarget folder: Downloads (click Browse to set a folder)';
+  document.getElementById('exportConfirmDetails').textContent = details + folderLine;
+  _exportCallback = callback;
+  openModal('exportConfirmModal');
+}
+
+function confirmExport() {
+  const cb = _exportCallback;
+  closeModal('exportConfirmModal');
+  if (cb) { cb(); }
+}
+
 function exportData() {
-  const data = JSON.stringify(state, null, 2);
-  saveToFolderOrDownload('tubevault-export.json', data, 'application/json').then(saved => {
-    showToast(saved ? '✓ Saved tubevault-export.json to folder' : '✓ Exported as JSON');
-  });
   closeExportMenu();
+  showExportConfirm(
+    'Export JSON',
+    'Export all your data as a JSON file.',
+    'File: tubevault-export.json',
+    () => {
+      const data = JSON.stringify(state, null, 2);
+      saveToFolderOrDownload('tubevault-export.json', data, 'application/json').then(saved => {
+        showToast(saved ? '✓ Saved tubevault-export.json to folder' : '✓ Exported as JSON');
+      });
+    }
+  );
 }
 
 // Exports the current collections + videos as a ready-to-paste
 // collections.js file, nested as collection -> groups -> videos
 // (matching the structure of the bundled collections.js).
-function exportCollectionsJs() {
+function buildCollectionsJsExport() {
   const colorsBlock = `const COLLECTION_COLORS = [\n` +
     chunk(COLLECTION_COLORS, 4).map(row => `  ${row.map(c => jsStr(c)).join(', ')}`).join(',\n') +
     `\n];`;
@@ -3621,6 +1914,8 @@ function exportCollectionsJs() {
 
   const collectionsBlock = `const DEFAULT_COLLECTIONS = [\n${collectionBlocks.join(',\n')}\n];`;
 
+  const fileName = getAppName() + '-collections.js';
+
   const fileContents =
 `// ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
@@ -3633,7 +1928,7 @@ function exportCollectionsJs() {
 //          └─ ungrouped: [ ...videos ]   (videos with no sub-group)
 //
 // To apply this snapshot:
-//   1. Replace your existing collections.js with this file
+//   1. Replace your existing ${fileName} with this file
 //   2. Clear the app's localStorage (or open in a private window)
 //      so the new defaults are picked up on next load
 // ──────────────────────────────────────────────────────────────
@@ -3656,10 +1951,47 @@ ${colorsBlock}
 ${collectionsBlock}
 `;
 
-  saveToFolderOrDownload('collections.js', fileContents, 'text/javascript').then(saved => {
-    showToast(saved ? '✓ Saved collections.js to folder' : '✓ Exported as collections.js');
+  // Build per-collection group details
+  const colDetails = state.collections.map(col => {
+    const colVideos = state.videos.filter(v => v.collection === col.id);
+    const groups = {};
+    let ungroupedCount = 0;
+    colVideos.forEach(v => {
+      if (v.group) {
+        groups[v.group] = (groups[v.group] || 0) + 1;
+      } else {
+        ungroupedCount++;
+      }
+    });
+    const groupLines = Object.entries(groups)
+      .sort((a, b) => b[1] - a[1])
+      .map(([g, c]) => `  ${g}: ${c}`)
+      .join('\n');
+    let detail = `${col.name} (${colVideos.length} videos)`;
+    if (groupLines) detail += '\n' + groupLines;
+    if (ungroupedCount) detail += `\n  Ungrouped: ${ungroupedCount}`;
+    return detail;
+  }).join('\n\n');
+
+  return { fileName, fileContents, details: colDetails };
+}
+
+function doExportCollectionsJs() {
+  const { fileName, fileContents } = buildCollectionsJsExport();
+  saveToFolderOrDownload(fileName, fileContents, 'text/javascript').then(saved => {
+    showToast(saved ? ('✓ Saved ' + fileName + ' to folder') : ('✓ Exported as ' + fileName));
   });
+}
+
+function exportCollectionsJs() {
   closeExportMenu();
+  const { fileName, details } = buildCollectionsJsExport();
+  showExportConfirm(
+    'Export Collections',
+    'Export your collections and videos as a JavaScript file.',
+    'File: ' + fileName + '\nContains: ' + state.collections.length + ' collection(s), ' + state.videos.length + ' video(s)' + (details ? '\n\n' + details : ''),
+    () => doExportCollectionsJs()
+  );
 }
 
 // Splits an array into chunks of a given size (used for formatting COLLECTION_COLORS)
@@ -3674,7 +2006,7 @@ function jsStr(str) {
   return "'" + String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n') + "'";
 }
 
-function exportWatchedJs() {
+function buildWatchedJsExport() {
   // Collect unique YouTube videoIds of all watched videos
   const watchedVideoIds = [...new Set(
     state.videos.filter(v => v.watched && v.videoId).map(v => v.videoId)
@@ -3695,6 +2027,7 @@ function exportWatchedJs() {
 
   const SEP = '// ' + '-'.repeat(62);
   const ts = new Date().toLocaleString();
+  const fileName = getAppName() + '-watched.js';
 
   const fileContents = [
     SEP,
@@ -3702,7 +2035,7 @@ function exportWatchedJs() {
     '// Exported from TubeVault on ' + ts,
     '//',
     '// WATCHED_VIDEO_IDS: YouTube video IDs marked as watched.',
-    '// To restore: replace watched.js with this file and clear localStorage.',
+    '// To restore: replace ' + fileName + ' with this file and clear localStorage.',
     SEP,
     '',
     'const WATCHED_VIDEO_IDS = [',
@@ -3711,15 +2044,30 @@ function exportWatchedJs() {
   '];\n';
 
   const n = watchedVideoIds.length;
-  saveToFolderOrDownload('watched.js', fileContents, 'text/javascript').then(saved => {
-    const dest = saved ? 'to folder' : 'as watched.js';
-    if (n === 0) showToast('\u26a0\ufe0f No watched videos — exported empty watched.js');
-    else showToast('\u2713 Saved ' + n + ' watched video' + (n !== 1 ? 's' : '') + ' ' + dest);
-  });
-  closeExportMenu();
+  return { fileName, fileContents, n: n };
 }
 
-function exportPlaylistJs() {
+function doExportWatchedJs() {
+  const exp = buildWatchedJsExport();
+  saveToFolderOrDownload(exp.fileName, exp.fileContents, 'text/javascript').then(saved => {
+    const dest = saved ? ('to folder') : ('as ' + exp.fileName);
+    if (exp.n === 0) showToast('\u26a0\ufe0f No watched videos — exported empty ' + exp.fileName);
+    else showToast('\u2713 Saved ' + exp.n + ' watched video' + (exp.n !== 1 ? 's' : '') + ' ' + dest);
+  });
+}
+
+function exportWatchedJs() {
+  closeExportMenu();
+  const exp = buildWatchedJsExport();
+  showExportConfirm(
+    'Export Watched',
+    'Export your watched video history as a JavaScript file.',
+    'File: ' + exp.fileName + '\nContains: ' + exp.n + ' watched video(s)',
+    () => doExportWatchedJs()
+  );
+}
+
+function buildPlaylistJsExport() {
   const SEP = '// ' + '-'.repeat(62);
 
   const blocks = state.playlists.map(function(pl) {
@@ -3752,13 +2100,15 @@ function exportPlaylistJs() {
     );
   });
 
+  const fileName = getAppName() + '-playlist.js';
+
   const header = [
     SEP,
     '// PLAYLIST CONFIG',
     '// Exported from TubeVault on ' + new Date().toLocaleString(),
     '//',
     '// Each playlist: id, name, color, videoIds, videos (full details)',
-    '// To apply as defaults: replace playlist.js and clear localStorage.',
+    '// To apply as defaults: replace ' + fileName + ' and clear localStorage.',
     SEP,
     '',
     'const DEFAULT_PLAYLISTS = ['
@@ -3766,21 +2116,51 @@ function exportPlaylistJs() {
 
   const fileContents = header + '\n' + blocks.join(',\n') + '\n];\n';
   const n = state.playlists.length;
-  saveToFolderOrDownload('playlist.js', fileContents, 'text/javascript').then(saved => {
-    showToast('\u2713 ' + (saved ? 'Saved' : 'Exported') + ' ' + n + ' playlist' + (n !== 1 ? 's' : '') + ' ' + (saved ? 'to folder' : 'as playlist.js'));
+  const totalVideos = state.playlists.reduce((sum, pl) => sum + pl.videoIds.length, 0);
+  const playlistDetails = state.playlists.map(pl => '• ' + pl.name + ' (' + pl.videoIds.length + ' videos)').join('\n');
+  return { fileName, fileContents, details: playlistDetails, n: n, totalVideos: totalVideos };
+}
+
+function doExportPlaylistJs() {
+  const exp = buildPlaylistJsExport();
+  saveToFolderOrDownload(exp.fileName, exp.fileContents, 'text/javascript').then(saved => {
+    showToast('\u2713 ' + (saved ? 'Saved' : 'Exported') + ' ' + exp.n + ' playlist' + (exp.n !== 1 ? 's' : '') + ' ' + (saved ? 'to folder' : ('as ' + exp.fileName)));
   });
+}
+
+function exportPlaylistJs() {
   closeExportMenu();
+  const exp = buildPlaylistJsExport();
+  showExportConfirm(
+    'Export Playlists',
+    'Export your playlists as a JavaScript file.',
+    'File: ' + exp.fileName + '\n\nPlaylists: ' + exp.n + '\nTotal videos: ' + exp.totalVideos + '\n\n' + exp.details,
+    () => doExportPlaylistJs()
+  );
 }
 
 function exportAllJs() {
   closeExportMenu();
-  exportCollectionsJs();
-  setTimeout(function() { exportPlaylistJs(); }, 300);
-  setTimeout(function() { exportWatchedJs(); }, 600);
-  setTimeout(function() {
-    const dest = exportFolderHandle ? 'to folder' : 'as downloads';
-    showToast('\u2713 Exported collections.js, playlist.js & watched.js ' + dest);
-  }, 700);
+  const appName = getAppName();
+  const names = {
+    collections: appName + '-collections.js',
+    playlist: appName + '-playlist.js',
+    watched: appName + '-watched.js',
+  };
+  showExportConfirm(
+    'Export All JS Files',
+    'Export all configuration files as JavaScript.',
+    'Files: ' + names.collections + ', ' + names.playlist + ', ' + names.watched,
+    () => {
+      doExportCollectionsJs();
+      setTimeout(doExportPlaylistJs, 300);
+      setTimeout(doExportWatchedJs, 600);
+      setTimeout(function() {
+        const dest = exportFolderHandle ? 'to folder' : 'as downloads';
+        showToast('\u2713 Exported ' + names.collections + ', ' + names.playlist + ' & ' + names.watched + ' ' + dest);
+      }, 700);
+    }
+  );
 }
 
 // ──────────────────────────────────────────────
@@ -3867,16 +2247,6 @@ function selectLocation(colId, group) {
   state.lastUsedGroup = group;
   save();
   renderQuickAddLocation();
-  const picker = document.getElementById('locationPicker');
-  if (picker) picker.style.display = 'none';
-}
-
-
-function selectLocation(colId, group) {
-  state.lastUsedCollection = colId;
-  state.lastUsedGroup = group;
-  save();
-  renderQuickAddLocation();
   // Close picker
   const picker = document.getElementById('locationPicker');
   if (picker) picker.style.display = 'none';
@@ -3885,18 +2255,6 @@ function selectLocation(colId, group) {
 // ──────────────────────────────────────────────
 // EXPORT ALL JS
 // ──────────────────────────────────────────────
-function exportAllJs() {
-  closeExportMenu();
-  // Fire all three JS exports in sequence with small delays
-  // so browsers don't block multiple simultaneous downloads
-  exportCollectionsJs();
-  setTimeout(function() { exportPlaylistJs(); }, 300);
-  setTimeout(function() { exportWatchedJs(); }, 600);
-  // Short delay then toast
-  setTimeout(function() {
-    showToast('✓ Exported collections.js, playlist.js & watched.js');
-  }, 700);
-}
 
 function toggleExportMenu() {
   const menu = document.getElementById('exportMenu');
@@ -3928,8 +2286,9 @@ function showConfirm(title, message, okLabel, callback) {
 }
 
 function confirmOk() {
+  const cb = _confirmCallback;
   closeConfirmModal();
-  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+  if (cb) { cb(); }
 }
 
 function closeConfirmModal() {
@@ -3974,7 +2333,6 @@ function seedData() {
   if (state.videos.length === 0) {
     let baseTime = Date.now();
     DEFAULT_COLLECTIONS.forEach(col => {
-      // Videos inside named groups
       Object.entries(col.groups || {}).forEach(([groupName, videos]) => {
         videos.forEach(v => {
           state.videos.push({
@@ -3987,7 +2345,6 @@ function seedData() {
           });
         });
       });
-      // Videos directly in the collection (no sub-group)
       (col.ungrouped || []).forEach(v => {
         state.videos.push({
           id: generateId(),
@@ -3999,7 +2356,6 @@ function seedData() {
         });
       });
     });
-    // Apply watched history from watched.js
     if (typeof WATCHED_VIDEO_IDS !== 'undefined' && WATCHED_VIDEO_IDS.length) {
       state.videos.forEach(v => {
         if (WATCHED_VIDEO_IDS.includes(v.videoId)) {
@@ -4008,8 +2364,38 @@ function seedData() {
         }
       });
     }
+    remapPlaylistIds();
     save();
   }
+}
+
+function remapPlaylistIds() {
+  const ytIdMap = {};
+  state.videos.forEach(v => { if (v.videoId) ytIdMap[v.videoId] = v.id; });
+  state.playlists.forEach(pl => {
+    const def = (typeof DEFAULT_PLAYLISTS !== 'undefined') && DEFAULT_PLAYLISTS.find(p => p.id === pl.id);
+    if (def && def.videos && def.videos.length) {
+      // De-dupe in case the source playlist file lists the same video twice
+      const mapped = [...new Set(def.videos.map(dv => ytIdMap[dv.videoId]).filter(Boolean))];
+      if (mapped.length) { pl.videoIds = mapped; return; }
+    }
+    const valid = pl.videoIds.filter(id => state.videos.find(v => v.id === id));
+    if (!valid.length && pl.videoIds.length) {
+      const byYt = state.videos.filter(v => v.videoId && pl.videoIds.includes(v.videoId));
+      if (byYt.length) pl.videoIds = [...new Set(byYt.map(v => v.id))];
+    }
+    // Final safety net — de-dupe by internal id, and also by the underlying
+    // YouTube video id (covers legacy duplicate library entries that share
+    // the same YouTube video under two different internal ids)
+    const seenYt = new Set();
+    pl.videoIds = pl.videoIds.filter(id => {
+      const v = state.videos.find(v => v.id === id);
+      const key = v && v.videoId ? v.videoId : id;
+      if (seenYt.has(key)) return false;
+      seenYt.add(key);
+      return true;
+    });
+  });
 }
 
 // ──────────────────────────────────────────────
@@ -4068,56 +2454,104 @@ function seedData() {
 })();
 
 // ──────────────────────────────────────────────
+// SHARED DRAG-TO-REORDER HELPER
+// Replaces four near-identical drag-and-drop implementations (collection
+// sidebar, playlist sidebar, in-group video cards, and playlist split-view
+// tracks). Behaviour is preserved: top/bottom drop indicators, `was-dragging`
+// click suppression, and "drop on empty space" via onDropToEnd.
+// ──────────────────────────────────────────────
+function makeSortable(container, itemSelector, opts) {
+  opts = opts || {};
+  const dragClass = opts.dragClass || 'sortable-dragging';
+  const overTopClass = opts.overTopClass || 'sortable-over-top';
+  const overBottomClass = opts.overBottomClass || 'sortable-over-bottom';
+  const wasDraggingClass = opts.wasDraggingClass || null;
+  let srcEl = null;
+
+  function clearIndicators() {
+    container.querySelectorAll('.' + overTopClass + ', .' + overBottomClass)
+      .forEach(el => el.classList.remove(overTopClass, overBottomClass));
+  }
+
+  function items() {
+    return Array.from(container.querySelectorAll(itemSelector));
+  }
+
+  items().forEach(item => {
+    item.draggable = true;
+
+    item.addEventListener('dragstart', (e) => {
+      srcEl = item;
+      item.classList.add(dragClass);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'sortable-drag');
+      // Defer the opacity drop so the browser snapshots a clean drag ghost
+      setTimeout(() => item.classList.add(dragClass), 0);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove(dragClass);
+      if (wasDraggingClass) item.classList.add(wasDraggingClass);
+      clearIndicators();
+      srcEl = null;
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!srcEl || srcEl === item) return;
+      clearIndicators();
+      const rect = item.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      item.classList.add(e.clientY < midY ? overTopClass : overBottomClass);
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove(overTopClass, overBottomClass);
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (opts.stopPropagation) e.stopPropagation();
+      clearIndicators();
+      if (!srcEl || srcEl === item) return;
+      const rect = item.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'top' : 'bottom';
+      const dragged = srcEl;
+      srcEl = null;
+      if (opts.onDrop) opts.onDrop(dragged, item, position);
+    });
+  });
+
+  container.addEventListener('dragover', (e) => e.preventDefault());
+  container.addEventListener('drop', (e) => {
+    if (!srcEl) return;
+    const dragged = srcEl;
+    srcEl = null;
+    clearIndicators();
+    if (opts.onDropToEnd) opts.onDropToEnd(dragged);
+  });
+}
+
+// ──────────────────────────────────────────────
 // CARD DRAG-AND-DROP (item reorder within group)
 // ──────────────────────────────────────────────
 function attachCardDrag() {
   document.querySelectorAll('.cards-grid').forEach(grid => {
-    const cards = Array.from(grid.querySelectorAll(':scope > .video-card'));
-    if (cards.length < 2) return;
-
-    cards.forEach(card => {
-      card.draggable = true;
-
-      card.addEventListener('dragstart', (e) => {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', card.id);
-        setTimeout(() => card.classList.add('card-dragging'), 0);
-      });
-
-      card.addEventListener('dragend', () => {
-        card.classList.remove('card-dragging');
-        grid.querySelectorAll('.card-drag-over').forEach(el => el.classList.remove('card-drag-over'));
-      });
-
-      card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        grid.querySelectorAll('.card-drag-over').forEach(el => el.classList.remove('card-drag-over'));
-        card.classList.add('card-drag-over');
-      });
-
-      card.addEventListener('dragleave', (e) => {
-        if (!card.contains(e.relatedTarget)) card.classList.remove('card-drag-over');
-      });
-
-      card.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        card.classList.remove('card-drag-over');
-        const srcId = e.dataTransfer.getData('text/plain');
-        if (srcId === card.id) return;
-        const srcCard = document.getElementById(srcId);
-        if (!srcCard || srcCard.closest('.cards-grid') !== grid) return;
-
-        // Reorder in DOM
-        const allCards = Array.from(grid.querySelectorAll(':scope > .video-card'));
-        const srcIdx = allCards.indexOf(srcCard);
-        const tgtIdx = allCards.indexOf(card);
-        if (srcIdx < tgtIdx) grid.insertBefore(srcCard, card.nextSibling);
-        else grid.insertBefore(srcCard, card);
-
+    makeSortable(grid, ':scope > .video-card', {
+      dragClass: 'card-dragging',
+      overTopClass: 'card-drag-over',
+      overBottomClass: 'card-drag-over',
+      stopPropagation: true,
+      onDrop: (srcEl, targetEl, position) => {
+        if (position === 'bottom') {
+          grid.insertBefore(srcEl, targetEl.nextSibling);
+        } else {
+          grid.insertBefore(srcEl, targetEl);
+        }
         saveCardOrder(grid);
-      });
+      }
     });
   });
 }
@@ -4147,6 +2581,16 @@ let pvState = {
   autoplay: true,     // auto-advance to next video when current ends
 };
 
+// Search query typed into the playlist split-view search bar — filters
+// which tracks are shown in the left panel (playback order is untouched).
+let pvSearchQuery = '';
+
+function pvHandleSearch() {
+  const input = document.getElementById('pvSearchInput');
+  pvSearchQuery = input ? input.value.trim().toLowerCase() : '';
+  pvRenderList();
+}
+
 // YouTube IFrame API player instance
 let ytPlayer = null;
 let ytReady = false;
@@ -4164,6 +2608,11 @@ function openPlaylistView(plId) {
   pvState.mode = pvState.mode || 'sequential';
   pvBuildOrder(pl);
   pvState.index = 0;
+
+  // Reset search bar for this playlist session
+  pvSearchQuery = '';
+  const pvSearchInput = document.getElementById('pvSearchInput');
+  if (pvSearchInput) pvSearchInput.value = '';
 
   // Show split view, hide main + sidebar
   document.getElementById('playlistView').style.display = 'flex';
@@ -4201,16 +2650,39 @@ function pvRenderList() {
   document.getElementById('pvSeqBtn').classList.toggle('active', pvState.mode === 'sequential');
   document.getElementById('pvRndBtn').classList.toggle('active', pvState.mode === 'random');
 
-  // Track list
+  // Track list — filtered by the playlist search bar (if any query is set).
+  // Filtering only affects which rows are shown; pvState.order / playback
+  // indices are untouched so drag-reorder and pvPlayIndex(i) stay correct.
   const tracks = document.getElementById('pvTracks');
-  tracks.innerHTML = pvState.order.map((vidId, i) => {
+  const q = pvSearchQuery;
+  const rows = pvState.order.map((vidId, i) => {
     const v = state.videos.find(v => v.id === vidId);
     if (!v) return '';
+    if (q) {
+      const haystack = `${v.title || ''} ${v.channel || ''} ${v.note || ''}`.toLowerCase();
+      if (!haystack.includes(q)) return '';
+    }
     const col = state.collections.find(c => c.id === v.collection);
     const path = col ? (v.group ? `${col.name} / ${v.group}` : col.name) : (v.group || '');
     const thumb = `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
     const isActive = i === pvState.index;
-    return `<div class="pv-track${isActive ? ' active' : ''}" onclick="pvPlayIndex(${i})" id="pvt-${i}">
+    return `<div class="pv-track${isActive ? ' active' : ''}" onclick="pvTrackClick(event, ${i})" id="pvt-${i}" draggable="true" data-pv-index="${i}">
+      <span class="pv-track-drag-handle" title="Drag to reorder">
+        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+          <rect x="0" y="0" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="4" y="0" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="8" y="0" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="0" y="4" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="4" y="4" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="8" y="4" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="0" y="8" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="4" y="8" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="8" y="8" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="0" y="12" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="4" y="12" width="1.5" height="1.5" rx="0.5"/>
+          <rect x="8" y="12" width="1.5" height="1.5" rx="0.5"/>
+        </svg>
+      </span>
       <span class="pv-track-num">${i + 1}</span>
       <span class="pv-track-play-icon">
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -4221,7 +2693,98 @@ function pvRenderList() {
         ${path ? `<div class="pv-track-path">${escHtml(path)}</div>` : ''}
       </div>
     </div>`;
-  }).join('');
+  });
+
+  const visibleRows = rows.filter(Boolean);
+  tracks.innerHTML = visibleRows.length
+    ? visibleRows.join('')
+    : (q ? `<div class="pv-search-empty">No tracks match "${escHtml(pvSearchQuery)}"</div>` : '');
+
+  pvAttachTrackDrag();
+}
+
+function pvTrackClick(event, i) {
+  const track = event.currentTarget;
+  if (track.classList.contains('was-dragging')) {
+    track.classList.remove('was-dragging');
+    return;
+  }
+  pvPlayIndex(i);
+}
+
+function pvAttachTrackDrag() {
+  const tracks = document.getElementById('pvTracks');
+  if (!tracks) return;
+
+  makeSortable(tracks, '.pv-track', {
+    dragClass: 'pv-track-dragging',
+    overTopClass: 'pv-track-drag-over-top',
+    overBottomClass: 'pv-track-drag-over-bottom',
+    wasDraggingClass: 'was-dragging',
+    stopPropagation: true,
+    onDrop: (srcEl, targetEl, position) => {
+      const srcIndex = parseInt(srcEl.dataset.pvIndex);
+      const targetIndex = parseInt(targetEl.dataset.pvIndex);
+      let insertAt = position === 'top' ? targetIndex : targetIndex + 1;
+      const moved = pvState.order.splice(srcIndex, 1)[0];
+      if (insertAt > srcIndex) insertAt--;
+
+      pvState.order.splice(insertAt, 0, moved);
+
+      const oldPlaying = pvState.index;
+      if (srcIndex === oldPlaying) {
+        pvState.index = insertAt;
+      } else if (srcIndex < oldPlaying && insertAt >= oldPlaying) {
+        pvState.index--;
+      } else if (srcIndex > oldPlaying && insertAt <= oldPlaying) {
+        pvState.index++;
+      }
+
+      pvSaveOrderToPlaylist();
+      pvRenderList();
+      showToast('✓ Playlist order saved');
+    },
+    onDropToEnd: (srcEl) => {
+      const srcIndex = parseInt(srcEl.dataset.pvIndex);
+      const moved = pvState.order.splice(srcIndex, 1)[0];
+      pvState.order.push(moved);
+      const oldPlaying = pvState.index;
+      if (srcIndex === oldPlaying) pvState.index = pvState.order.length - 1;
+      else if (srcIndex < oldPlaying) pvState.index--;
+      pvSaveOrderToPlaylist();
+      pvRenderList();
+      showToast('✓ Playlist order saved');
+    }
+  });
+}
+
+
+function pvSaveOrderToPlaylist() {
+  const pl = state.playlists.find(p => p.id === pvState.plId);
+  if (!pl) return;
+  pl.videoIds = [...pvState.order];
+  save();
+
+  const defPl = (typeof DEFAULT_PLAYLISTS !== 'undefined') && DEFAULT_PLAYLISTS.find(p => p.id === pl.id);
+  if (defPl) {
+    defPl.videoIds = [...pvState.order];
+    const orderedVideos = pvState.order.map(id => {
+      const v = state.videos.find(v => v.id === id);
+      if (!v) return null;
+      const col = state.collections.find(c => c.id === v.collection);
+      const path = col ? (v.group ? col.name + ' / ' + v.group : col.name) : '';
+      return {
+        url: v.url || '',
+        videoId: v.videoId || '',
+        ...(v.playlistId ? { playlistId: v.playlistId } : {}),
+        title: v.title || '',
+        channel: v.channel || '',
+        ...(path ? { collectionPath: path } : {}),
+        note: v.note || '',
+      };
+    }).filter(Boolean);
+    defPl.videos = orderedVideos;
+  }
 }
 
 function pvPlayIndex(i) {
@@ -4233,36 +2796,61 @@ function pvPlayIndex(i) {
   markWatched(v.id);
 
   const container = document.getElementById('pvIframeContainer');
+
   if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
-    ytPlayer.loadVideoById(v.videoId);
+    try {
+      ytPlayer.loadVideoById(v.videoId);
+    } catch(e) {
+      ytPlayer = null;
+      pvPlayIndex(i);
+      return;
+    }
+  } else if (ytReady && window.YT && window.YT.Player) {
+    if (container) container.innerHTML = '<div id="ytPlayerEl" style="width:100%;height:100%;"></div>';
+    ytPlayer = new window.YT.Player('ytPlayerEl', {
+      width: '100%',
+      height: '100%',
+      videoId: v.videoId,
+      playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+      events: {
+        onReady: function() {
+          try { ytPlayer.playVideo(); } catch(e) {}
+        },
+        onStateChange: onYtPlayerStateChange,
+      }
+    });
   } else {
-    // Create or recreate the player
-    if (container) container.innerHTML = '<div id="ytPlayerEl"></div>';
-    if (window.YT && window.YT.Player) {
-      ytPlayer = new window.YT.Player('ytPlayerEl', {
-        width: '100%',
-        height: '100%',
-        videoId: v.videoId,
-        playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
-        events: {
-          onStateChange: onYtPlayerStateChange,
+    if (container) container.innerHTML =
+      `<iframe src="https://www.youtube.com/embed/${v.videoId}?autoplay=1&rel=0&enablejsapi=1"
+       style="width:100%;height:100%;border:none;position:absolute;inset:0;" allowfullscreen
+       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    if (!ytReady) {
+      const checkInterval = setInterval(() => {
+        if (ytReady && window.YT && window.YT.Player) {
+          clearInterval(checkInterval);
+          if (container) container.innerHTML = '<div id="ytPlayerEl" style="width:100%;height:100%;"></div>';
+          ytPlayer = new window.YT.Player('ytPlayerEl', {
+            width: '100%',
+            height: '100%',
+            videoId: v.videoId,
+            playerVars: { autoplay: 1, rel: 0, modestbranding: 1 },
+            events: {
+              onReady: function() {
+                try { ytPlayer.playVideo(); } catch(e) {}
+              },
+              onStateChange: onYtPlayerStateChange,
+            }
+          });
         }
-      });
-    } else {
-      // YT API not loaded yet — fallback to iframe
-      if (container) container.innerHTML =
-        `<iframe src="https://www.youtube.com/embed/${v.videoId}?autoplay=1&rel=0&enablejsapi=1"
-         style="width:100%;height:100%;border:none;" allowfullscreen
-         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+      }, 500);
+      setTimeout(() => clearInterval(checkInterval), 15000);
     }
   }
 
-  // Update active track highlight
   document.querySelectorAll('.pv-track').forEach((el, idx) => {
     el.classList.toggle('active', idx === i);
   });
 
-  // Scroll active track into view
   const activeTrack = document.getElementById('pvt-' + i);
   if (activeTrack) activeTrack.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -4317,141 +2905,292 @@ function closePvView(restoreAll) {
   ) || document.querySelectorAll('.sidebar-item')[0];
   if (allBtn) allBtn.classList.add('active');
   document.getElementById('sectionTitle').textContent = 'All Videos';
-  const playBtn = document.getElementById('playPlaylistBtn');
-  if (playBtn) playBtn.style.display = 'none';
   renderCards();
 }
 
+
 // ──────────────────────────────────────────────
-// PLAYLIST PLAYER
-let playlistPlayer = {
-  active: false,
-  plId: null,
-  order: [],    // array of video IDs in play order
-  index: 0,     // current position in order
-  mode: 'sequential', // 'sequential' | 'random'
-};
+// CATEGORY SWITCHER (sidebar-bottom text menu)
+// Replaces the old topbar kebab/dot app-switcher. Lists every known
+// "category" (a category = its own TholsStudio page, e.g. Music,
+// Electronics, Astrology) plus a "Create category…" action that
+// generates a brand-new category page.
+//
+// The registry lives in a SHARED (non-namespaced) localStorage key so
+// every category page — old and new — sees the same list, as long as
+// they're served from the same origin.
+// ──────────────────────────────────────────────
+const APPS_REGISTRY_KEY = 'tholsstudio_categories';
 
-function startPlaylistPlayer() {
-  if (!currentFilter.startsWith('playlist:')) return;
-  const plId = currentFilter.slice(9);
-  const pl = state.playlists.find(p => p.id === plId);
-  if (!pl || !pl.videoIds.length) { showToast('⚠️ Playlist is empty'); return; }
+// The three categories that ship with the project. Custom ones created
+// via "Create category…" are layered on top of this list.
+const BUILTIN_APPS = [
+  { id: 'music',       name: 'Music',       color: '#EC407A', file: 'music.html' },
+  { id: 'electronics', name: 'Electronics', color: '#29B6F6', file: 'electronics.html' },
+  { id: 'astrology',   name: 'Astrology',   color: '#AB47BC', file: 'astrology.html' },
+];
 
-  playlistPlayer.plId = plId;
-  playlistPlayer.active = true;
-  playlistPlayer.mode = playlistPlayer.mode || 'sequential';
-  buildPlayOrder(pl);
-  playlistPlayer.index = 0;
-  updatePlayerBar();
-  openCurrentPlaylistVideo();
+function getAppsRegistry() {
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
+  const map = new Map();
+  BUILTIN_APPS.forEach(a => map.set(a.id, a));
+  custom.forEach(a => map.set(a.id, a)); // custom entries win on id collision
+  return [...map.values()];
 }
 
-function buildPlayOrder(pl) {
-  const ids = [...pl.videoIds];
-  if (playlistPlayer.mode === 'random') {
-    // Fisher-Yates shuffle
-    for (let i = ids.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ids[i], ids[j]] = [ids[j], ids[i]];
+function saveCustomApp(app) {
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
+  custom.push(app);
+  localStorage.setItem(APPS_REGISTRY_KEY, JSON.stringify(custom));
+}
+
+function renderCategorySwitcher() {
+  const wrap = document.getElementById('categorySwitcher');
+  if (!wrap) return;
+
+  const apps = getAppsRegistry();
+  const myId = getAppName();
+  const current = apps.find(a => a.id === myId) || { name: APP_LABEL || 'Category', color: APP_COLOR || 'var(--indigo)' };
+
+  wrap.innerHTML = `
+    <button class="category-toggle-btn" id="categoryToggleBtn" onclick="toggleCategoryMenu()">
+      <span class="category-toggle-dot" style="background:${current.color}"></span>
+      <span class="category-toggle-label">${escHtml(current.name)}</span>
+      <svg class="category-toggle-chev" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+    <div class="category-menu" id="categoryMenu">
+      ${apps.map(a => `
+        <a class="category-menu-item${a.id === myId ? ' active' : ''}" href="${escAttr(a.file)}">
+          <span class="category-menu-dot" style="background:${a.color}"></span>${escHtml(a.name)}
+        </a>`).join('')}
+      <div class="category-menu-divider"></div>
+      <button class="category-menu-item category-menu-create" onclick="openCreateCategoryModal()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create category…
+      </button>
+    </div>
+  `;
+}
+
+function toggleCategoryMenu() {
+  const menu = document.getElementById('categoryMenu');
+  const btn = document.getElementById('categoryToggleBtn');
+  if (!menu) return;
+  const isOpen = menu.classList.toggle('open');
+  btn?.classList.toggle('menu-open', isOpen);
+  if (isOpen) {
+    setTimeout(() => {
+      const close = (e) => {
+        const wrap = document.getElementById('categorySwitcher');
+        if (wrap && !wrap.contains(e.target)) {
+          menu.classList.remove('open');
+          btn?.classList.remove('menu-open');
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 0);
+  }
+}
+
+// ── Create category ──
+function openCreateCategoryModal() {
+  document.getElementById('categoryMenu')?.classList.remove('open');
+  document.getElementById('categoryToggleBtn')?.classList.remove('menu-open');
+  const input = document.getElementById('newCategoryName');
+  if (input) input.value = '';
+  state.selectedCategoryColor = COLLECTION_COLORS[Math.floor(Math.random() * COLLECTION_COLORS.length)];
+  renderCategoryColorPicker();
+  openModal('createCategoryModal');
+  setTimeout(() => input?.focus(), 100);
+}
+
+function renderCategoryColorPicker() {
+  const cp = document.getElementById('categoryColorPicker');
+  if (!cp) return;
+  cp.innerHTML = COLLECTION_COLORS.map(c => `
+    <div class="color-chip ${c === state.selectedCategoryColor ? 'selected' : ''}"
+      style="background:${c}"
+      onclick="selectCategoryColor('${c}')"></div>
+  `).join('');
+}
+
+function selectCategoryColor(c) {
+  state.selectedCategoryColor = c;
+  renderCategoryColorPicker();
+}
+
+function slugifyAppName(name) {
+  let base = name.trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (!base) base = 'category';
+  let id = base, n = 2;
+  const existingIds = getAppsRegistry().map(a => a.id);
+  while (existingIds.includes(id)) { id = `${base}-${n}`; n++; }
+  return id;
+}
+
+function downloadTextFile(filename, text, mimeType) {
+  const blob = new Blob([text], { type: mimeType });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function createCategory() {
+  const nameInput = document.getElementById('newCategoryName');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) { showToast('⚠️ Enter a category name'); return; }
+
+  const id = slugifyAppName(name);
+  const color = state.selectedCategoryColor || COLLECTION_COLORS[0];
+  const file = `${id}.html`;
+
+  saveCustomApp({ id, name, color, file });
+
+  downloadTextFile(file, buildCategoryHtml(id, name, color), 'text/html');
+  setTimeout(() => downloadTextFile(`${id}-collections.js`, buildCategoryCollectionsJs(id, name, color), 'text/javascript'), 250);
+  setTimeout(() => downloadTextFile(`${id}-playlist.js`, buildCategoryPlaylistJs(), 'text/javascript'), 500);
+  setTimeout(() => downloadTextFile(`${id}-watched.js`, buildCategoryWatchedJs(), 'text/javascript'), 750);
+  // Ship page-template.js too so the new category page is self-contained
+  // (it is referenced by the generated HTML and reused if another category
+  // is created from that page later).
+  setTimeout(() => {
+    if (typeof PAGE_TEMPLATE !== 'undefined') {
+      downloadTextFile('page-template.js', 'window.PAGE_TEMPLATE = ' + JSON.stringify(PAGE_TEMPLATE) + ';', 'text/javascript');
     }
+  }, 1000);
+
+  closeModal('createCategoryModal');
+  renderCategorySwitcher();
+  showToast(`✓ "${name}" created — save ${file} at the root and the 4 .js files (${id}-collections.js, ${id}-playlist.js, ${id}-watched.js, page-template.js) inside a ${id}/ folder`);
+}
+
+function buildCategoryCollectionsJs(id, name, color) {
+  return `// --------------------------------------------------------------
+// COLLECTIONS CONFIG — ${name}
+// Starter file (empty — add your own).
+//
+// Each collection: id, name, color, groups: {}, ungrouped: []
+// To apply as defaults: replace this file and clear localStorage.
+// --------------------------------------------------------------
+
+const COLLECTION_COLORS = [
+  '#5C6BC0', '#EF5350', '#26A69A', '#FFA726',
+  '#66BB6A', '#AB47BC', '#29B6F6', '#FF7043',
+  '#78909C', '#EC407A'
+];
+
+const DEFAULT_COLLECTIONS = [
+  {
+    id: ${jsStr(id)},
+    name: ${jsStr(name)},
+    color: ${jsStr(color)},
+    groups: {},
+    ungrouped: []
   }
-  playlistPlayer.order = ids;
+];
+`;
 }
 
-function openCurrentPlaylistVideo() {
-  const order = playlistPlayer.order;
-  if (!order.length) return;
-  const idx = Math.max(0, Math.min(playlistPlayer.index, order.length - 1));
-  playlistPlayer.index = idx;
-  const vid = state.videos.find(v => v.id === order[idx]);
-  if (!vid) { playlistStep(1); return; } // skip deleted videos
-  markWatched(vid.id);
-  window.open(getWatchUrl(vid.videoId, vid.playlistId), '_blank');
-  updatePlayerBar();
-  // Highlight the current card
-  document.querySelectorAll('.video-card').forEach(el => el.classList.remove('pp-active'));
-  const card = document.getElementById('card-' + vid.id);
-  if (card) {
-    card.classList.add('pp-active');
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+function buildCategoryPlaylistJs() {
+  return `// --------------------------------------------------------------
+// PLAYLIST CONFIG
+// Starter file (no playlists yet — create some in the app).
+//
+// Each playlist: id, name, color, videoIds, videos (full details)
+// To apply as defaults: replace this file and clear localStorage.
+// --------------------------------------------------------------
+
+const DEFAULT_PLAYLISTS = [];
+`;
+}
+
+function buildCategoryWatchedJs() {
+  return `// --------------------------------------------------------------
+// WATCHED HISTORY
+//
+// WATCHED_VIDEO_IDS: YouTube video IDs marked as watched.
+// To restore: replace this file with an exported watched.js
+// and clear localStorage.
+// --------------------------------------------------------------
+
+const WATCHED_VIDEO_IDS = [];
+`;
+}
+
+// Full standalone HTML page for a brand-new category — mirrors the
+// structure of music.html / electronics.html / astrology.html.
+function configScriptTags(id, dir) {
+  dir = dir || '';
+  return '<script src="' + dir + id + '-collections.js"></script>\n' +
+         '<script src="' + dir + id + '-playlist.js"></script>\n' +
+         '<script src="' + dir + id + '-watched.js"></script>';
+}
+
+// Builds a full standalone category page from the shared PAGE_TEMPLATE
+// (generated by build.js -> page-template.js), keeping runtime category
+// creation in lock-step with the three built-in pages. No fetch: works on
+// GitHub Pages and when opened via file://.
+function buildCategoryHtml(id, name, color) {
+  if (typeof PAGE_TEMPLATE === 'undefined') {
+    showToast('⚠️ page-template.js missing — category page not generated');
+    return '';
+  }
+  const dir = id + '/';
+  return PAGE_TEMPLATE
+    .replace(/\{\{APP_NAME\}\}/g, id)
+    .replace(/\{\{APP_LABEL\}\}/g, name)
+    .replace(/\{\{APP_COLOR\}\}/g, color)
+    .replace(/\{\{JS_DIR\}\}/g, dir)
+    .replace(/\{\{SCRIPT_TAGS\}\}/g, configScriptTags(id, dir));
+}
+
+
+// ──────────────────────────────────────────────
+// BRANDING (per-app title / logo subtitle / accent)
+// Uses APP_NAME / APP_LABEL / APP_COLOR set in each app's HTML
+// ──────────────────────────────────────────────
+function applyAppBranding() {
+  const label = typeof APP_LABEL !== 'undefined' ? APP_LABEL : '';
+  const color = typeof APP_COLOR !== 'undefined' ? APP_COLOR : '';
+  if (label) document.title = `TholsStudio — ${label}`;
+  const sub = document.getElementById('appSubtitle');
+  if (sub && label) sub.textContent = label;
+  if (color) {
+    document.documentElement.style.setProperty('--indigo', color);
+    const icon = document.querySelector('.logo-icon');
+    if (icon) icon.style.background = color;
   }
 }
 
-function playlistStep(dir) {
-  const order = playlistPlayer.order;
-  if (!order.length) return;
-  let next = playlistPlayer.index + dir;
-  if (next < 0) next = order.length - 1;
-  if (next >= order.length) next = 0;
-  playlistPlayer.index = next;
-  openCurrentPlaylistVideo();
-}
-
-function setPlaylistMode(mode) {
-  if (playlistPlayer.mode === mode) return;
-  playlistPlayer.mode = mode;
-  const pl = state.playlists.find(p => p.id === playlistPlayer.plId);
-  if (pl) buildPlayOrder(pl);
-  playlistPlayer.index = 0;
-  updatePlayerBar();
-  showToast(mode === 'random' ? '🔀 Random play on' : '➡️ Sequential play on');
-}
-
-function updatePlayerBar() {
-  const bar = document.getElementById('playlistPlayerBar');
-  if (!bar) return;
-  const pl = state.playlists.find(p => p.id === playlistPlayer.plId);
-  if (!pl || !playlistPlayer.active) {
-    bar.style.display = 'none';
-    document.querySelector('.main')?.classList.remove('has-player-bar');
-    return;
-  }
-
-  bar.style.display = 'flex';
-  document.querySelector('.main')?.classList.add('has-player-bar');
-
-  // Playlist name + dot
-  document.getElementById('ppbName').textContent = pl.name;
-  document.getElementById('ppbDot').style.background = pl.color || '#78909C';
-
-  // Current video title
-  const order = playlistPlayer.order;
-  const idx = playlistPlayer.index;
-  const currentVid = order.length ? state.videos.find(v => v.id === order[idx]) : null;
-  const titleEl = document.getElementById('ppbVideoTitle');
-  if (titleEl) titleEl.textContent = currentVid ? (currentVid.title || currentVid.url || '—') : '—';
-
-  // Counter: current / total
-  document.getElementById('ppbTrack').textContent = order.length
-    ? `${idx + 1} / ${order.length}`
-    : '0 / 0';
-
-  // Mode buttons — toggle active class
-  const seqBtn = document.getElementById('ppbSeqBtn');
-  const rndBtn = document.getElementById('ppbRndBtn');
-  if (seqBtn && rndBtn) {
-    seqBtn.classList.toggle('active', playlistPlayer.mode === 'sequential');
-    rndBtn.classList.toggle('active', playlistPlayer.mode === 'random');
-  }
-}
-
-function closePlaylistPlayer() {
-  playlistPlayer.active = false;
-  document.querySelectorAll('.video-card').forEach(el => el.classList.remove('pp-active'));
-  const bar = document.getElementById('playlistPlayerBar');
-  if (bar) bar.style.display = 'none';
-  document.querySelector('.main')?.classList.remove('has-player-bar');
+// Keeps the "Export as …" dropdown labels honest — they now show the actual
+// app-prefixed filename (e.g. "Export as music-playlist.js") instead of the
+// generic name, matching what confirmExport() actually writes to disk.
+function updateExportMenuLabels() {
+  const appName = getAppName();
+  const map = {
+    exportCollectionsLabel: appName + '-collections.js',
+    exportWatchedLabel: appName + '-watched.js',
+    exportPlaylistLabel: appName + '-playlist.js',
+  };
+  Object.entries(map).forEach(([id, filename]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = 'Export as ' + filename;
+  });
 }
 
 // ──────────────────────────────────────────────
 // INIT
 // ──────────────────────────────────────────────
+applyAppBranding();
 seedData();
+restoreExportFolder();
 renderSidebar();
 renderCards();
-
-</script>
-
-</body>
-</html>
+renderCategorySwitcher();
+updateExportMenuLabels();
