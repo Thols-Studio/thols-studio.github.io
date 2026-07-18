@@ -131,6 +131,20 @@ const WATCHED_VIDEO_IDS = [];
 `;
 }
 
+// Builds the inline <script> that defines window.__BUILTIN_APPS__ — the
+// file:// fallback list for the in-app category switcher. Sourced from
+// categories.json so it never drifts from the build manifest. Injected into
+// every generated page (before app.js) by the {{BUILTIN_APPS_JS}} token.
+function buildBuiltinAppsJs(apps) {
+  const list = apps.map(a => ({
+    id: a.id,
+    name: a.label,
+    color: a.color,
+    file: `${a.id}.html`,
+  }));
+  return `<script>window.__BUILTIN_APPS__ = ${JSON.stringify(list)};</script>`;
+}
+
 // Writes the three seed files into the category's <id>/ folder — but only if
 // they don't already exist, so re-running build.js never clobbers a category's
 // curated collections / videos / playlists / watched history (source data built
@@ -153,6 +167,11 @@ function writeCategorySeeds(app) {
   });
 }
 
+// Injected into every generated page (before app.js) via {{BUILTIN_APPS_JS}}.
+// Holds the file:// fallback for the in-app category switcher, sourced from
+// categories.json so it never drifts from the build manifest.
+let BUILTIN_APPS_JS = '';
+
 function render(template, app) {
   const dir = app.dir || '';
   return template
@@ -160,7 +179,8 @@ function render(template, app) {
     .replace(/\{\{APP_LABEL\}\}/g, app.label)
     .replace(/\{\{APP_COLOR\}\}/g, app.color)
     .replace(/\{\{JS_DIR\}\}/g, dir)
-    .replace(/\{\{SCRIPT_TAGS\}\}/g, configScriptTags(app.id, dir));
+    .replace(/\{\{SCRIPT_TAGS\}\}/g, configScriptTags(app.id, dir))
+    .replace(/\{\{BUILTIN_APPS_JS\}\}/g, BUILTIN_APPS_JS);
 }
 
 function writeFileEnsureDir(file, contents) {
@@ -179,6 +199,10 @@ function main() {
 
   // 1) Category pages from categories.json (HTML at root, JS in <id>/ folders)
   const APPS = loadCategories();
+  // Generated once from the manifest — the file:// fallback for the in-app
+  // category switcher, injected via {{BUILTIN_APPS_JS}} so it can't drift.
+  BUILTIN_APPS_JS = buildBuiltinAppsJs(APPS);
+
   APPS.forEach(app => {
     app.dir = app.id + '/';
     const html = render(template, app);

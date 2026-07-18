@@ -2922,10 +2922,10 @@ function closePvView(restoreAll) {
 // ──────────────────────────────────────────────
 const APPS_REGISTRY_KEY = 'tholsstudio_categories';
 
-// Fallback built-in list, used only when categories.json cannot be fetched
-// (e.g. opened via file://). On HTTP (GitHub Pages / local server) the real
-// list is loaded from categories.json at runtime so it stays in sync with the
-// build manifest — no need to keep this array manually updated.
+// Last-resort fallback list, used only when neither categories.json (HTTP)
+// nor the build-generated window.__BUILTIN_APPS__ (file://) is available.
+// Normally the generated page injects window.__BUILTIN_APPS__ from
+// categories.json, so this array is rarely used and need not be kept in sync.
 const BUILTIN_APPS = [
   { id: 'unity3d',    name: 'Unity3D',    color: '#EC407A', file: 'unity3d.html' },
   { id: 'gamedesign', name: 'GameDesign', color: '#29B6F6', file: 'gamedesign.html' },
@@ -2966,17 +2966,28 @@ function getAppsRegistry() {
   let custom = [];
   try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
   const map = new Map();
-  BUILTIN_APPS.forEach(a => map.set(a.id, a));
+  getFallbackBuiltins().forEach(a => map.set(a.id, a));
   custom.forEach(a => map.set(a.id, a)); // custom entries win on id collision
   return [...map.values()];
 }
 
+// The file:// fallback list. Prefers the build-generated window.__BUILTIN_APPS__
+// (injected by build.js from categories.json) so it never drifts from the
+// manifest; falls back to the hardcoded BUILTIN_APPS only if that is absent.
+function getFallbackBuiltins() {
+  if (typeof window !== 'undefined' && Array.isArray(window.__BUILTIN_APPS__) && window.__BUILTIN_APPS__.length) {
+    return window.__BUILTIN_APPS__;
+  }
+  return BUILTIN_APPS;
+}
+
 // Async variant: prefers categories.json (HTTP) and falls back to the
-// hardcoded BUILTIN_APPS (file://). Used at init to populate the switcher
-// with the real, build-driven category list.
+// build-generated window.__BUILTIN_APPS__ (file://), then the last-resort
+// hardcoded BUILTIN_APPS. Used at init to populate the switcher with the real,
+// build-driven category list.
 async function getAppsRegistryAsync() {
   const json = await loadBuiltinsFromJson();
-  const base = json || BUILTIN_APPS;
+  const base = json || getFallbackBuiltins();
   let custom = [];
   try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
   const map = new Map();
