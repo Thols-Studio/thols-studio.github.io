@@ -2922,13 +2922,45 @@ function closePvView(restoreAll) {
 // ──────────────────────────────────────────────
 const APPS_REGISTRY_KEY = 'tholsstudio_categories';
 
-// The three categories that ship with the project. Custom ones created
-// via "Create category…" are layered on top of this list.
+// Fallback built-in list, used only when categories.json cannot be fetched
+// (e.g. opened via file://). On HTTP (GitHub Pages / local server) the real
+// list is loaded from categories.json at runtime so it stays in sync with the
+// build manifest — no need to keep this array manually updated.
 const BUILTIN_APPS = [
-  { id: 'music',       name: 'Music',       color: '#EC407A', file: 'music.html' },
-  { id: 'electronics', name: 'Electronics', color: '#29B6F6', file: 'electronics.html' },
-  { id: 'astrology',   name: 'Astrology',   color: '#AB47BC', file: 'astrology.html' },
+  { id: 'unity3d',    name: 'Unity3D',    color: '#EC407A', file: 'unity3d.html' },
+  { id: 'gamedesign', name: 'GameDesign', color: '#29B6F6', file: 'gamedesign.html' },
+  { id: 'blender',    name: 'Blender',    color: '#AB47BC', file: 'blender.html' },
+  { id: 'csharp',     name: 'CSharp',     color: '#AB46BC', file: 'csharp.html' },
 ];
+
+// Cached built-ins resolved from categories.json (when available).
+let _jsonBuiltins = null;
+
+// Reads categories.json (the build manifest) over HTTP and returns its
+// entries shaped as app descriptors. Returns null on fetch failure so the
+// caller can fall back to BUILTIN_APPS.
+async function loadBuiltinsFromJson() {
+  if (_jsonBuiltins) return _jsonBuiltins;
+  try {
+    const res = await fetch('categories.json', { cache: 'no-cache' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : data.collections;
+    if (!Array.isArray(list)) return null;
+    const apps = list
+      .filter(c => c && c.id && /^[a-z0-9-]+$/i.test(c.id))
+      .map(c => ({
+        id: c.id,
+        name: c.name || c.id,
+        color: c.color || '#5C6BC0',
+        file: `${c.id}.html`,
+      }));
+    _jsonBuiltins = apps.length ? apps : null;
+    return _jsonBuiltins;
+  } catch {
+    return null;
+  }
+}
 
 function getAppsRegistry() {
   let custom = [];
@@ -2939,6 +2971,20 @@ function getAppsRegistry() {
   return [...map.values()];
 }
 
+// Async variant: prefers categories.json (HTTP) and falls back to the
+// hardcoded BUILTIN_APPS (file://). Used at init to populate the switcher
+// with the real, build-driven category list.
+async function getAppsRegistryAsync() {
+  const json = await loadBuiltinsFromJson();
+  const base = json || BUILTIN_APPS;
+  let custom = [];
+  try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
+  const map = new Map();
+  base.forEach(a => map.set(a.id, a));
+  custom.forEach(a => map.set(a.id, a));
+  return [...map.values()];
+}
+
 function saveCustomApp(app) {
   let custom = [];
   try { custom = JSON.parse(localStorage.getItem(APPS_REGISTRY_KEY) || '[]'); } catch {}
@@ -2946,11 +2992,12 @@ function saveCustomApp(app) {
   localStorage.setItem(APPS_REGISTRY_KEY, JSON.stringify(custom));
 }
 
-function renderCategorySwitcher() {
+function renderCategorySwitcher(apps) {
   const wrap = document.getElementById('categorySwitcher');
   if (!wrap) return;
 
-  const apps = getAppsRegistry();
+  // Fall back to the synchronous registry if called without fetched apps.
+  if (!apps) apps = getAppsRegistry();
   const myId = getAppName();
   const current = apps.find(a => a.id === myId) || { name: APP_LABEL || 'Category', color: APP_COLOR || 'var(--indigo)' };
 
@@ -3194,3 +3241,9 @@ renderSidebar();
 renderCards();
 renderCategorySwitcher();
 updateExportMenuLabels();
+
+// Re-render the category switcher with the real list from categories.json
+// when served over HTTP; on file:// the fetch fails and the hardcoded
+// fallback (rendered above) stays in place. This keeps the bottom menu in
+// sync with the build manifest without manual edits.
+getAppsRegistryAsync().then(apps => renderCategorySwitcher(apps));

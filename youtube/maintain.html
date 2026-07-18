@@ -76,10 +76,12 @@
   let apps = [];
 
   // Hardcoded fallback if categories.json can't be fetched (e.g. opened via file://).
+  // Keep in sync with categories.json — used only as a file:// fallback.
   const FALLBACK_APPS = [
-    { id: 'music',       label: 'Music',       color: '#EC407A' },
-    { id: 'electronics', label: 'Electronics', color: '#29B6F6' },
-    { id: 'astrology',   label: 'Astrology',   color: '#AB47BC' },
+    { id: 'unity3d',    label: 'Unity3D',    color: '#EC407A' },
+    { id: 'gamedesign', label: 'GameDesign', color: '#29B6F6' },
+    { id: 'blender',    label: 'Blender',    color: '#AB47BC' },
+    { id: 'csharp',     label: 'CSharp',     color: '#AB46BC' },
   ];
 
   function loadCategories() {
