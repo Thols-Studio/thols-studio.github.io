@@ -10,7 +10,10 @@ followed. Repo files referenced: `app.js`, `build.js`, `delete-category.js`, `ma
 
 ## Phase 7 — Bug fixes applied this session
 
-### 1. Missing seeds broke pages
+These map to **Fix 7.1 / 7.2 / 7.3** in `Tasks.md` (T7.1–T7.3) and are enforced by the build
+(T2.x), engine (T1.11), and delete-script (T3.1) tasks.
+
+### Fix 7.1 — Missing seeds broke pages
 - **Root cause:** `build.js` originally generated only `page-template.js`; the per-category
   `<id>/` seed files were absent. `app.js` then threw at top-level state init when it called
   `DEFAULT_COLLECTIONS.map` against an undefined `COLLECTION_COLORS`. That exception aborted
@@ -19,27 +22,31 @@ followed. Repo files referenced: `app.js`, `build.js`, `delete-category.js`, `ma
 - **Why tests.html survived:** the `test/` folder already had its own seed files, so the test
   page initialized normally while every real category page did not.
 - **Fix:** `build.js` now generates starter seed files (skip-if-exists) into each `<id>/`
-  directory. Existing curated seeds are never overwritten.
+  directory (see `phase2-buildjs.md` T2.4 / T2.6). Existing curated seeds are never overwritten.
+- **Preserved by:** T2.4, T2.6, T5.2. **Regression-checked by:** V1, T9.5.
 
-### 2. Stale category list
+### Fix 7.2 — Stale category list
 - **Root cause:** `BUILTIN_APPS` was hard-coded in both `app.js` and `delete-category.js`, and
   the docs still listed the old `music / electronics / astrology` set instead of the real
   `unity3d / gamedesign / blender / csharp`. The bottom menu linked to pages that did not exist.
 - **Fix:** every surface now reads `categories.json`. `build.js` injects a generated
-  `window.__BUILTIN_APPS__` (built from `categories.json`) into each page **before** `app.js`,
-  which also eliminates the `file://` fallback drift. The literal `BUILTIN_APPS` constant is now
-  last-resort only.
+  `window.__BUILTIN_APPS__` (built from `categories.json`) into each page **before** `app.js`
+  (T2.5), which also eliminates the `file://` fallback drift. The literal `BUILTIN_APPS`
+  constant is now last-resort only (see `phase1-appjs.md` T1.11, `phase3-delete-maintain.md` T3.1).
 - **Runtime resolution order:**
   - `app.js` `getFallbackBuiltins()` prefers `window.__BUILTIN_APPS__`, then the literal
     `BUILTIN_APPS`.
   - `getAppsRegistryAsync` prefers the fetched `categories.json`, then the fallback.
+- **Preserved by:** T1.11, T2.5, T3.1, T4.2. **Verified by:** V2 (injected registry present),
+  T9.3.
 
-### 3. Build dead-end
+### Fix 7.3 — Build dead-end
 - **Root cause:** a generated page with no seeds produced a broken page, and no automated step
   existed to fill those seeds.
 - **Fix:** `build.js` now owns the *full* folder contents for each category — the HTML,
-  `page-template.js`, and the starter seeds. Re-running the build preserves curated data
+  `page-template.js`, and the starter seeds (T2.7). Re-running the build preserves curated data
   (seeds are only written when missing).
+- **Preserved by:** T2.6. **Verified by:** V2, T9.6.
 
 ---
 
@@ -51,7 +58,11 @@ followed. Repo files referenced: `app.js`, `build.js`, `delete-category.js`, `ma
 | `MAINTAIN.md` | Browser-only generator usage, delete guards, file layout. |
 | `PRD.md` | Product requirements + known issues (with fixes logged). |
 | `TDD.md` | Technical design: build pipeline, runtime, data model, category system, security, testing. |
-| `Tasks.md` | Ordered recreate-from-scratch task list (Phases 0–9). |
+| `Tasks.md` | Ordered recreate-from-scratch task list (Phases 0–9) with `[x]`/`[ ]` markers, named
+  verification tasks (V1/V2/V6), checkpoints (C1/C2), and a dependency-waves graph. |
+| `Prompt.md` | Recommended prompts for testing another model (Goal A reconstruct / Goal B verify). |
+| `bundle.md` | All docs concatenated for one-shot model ingestion. |
+| `sources/` | Canonical real source files (for Goal B verification against `docs/bundle.md`). |
 
 All docs were updated to reflect the **real categories** (`unity3d / gamedesign / blender /
 csharp`) and the **new build behaviour** (build.js owns full folder contents, seeds are
@@ -61,18 +72,22 @@ generated and preserved).
 
 ## Phase 9 — Verification (after any rebuild)
 
-Steps performed (and required after each rebuild):
+These map to **Tasks.md** `T9.1–T9.6` and the named checks **V1 / V2 / V6**, gated by
+**checkpoints C1 / C2**.
 
-1. **Syntax check** — `node -c app.js && node -c build.js && node -c delete-category.js`.
-2. **Build runs clean** — `node build.js` completes with no errors and **no leftover `{{...}}`
-   tokens** in any output file.
-3. **Injected registry** — every `<id>.html` contains the injected `window.__BUILTIN_APPS__`
-   (all categories) placed **before** `app.js`.
-4. **Test suite** — open `tests.html` over HTTP; the feature suite is green.
-5. **Regression check** — open a category page and confirm **New Collection / New Playlist**
-   buttons work (the original dead-button bug).
-6. **Preservation check** — re-run `node build.js`; existing seed files must be reported as
-   `kept existing … (preserve)` with no data loss.
+1. **Syntax check (T9.1)** — `node -c app.js && node -c build.js && node -c delete-category.js`.
+2. **Build runs clean (T9.2)** — `node build.js` completes with no errors and **no leftover
+   `{{...}}` tokens** in any output file.
+3. **Injected registry (T9.3 / V2)** — every `<id>.html` contains the injected
+   `window.__BUILTIN_APPS__` (all categories) placed **before** `app.js`.
+4. **Test suite (T9.4 / V6)** — open `tests.html` over HTTP; the feature suite is green.
+5. **Regression check (T9.5 / V1)** — open a category page and confirm **New Collection / New
+   Playlist** buttons work (the original dead-button bug, Fix 7.1).
+6. **Preservation check (T9.6 / V2)** — re-run `node build.js`; existing seed files must be
+   reported as `kept existing … (preserve)` with no data loss (Fix 7.3).
+
+> **C1 (engine + build complete):** run V1, V2, V6 after Phases 0–5.
+> **C2 (full system + docs):** run T9.1–T9.6 after Phases 6–9.
 
 > **PowerShell caveat:** the shell here is Windows PowerShell, where `cmd1 && cmd2` does **not**
 > short-circuit on failure the way it does in bash. Use `;` to separate commands, or explicitly

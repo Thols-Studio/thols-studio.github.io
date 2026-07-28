@@ -1,6 +1,6 @@
 # TubeVault / TholsStudio — `app.js` Core Engine (Phase 1)
 
-Client-side YouTube vault shared engine (~3260 lines, single file). Drives every TholsStudio category page (Music, Electronics, Astrology, etc.). Namespaces localStorage and the export-folder IndexedDB store per app via `APP_NAME`, and loads defaults (`DEFAULT_COLLECTIONS`, `DEFAULT_PLAYLISTS`, `COLLECTION_COLORS`, `WATCHED_VIDEO_IDS`) supplied by each page's injected `collections.js` / `playlist.js` / `watched.js` scripts plus the inline `APP_NAME` / `APP_LABEL` / `APP_COLOR` block.
+Client-side YouTube vault shared engine (~3260 lines, single file). Drives every TholsStudio category page (unity3d, gamedesign, blender, csharp, … — the list is sourced from `categories.json`, not hardcoded). Namespaces localStorage and the export-folder IndexedDB store per app via `APP_NAME`, and loads defaults (`DEFAULT_COLLECTIONS`, `DEFAULT_PLAYLISTS`, `COLLECTION_COLORS`, `WATCHED_VIDEO_IDS`) supplied by each page's injected `<id>-collections.js` / `<id>-playlist.js` / `<id>-watched.js` scripts plus the inline `APP_NAME` / `APP_LABEL` / `APP_COLOR` block.
 
 ---
 
