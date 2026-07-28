@@ -3,6 +3,7 @@
     { "id": "unity3d",       "name": "Unity3D",       "color": "#EC407A" },
     { "id": "gamedesign", "name": "GameDesign", "color": "#29B6F6" },
     { "id": "blender",   "name": "Blender",   "color": "#AB47BC" },
-    { "id": "csharp",   "name": "CSharp",   "color": "#AB46BC" }
+    { "id": "csharp",   "name": "CSharp",   "color": "#AB46BC" },
+    { "id": "ai",   "name": "AI",   "color": "#AB45BC" }
   ]
 }
