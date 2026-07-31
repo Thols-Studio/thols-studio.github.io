@@ -111,21 +111,22 @@
   #status.error{color:var(--err);}
 
   /* ===== Main split ===== */
-  #main{flex:1; display:flex; min-height:0;}
+  #main{flex:1; display:flex; flex-direction:column; min-height:0;}
   #editor-pane{
-    width:44%;
-    min-width:280px;
-    max-width:75%;
+    flex:0 0 45%;
+    min-height:200px;
+    max-height:75%;
     display:flex;
     flex-direction:column;
     background:var(--ink-900);
-    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
   }
   #editor-head{
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:10px 14px;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+    padding:8px 14px;
     font-size:11px;
     text-transform:uppercase;
     letter-spacing:0.6px;
@@ -154,6 +155,7 @@
     color:var(--ink-600);
     user-select:none;
     overflow:hidden;
+    white-space:pre;
     background:var(--ink-950);
     flex-shrink:0;
   }
@@ -187,8 +189,8 @@
   }
 
   #resizer{
-    width:5px;
-    cursor:col-resize;
+    height:5px;
+    cursor:row-resize;
     background:var(--ink-900);
     flex-shrink:0;
     position:relative;
@@ -201,7 +203,7 @@
     display:flex;
     flex-direction:column;
     background:var(--paper);
-    min-width:0;
+    min-height:0;
   }
   #preview-head{
     display:flex;
@@ -330,6 +332,13 @@
       <option value="forest">Theme: forest</option>
       <option value="base">Theme: base</option>
     </select>
+    <button class="tbtn" id="toggleSourceBtn" title="Show or hide the diagram source">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>Hide source</span>
+    </button>
     <div class="spacer"></div>
     <div id="status"><span class="dot"></span><span id="status-text">Rendered</span></div>
     <div class="divider"></div>
@@ -411,11 +420,16 @@ const EXAMPLES = {
     participant U as User
     participant A as App
     participant S as Server
+    participant D as Database
+    participant C as Cache
     U->>A: Click "Save"
     A->>S: POST /save
+    S->>D: INSERT row
+    D-->>S: row id
+    S->>C: invalidate(key)
     S-->>A: 200 OK
     A-->>U: Show confirmation
-    Note over U,S: Round trip under 300ms`,
+    Note over S,C: Cache invalidated`,
   "Class": `classDiagram
     class Diagram {
       +String title
@@ -515,6 +529,208 @@ function applyTransform(){
   zoomLabel.textContent = Math.round(zoom*100) + '%';
 }
 
+// Vivid per-participant palette for sequence diagrams.
+// Colours are applied by actor label so the top & bottom boxes match.
+const SEQ_PALETTE = [
+  { fill:'#e2795b', text:'#ffffff' }, // coral
+  { fill:'#3fb8af', text:'#ffffff' }, // teal
+  { fill:'#8b7ff0', text:'#ffffff' }, // violet
+  { fill:'#e2a23b', text:'#1a1a1a' }, // amber
+  { fill:'#5b9fe2', text:'#ffffff' }, // blue
+  { fill:'#5cb896', text:'#ffffff' }, // green
+  { fill:'#d36ba1', text:'#ffffff' }, // pink
+  { fill:'#7d8cf0', text:'#ffffff' }, // indigo
+  { fill:'#5bc0de', text:'#1a1a1a' }, // sky
+  { fill:'#e2824a', text:'#ffffff' }, // orange
+];
+
+function colorizeSequence(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+
+  // In Mermaid 0.16.x the `.actor` class sits directly on the box <rect> and
+  // on the label <text> — they are siblings, not nested in a wrapper <g>.
+  const actorRects = svg.querySelectorAll('rect.actor');
+  const actorTexts = svg.querySelectorAll('text.actor');
+  // Not a sequence diagram (or no actors): bail out.
+  if(!actorRects.length) return;
+
+  // Mermaid embeds a <style> block with rules like
+  //   #g2 .actor{ fill:#ECECFF; }
+  //   #g2 text.actor>tspan{ fill:black; }
+  // CSS beats presentation attributes, so setting fill="" attributes has no
+  // visible effect. We instead tag each element with data-lane (derived from
+  // x-position so a column's top & bottom boxes share a lane) and inject our
+  // own <style> with !important, which wins over Mermaid's rule.
+  const xCentres = [];
+  actorRects.forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    xCentres.push(Math.round(x + w / 2));
+  });
+  // Assign a lane index to each distinct x centre, in left-to-right order.
+  const laneByX = new Map();
+  [...new Set(xCentres)].sort((a, b) => a - b).forEach((cx, i) => laneByX.set(cx, i));
+  const sortedUnique = [...laneByX.keys()].sort((a, b) => a - b);
+
+  actorRects.forEach((rect, i) => {
+    rect.setAttribute('data-lane', String(laneByX.get(xCentres[i]) ?? 0));
+  });
+
+  // Tag the vertical lifelines so each takes its object's colour. In Mermaid
+  // 0.16.x the lifelines are <line> elements where x1 === x2; match each to the
+  // nearest actor lane by its x position. Horizontal message arrows (x1 !== x2)
+  // are left untouched — they span two objects.
+  const laneXOf = (x) => {
+    let bestLane = 0, bestDist = Infinity;
+    sortedUnique.forEach((cx, idx) => {
+      const d = Math.abs(cx - x);
+      if(d < bestDist){ bestDist = d; bestLane = idx; }
+    });
+    return bestLane;
+  };
+  svg.querySelectorAll('line').forEach(line => {
+    const x1 = parseFloat(line.getAttribute('x1'));
+    const x2 = parseFloat(line.getAttribute('x2'));
+    if(isNaN(x1) || isNaN(x2)) return;
+    if(Math.abs(x1 - x2) < 1){          // vertical lifeline
+      line.setAttribute('data-lane', String(laneXOf(x1)));
+    }
+  });
+
+  // Tag activation rectangles (the thin bars showing object is active) with
+  // their owner's lane so they inherit the object colour.
+  svg.querySelectorAll('rect[class^="activation"]').forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    rect.setAttribute('data-lane', String(laneXOf(x + w / 2)));
+  });
+
+  // Message arrows + their text labels: colour them by their SOURCE object's
+  // lane (the actor nearest the arrow's start x1). The arrows themselves are
+  // invisible lines (stroke:none) whose visible parts are shared <marker>
+  // shapes (#arrowhead, #sequencenumber). Markers render in an isolated
+  // context and don't inherit colour from the line, so we clone the shared
+  // markers once per lane, tint each clone, and repoint every arrow's
+  // marker-start/marker-end to its source-lane clone.
+  const NS = 'http://www.w3.org/2000/svg';
+  let defs = svg.querySelector('defs');
+  if(!defs){
+    defs = document.createElementNS(NS, 'defs');
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  const tplArrow = svg.querySelector('#arrowhead');
+  const tplSeq   = svg.querySelector('#sequencenumber');
+  // Clear any clones from a previous render.
+  defs.querySelectorAll('[data-seq-clone]').forEach(el => el.remove());
+
+  const cloneMarker = (tpl, id, lane) => {
+    if(!tpl) return null;
+    const clone = tpl.cloneNode(true);
+    clone.setAttribute('id', id);
+    clone.setAttribute('data-seq-clone', '1');
+    const c = SEQ_PALETTE[lane % SEQ_PALETTE.length];
+    clone.querySelectorAll('path, circle').forEach(el => {
+      el.setAttribute('fill', c.fill);
+      el.setAttribute('stroke', c.fill);
+    });
+    defs.appendChild(clone);
+    return clone;
+  };
+  // Pre-create a coloured clone per lane for both marker kinds.
+  const lanesPresent = new Set();
+  svg.querySelectorAll('line').forEach(line => {
+    const me = line.getAttribute('marker-end') || line.getAttribute('marker-start');
+    if(!me) return;
+    const x1 = parseFloat(line.getAttribute('x1'));
+    if(isNaN(x1)) return;
+    lanesPresent.add(laneXOf(x1));
+  });
+  lanesPresent.forEach(lane => {
+    cloneMarker(tplArrow, 'arrowhead-l' + lane, lane);
+    cloneMarker(tplSeq,   'sequencenumber-l' + lane, lane);
+  });
+
+  // Repoint each message arrow to its source-lane marker, and tag the arrow
+  // + its label text with data-lane so the injected CSS tints the label.
+  svg.querySelectorAll('line').forEach(line => {
+    const me = line.getAttribute('marker-end');
+    const ms = line.getAttribute('marker-start');
+    if(!me && !ms) return;
+    const x1 = parseFloat(line.getAttribute('x1'));
+    if(isNaN(x1)) return;
+    const lane = laneXOf(x1);
+    if(me)  line.setAttribute('marker-end',   `url(#arrowhead-l${lane})`);
+    if(ms)  line.setAttribute('marker-start', `url(#sequencenumber-l${lane})`);
+    line.setAttribute('data-lane', String(lane));
+  });
+
+  // Match each message label to its arrow geometrically. Mermaid centres each
+  // label on its arrow's midpoint, so label.x ~= arrow.midX; the label sits a
+  // little ABOVE the arrow (label.y < arrow.y). We can't pair by document index
+  // because loop/note contexts emit extra <text> elements with no arrow, so the
+  // text and line counts differ. Instead, for each label find the best-matching
+  // arrow: midpoint x must be close (primary signal), and among those prefer the
+  // arrow closest to the label in y while still lying below it. A small x band
+  // is allowed (midpoint rounds differently than the label x).
+  const arrowList = [];
+  svg.querySelectorAll('line').forEach(line => {
+    if(line.getAttribute('marker-end') || line.getAttribute('marker-start')){
+      const x1 = parseFloat(line.getAttribute('x1')) || 0;
+      const x2 = parseFloat(line.getAttribute('x2')) || 0;
+      arrowList.push({
+        midX: (x1 + x2) / 2,
+        y: parseFloat(line.getAttribute('y1')) || 0,
+        lane: parseInt(line.getAttribute('data-lane'), 10)
+      });
+    }
+  });
+  svg.querySelectorAll('text.messageText').forEach(t => {
+    const tx = parseFloat(t.getAttribute('x')) || 0;
+    const ty = parseFloat(t.getAttribute('y')) || 0;
+    let bestLane = null, bestScore = Infinity;
+    arrowList.forEach(a => {
+      const dx = Math.abs(a.midX - tx);
+      if(dx > 12) return;                 // label not on this arrow's midpoint
+      // label is above the arrow; prefer the nearest arrow below it. Weight x
+      // heavily so the right arrow wins even when several share a band.
+      const dy = ty - a.y;                // +ve when arrow is below label
+      const penalty = dy < 0 ? 500 : 0;   // disfavour arrows above the label
+      const score = dx * 5 + Math.abs(dy) + penalty;
+      if(score < bestScore){ bestScore = score; bestLane = a.lane; }
+    });
+    if(bestLane !== null) t.setAttribute('data-lane', String(bestLane));
+  });
+
+  actorTexts.forEach(t => {
+    const x = parseFloat(t.getAttribute('x')) || 0;
+    let bestLane = 0, bestDist = Infinity;
+    sortedUnique.forEach((cx, idx) => {
+      const d = Math.abs(cx - x);
+      if(d < bestDist){ bestDist = d; bestLane = idx; }
+    });
+    t.setAttribute('data-lane', String(bestLane));
+  });
+
+  // Remove any prior injected style so repeated renders don't accumulate.
+  svg.querySelector('style#seq-colors')?.remove();
+  const rules = SEQ_PALETTE.map((c, i) =>
+    // Boxes & lifelines take the lane fill; actor LABELS stay high-contrast
+    // (white/dark) on the coloured box — that's the "object text" style.
+    `svg [data-lane="${i}"]{fill:${c.fill}!important;stroke:${c.fill}!important;}` +
+    `svg text.actor[data-lane="${i}"]{fill:${c.text}!important;font-weight:700!important;}` +
+    `svg text.actor[data-lane="${i}"]>tspan{fill:${c.text}!important;font-weight:700!important;}` +
+    // Arrow message text sits on the cream canvas, so it uses the lane colour
+    // itself — readable on the background and clearly tied to its source object.
+    `svg text.messageText[data-lane="${i}"]{fill:${c.fill}!important;stroke:none!important;font-weight:600!important;}` +
+    `svg text.messageText[data-lane="${i}"]>tspan{fill:${c.fill}!important;}`
+  ).join('\n');
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.setAttribute('id', 'seq-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
 async function render(){
   if(typeof window.mermaid === 'undefined') return;
   const src = codeEl.value.trim();
@@ -530,7 +746,8 @@ async function render(){
   try{
     const { svg } = await mermaid.render(id, src);
     hostEl.innerHTML = svg;
-    lastGoodSvg = svg;
+    colorizeSequence();
+    lastGoodSvg = hostEl.innerHTML;
     errorBar.style.display = 'none';
     statusEl.classList.remove('error');
     statusText.textContent = 'Rendered';
@@ -639,7 +856,7 @@ document.getElementById('downloadPngBtn').addEventListener('click', () => {
 
 // Zoom / pan
 function setZoom(z, cx, cy){
-  zoom = Math.min(3, Math.max(0.2, z));
+  zoom = Math.min(5, Math.max(0.2, z));
   applyTransform();
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.15));
@@ -676,10 +893,25 @@ resizer.addEventListener('mousedown', () => { resizing = true; resizer.classList
 window.addEventListener('mousemove', (e) => {
   if(!resizing) return;
   const mainRect = document.getElementById('main').getBoundingClientRect();
-  const w = Math.min(Math.max(e.clientX - mainRect.left, 280), mainRect.width * 0.75);
-  editorPane.style.width = w + 'px';
+  const h = Math.min(Math.max(e.clientY - mainRect.top, 200), mainRect.height * 0.75);
+  editorPane.style.flexBasis = h + 'px';
 });
 window.addEventListener('mouseup', () => { resizing = false; resizer.classList.remove('active'); });
+
+// Toggle source pane visibility
+const toggleSourceBtn = document.getElementById('toggleSourceBtn');
+const toggleIcon = toggleSourceBtn.querySelector('svg');
+const toggleLabel = toggleSourceBtn.querySelector('span');
+const eyeOpenSvg = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+const eyeOffSvg = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+let sourceHidden = false;
+toggleSourceBtn.addEventListener('click', () => {
+  sourceHidden = !sourceHidden;
+  editorPane.style.display = sourceHidden ? 'none' : '';
+  resizer.style.display = sourceHidden ? 'none' : '';
+  toggleIcon.innerHTML = sourceHidden ? eyeOffSvg : eyeOpenSvg;
+  toggleLabel.textContent = sourceHidden ? 'Show source' : 'Hide source';
+});
 
 // init
 codeEl.value = EXAMPLES["Flowchart"];

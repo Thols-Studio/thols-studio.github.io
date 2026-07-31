@@ -100,6 +100,17 @@
   .checkline{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); }
   .checkline input{ accent-color:var(--accent); }
 
+  .hint{
+    display:none; align-items:center; gap:6px; margin-top:8px;
+    font-size:12px; color:var(--text-dim); line-height:1.5;
+  }
+  .hint-btn{
+    background:none; border:none; padding:0; margin:0;
+    color:var(--accent-2); text-decoration:underline; text-underline-offset:2px;
+    font-family:var(--sans); font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .hint-btn:hover{ color:#ffcb80; }
+
   .stats{
     display:flex; gap:10px; margin-left:auto; font-family:var(--mono); font-size:12px;
   }
@@ -132,6 +143,7 @@
   .tree li{ white-space:nowrap; }
   .node-dir{ color:var(--text-dim); }
   .node-dir::before{ content:"📁 "; }
+  .node-dir.no-match{ opacity:.45; }
   .node-file{ color:var(--text-dim); }
   .node-file::before{ content:"· "; color:var(--line); }
   .node-file.match{ color:var(--good); }
@@ -156,6 +168,22 @@
     background:rgba(255,107,107,.08); border:1px solid rgba(255,107,107,.35);
     color:#ffb3b3; font-size:13px; line-height:1.5;
   }
+  .warn.caution{
+    background:rgba(255,180,84,.08); border-color:rgba(255,180,84,.35); color:#ffd9a0;
+  }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(8,10,13,.72);
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:22px 24px; max-width:420px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);
+  }
+  .modal h3{ margin:0 0 10px; font-size:16px; font-weight:700; }
+  .modal-body{ margin:0 0 20px; color:var(--text-dim); font-size:13.5px; line-height:1.55; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; }
 </style>
 </head>
 <body>
@@ -164,11 +192,15 @@
   <header>
     <p class="eyebrow">Folder Sieve</p>
     <h1>Copy files by extension, keep the folder structure</h1>
-    <p class="sub">Pick a source folder, scan it, choose which extensions to keep, then copy just those files into a destination folder — every subfolder recreated exactly as it was.</p>
+    <p class="sub">Pick a source folder, scan it, choose which extensions to keep, then copy just those files into a destination folder. Only the subfolders that end up holding a match get recreated — dimmed folders in the preview won't be.</p>
   </header>
 
   <div id="apiWarn" class="warn">
     Your browser doesn't support the File System Access API needed for this tool. Please open this file in a recent version of <b>Chrome</b> or <b>Edge</b>.
+  </div>
+
+  <div id="conflictWarn" class="warn">
+    The destination can't be the same folder as, or a folder inside, the source. Choose a different destination to continue.
   </div>
 
   <div class="grid">
@@ -176,14 +208,14 @@
       <h2>Source folder</h2>
       <div class="picker-row">
         <div class="path-pill empty" id="srcPath">No folder selected</div>
-        <button id="srcBtn">Choose folder</button>
+        <button id="srcBtn" type="button">Choose folder</button>
       </div>
     </div>
     <div class="card">
       <h2>Destination folder</h2>
       <div class="picker-row">
         <div class="path-pill empty" id="dstPath">No folder selected</div>
-        <button id="dstBtn">Choose folder</button>
+        <button id="dstBtn" type="button">Choose folder</button>
       </div>
     </div>
   </div>
@@ -192,26 +224,37 @@
     <div class="field grow">
       <label for="extInput">Extensions to keep</label>
       <input type="text" id="extInput" placeholder=".png, .jpg, .cs, .prefab" style="width:100%">
+      <div class="hint" id="metaHint">
+        Looks like Unity file types — <button type="button" class="hint-btn" id="addMetaBtn">include .meta too</button> to keep GUIDs intact.
+      </div>
     </div>
     <div class="field">
       <label>&nbsp;</label>
-      <button id="scanBtn" class="primary" disabled>Scan source</button>
+      <div style="display:flex; gap:8px;">
+        <button id="scanBtn" class="primary" type="button" disabled>Scan source</button>
+        <button id="cancelScanBtn" type="button" style="display:none">Cancel</button>
+      </div>
     </div>
     <div class="field">
       <label class="checkline" style="margin-top:8px">
-        <input type="checkbox" id="overwriteChk" checked> Overwrite existing files
+        <input type="checkbox" id="overwriteChk"> Overwrite existing files
       </label>
     </div>
-    <div class="stats" id="stats" style="display:none">
+    <div class="stats" id="stats" style="display:none" role="status" aria-live="polite">
       <div class="stat">files scanned <b id="statTotal">0</b></div>
       <div class="stat match">matches <b id="statMatch">0</b></div>
     </div>
+  </div>
+
+  <div id="partialWarn" class="warn caution">
+    Scan stopped early, so the results below may be incomplete.
   </div>
 
   <div class="panes">
     <div class="pane">
       <div class="pane-head">
         <h2>Structure preview</h2>
+        <span style="font-size:11px; color:var(--text-dim);">dimmed = no match inside</span>
       </div>
       <div class="pane-body">
         <div class="tree" id="tree"><p class="empty-hint">Choose a source folder and scan it to preview the structure here.</p></div>
@@ -222,32 +265,57 @@
         <h2>Activity log</h2>
       </div>
       <div class="pane-body">
-        <div class="log" id="log"><p class="empty-hint">Nothing yet.</p></div>
+        <div class="log" id="log" role="log" aria-live="polite"><p class="empty-hint">Nothing yet.</p></div>
       </div>
     </div>
   </div>
 
   <div class="actionbar">
-    <button id="copyBtn" class="primary" disabled>Copy matching files →</button>
+    <button id="copyBtn" class="primary" type="button" disabled>Copy matching files →</button>
+    <button id="cancelCopyBtn" type="button" style="display:none">Cancel</button>
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="stat" id="progressLabel" style="font-family:var(--mono)">idle</div>
   </div>
 
 </div>
 
+<div class="modal-overlay" id="overwriteModalOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="overwriteModalTitle">
+    <h3 id="overwriteModalTitle">Overwrite existing files?</h3>
+    <p class="modal-body" id="overwriteModalBody"></p>
+    <div class="modal-actions">
+      <button id="overwriteCancelBtn" type="button">Cancel</button>
+      <button id="overwriteConfirmBtn" class="primary" type="button">Overwrite</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let srcHandle = null, dstHandle = null;
-let scannedEntries = []; // {relPath, name, handle, isMatch}
+let scannedEntries = []; // {kind, relPath, name, handle, isMatch}
+let folderConflict = false;
+let cancelRequested = false;
+let lastScanPartial = false;
 
 const el = id => document.getElementById(id);
 const srcBtn = el('srcBtn'), dstBtn = el('dstBtn');
 const srcPathEl = el('srcPath'), dstPathEl = el('dstPath');
 const extInput = el('extInput');
 const scanBtn = el('scanBtn'), copyBtn = el('copyBtn');
+const cancelScanBtn = el('cancelScanBtn'), cancelCopyBtn = el('cancelCopyBtn');
 const treeEl = el('tree'), logEl = el('log');
 const statsEl = el('stats'), statTotal = el('statTotal'), statMatch = el('statMatch');
 const progressBar = el('progressBar'), progressLabel = el('progressLabel');
 const overwriteChk = el('overwriteChk');
+const conflictWarnEl = el('conflictWarn'), partialWarnEl = el('partialWarn');
+const metaHintEl = el('metaHint'), addMetaBtn = el('addMetaBtn');
+const overwriteModalOverlay = el('overwriteModalOverlay');
+const overwriteModalBody = el('overwriteModalBody');
+const overwriteConfirmBtn = el('overwriteConfirmBtn');
+const overwriteCancelBtn = el('overwriteCancelBtn');
+
+// Extensions commonly seen in Unity projects. Used only for the ".meta" hint below.
+const UNITY_LIKE_EXTS = ['.cs', '.prefab', '.unity', '.asset', '.mat', '.controller', '.anim', '.physicmaterial', '.spriteatlas', '.shadervariants', '.playable', '.mixer'];
 
 if (!('showDirectoryPicker' in window)) {
   el('apiWarn').style.display = 'block';
@@ -261,6 +329,14 @@ function log(msg, cls){
   line.textContent = msg;
   logEl.appendChild(line);
   logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
+}
+
+function debounce(fn, ms){
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 function parseExtensions(){
@@ -277,16 +353,63 @@ function matchesExt(name, exts){
   return exts.some(ext => lower.endsWith(ext));
 }
 
+function updateMetaHint(exts){
+  const looksUnity = exts.some(e => UNITY_LIKE_EXTS.includes(e));
+  const hasMeta = exts.includes('.meta');
+  metaHintEl.style.display = (looksUnity && !hasMeta) ? 'flex' : 'none';
+}
+
+addMetaBtn.addEventListener('click', () => {
+  const current = extInput.value.trim().replace(/,\s*$/, '');
+  extInput.value = current ? current + ', .meta' : '.meta';
+  extInput.dispatchEvent(new Event('input'));
+  extInput.focus();
+});
+
+// True if `target` is the same folder as `root`, or nested anywhere inside it.
+// Only walks directories (not files), so it's much cheaper than a full scan.
+async function isSameOrDescendant(root, target){
+  if (await root.isSameEntry(target)) return true;
+  for await (const [, handle] of root.entries()){
+    if (handle.kind === 'directory'){
+      if (await isSameOrDescendant(handle, target)) return true;
+    }
+  }
+  return false;
+}
+
+function refreshActionAvailability(){
+  scanBtn.disabled = !srcHandle || folderConflict;
+  updateCopyBtn();
+}
+
+function setFolderConflict(isConflict){
+  folderConflict = isConflict;
+  conflictWarnEl.style.display = isConflict ? 'block' : 'none';
+  refreshActionAvailability();
+}
+
+async function checkFolderConflict(){
+  if (!srcHandle || !dstHandle){ setFolderConflict(false); return; }
+  try {
+    const conflict = await isSameOrDescendant(srcHandle, dstHandle);
+    setFolderConflict(conflict);
+  } catch (e){
+    log('Could not verify source/destination overlap: ' + e.message, 'err');
+    setFolderConflict(false);
+  }
+}
+
 srcBtn.addEventListener('click', async () => {
   try {
     srcHandle = await window.showDirectoryPicker({ id: 'sieve-src', mode: 'read' });
     srcPathEl.textContent = srcHandle.name;
     srcPathEl.classList.remove('empty');
-    scanBtn.disabled = false;
     scannedEntries = [];
-    copyBtn.disabled = true;
     treeEl.innerHTML = '<p class="empty-hint">Ready to scan.</p>';
     statsEl.style.display = 'none';
+    partialWarnEl.style.display = 'none';
+    await checkFolderConflict();
   } catch (e) { if (e.name !== 'AbortError') log('Source pick failed: ' + e.message, 'err'); }
 });
 
@@ -295,18 +418,22 @@ dstBtn.addEventListener('click', async () => {
     dstHandle = await window.showDirectoryPicker({ id: 'sieve-dst', mode: 'readwrite' });
     dstPathEl.textContent = dstHandle.name;
     dstPathEl.classList.remove('empty');
-    updateCopyBtn();
+    await checkFolderConflict();
   } catch (e) { if (e.name !== 'AbortError') log('Destination pick failed: ' + e.message, 'err'); }
 });
 
 function updateCopyBtn(){
-  copyBtn.disabled = !(srcHandle && dstHandle && scannedEntries.some(e => e.isMatch));
+  copyBtn.disabled = !(srcHandle && dstHandle && !folderConflict && scannedEntries.some(e => e.isMatch));
 }
 
 async function* walk(dirHandle, relPath = ''){
   for await (const [name, handle] of dirHandle.entries()){
+    if (cancelRequested) return;
     const childPath = relPath ? relPath + '/' + name : name;
     if (handle.kind === 'directory'){
+      // Defensive backstop: never treat the destination folder itself as source content,
+      // even if it ended up nested inside the folder being scanned.
+      if (dstHandle && await handle.isSameEntry(dstHandle)) continue;
       yield { kind: 'dir', relPath: childPath, name, handle };
       yield* walk(handle, childPath);
     } else {
@@ -315,7 +442,7 @@ async function* walk(dirHandle, relPath = ''){
   }
 }
 
-// Build a nested object tree from flat entries for rendering
+// Build a nested { dirs, files } tree from the flat scanned-entries list, for rendering.
 function buildTreeDom(entries){
   const root = { dirs: new Map(), files: [] };
   for (const entry of entries){
@@ -333,13 +460,25 @@ function buildTreeDom(entries){
   return root;
 }
 
+// Post-order pass: a directory "hasMatch" if it, or anything nested inside it, has a matching file.
+// This is what the actual copy step creates — folders with no match anywhere inside are skipped.
+function markMatchSubtrees(node){
+  let any = node.files.some(f => f.isMatch);
+  for (const child of node.dirs.values()){
+    if (markMatchSubtrees(child)) any = true;
+  }
+  node.hasMatch = any;
+  return any;
+}
+
 function renderNode(node){
   const ul = document.createElement('ul');
   for (const [dirName, child] of node.dirs.entries()){
     const li = document.createElement('li');
     const span = document.createElement('span');
-    span.className = 'node-dir';
+    span.className = 'node-dir' + (child.hasMatch ? '' : ' no-match');
     span.textContent = dirName;
+    if (!child.hasMatch) span.title = "Won't be created at the destination — no matching files inside";
     li.appendChild(span);
     li.appendChild(renderNode(child));
     ul.appendChild(li);
@@ -355,12 +494,23 @@ function renderNode(node){
   return ul;
 }
 
+function renderTree(){
+  const treeData = buildTreeDom(scannedEntries);
+  markMatchSubtrees(treeData);
+  treeEl.innerHTML = '';
+  treeEl.appendChild(renderNode(treeData));
+}
+
 scanBtn.addEventListener('click', async () => {
-  if (!srcHandle) return;
+  if (!srcHandle || folderConflict) return;
+  cancelRequested = false;
   scanBtn.disabled = true;
   scanBtn.textContent = 'Scanning…';
+  cancelScanBtn.style.display = 'inline-block';
   treeEl.innerHTML = '';
   scannedEntries = [];
+  lastScanPartial = false;
+  partialWarnEl.style.display = 'none';
   log('Scanning "' + srcHandle.name + '"…', 'dim');
 
   const exts = parseExtensions();
@@ -368,6 +518,7 @@ scanBtn.addEventListener('click', async () => {
 
   try {
     for await (const entry of walk(srcHandle)){
+      if (cancelRequested) break;
       if (entry.kind === 'file'){
         total++;
         entry.isMatch = matchesExt(entry.name, exts);
@@ -376,36 +527,51 @@ scanBtn.addEventListener('click', async () => {
       }
     }
   } catch (e){
+    lastScanPartial = true;
     log('Scan error: ' + e.message, 'err');
   }
 
-  const treeData = buildTreeDom(scannedEntries);
-  treeEl.appendChild(renderNode(treeData));
+  if (cancelRequested){
+    lastScanPartial = true;
+    log('Scan cancelled — showing partial results.', 'dim');
+  }
+
+  partialWarnEl.style.display = lastScanPartial ? 'block' : 'none';
+
+  renderTree();
 
   statTotal.textContent = total;
   statMatch.textContent = matches;
   statsEl.style.display = 'flex';
 
-  log('Scan complete — ' + total + ' files found, ' + matches + ' match the filter.', 'ok');
+  log((lastScanPartial ? 'Scan stopped early — ' : 'Scan complete — ') + total + ' files found, ' + matches + ' match the filter.',
+      lastScanPartial ? 'dim' : 'ok');
 
-  scanBtn.disabled = false;
+  cancelRequested = false;
   scanBtn.textContent = 'Scan source';
-  updateCopyBtn();
+  cancelScanBtn.style.display = 'none';
+  updateMetaHint(exts);
+  refreshActionAvailability();
 });
 
-extInput.addEventListener('input', () => {
-  if (scannedEntries.length === 0) return;
+cancelScanBtn.addEventListener('click', () => { cancelRequested = true; });
+cancelCopyBtn.addEventListener('click', () => { cancelRequested = true; });
+
+const handleExtInput = debounce(() => {
   const exts = parseExtensions();
+  updateMetaHint(exts);
+  if (scannedEntries.length === 0) return;
   let matches = 0;
   for (const entry of scannedEntries){
     entry.isMatch = matchesExt(entry.name, exts);
     if (entry.isMatch) matches++;
   }
   statMatch.textContent = matches;
-  treeEl.innerHTML = '';
-  treeEl.appendChild(renderNode(buildTreeDom(scannedEntries)));
+  renderTree();
   updateCopyBtn();
-});
+}, 150);
+
+extInput.addEventListener('input', handleExtInput);
 
 async function getOrCreateDir(rootHandle, relDirPath, cache){
   if (!relDirPath) return rootHandle;
@@ -425,8 +591,76 @@ async function getOrCreateDir(rootHandle, relDirPath, cache){
   return handle;
 }
 
+// Read-only counterpart of getOrCreateDir, used only for the pre-copy overwrite count.
+// Never creates anything — a missing directory just means "nothing to overwrite here yet".
+async function findExistingDir(rootHandle, relDirPath, cache){
+  if (!relDirPath) return rootHandle;
+  if (cache.has(relDirPath)) return cache.get(relDirPath);
+  let handle = rootHandle;
+  let built = '';
+  for (const part of relDirPath.split('/')){
+    built = built ? built + '/' + part : part;
+    if (cache.has(built)){
+      handle = cache.get(built);
+      if (!handle) { cache.set(relDirPath, null); return null; }
+      continue;
+    }
+    try {
+      handle = await handle.getDirectoryHandle(part, { create: false });
+      cache.set(built, handle);
+    } catch {
+      cache.set(built, null);
+      cache.set(relDirPath, null);
+      return null;
+    }
+  }
+  return handle;
+}
+
+async function countExisting(entries){
+  const dirCache = new Map();
+  let count = 0;
+  for (const entry of entries){
+    const parts = entry.relPath.split('/');
+    const dirPart = parts.slice(0, -1).join('/');
+    const targetDir = await findExistingDir(dstHandle, dirPart, dirCache);
+    if (!targetDir) continue;
+    try {
+      await targetDir.getFileHandle(entry.name, { create: false });
+      count++;
+    } catch { /* doesn't exist yet */ }
+  }
+  return count;
+}
+
+function confirmOverwrite(count, total){
+  return new Promise(resolve => {
+    overwriteModalBody.textContent = count === total
+      ? `All ${total} of the files you're about to copy already exist at the destination.`
+      : `${count} of the ${total} files you're about to copy already exist at the destination.`;
+    overwriteConfirmBtn.textContent = 'Overwrite ' + count + ' file' + (count === 1 ? '' : 's');
+    overwriteModalOverlay.style.display = 'flex';
+    overwriteCancelBtn.focus();
+
+    const cleanup = (result) => {
+      overwriteModalOverlay.style.display = 'none';
+      overwriteConfirmBtn.removeEventListener('click', onConfirm);
+      overwriteCancelBtn.removeEventListener('click', onCancel);
+      overwriteModalOverlay.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    };
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onKeydown = (e) => { if (e.key === 'Escape') cleanup(false); };
+
+    overwriteConfirmBtn.addEventListener('click', onConfirm);
+    overwriteCancelBtn.addEventListener('click', onCancel);
+    overwriteModalOverlay.addEventListener('keydown', onKeydown);
+  });
+}
+
 copyBtn.addEventListener('click', async () => {
-  if (!srcHandle || !dstHandle) return;
+  if (!srcHandle || !dstHandle || folderConflict) return;
 
   const perm = await dstHandle.queryPermission({ mode: 'readwrite' });
   if (perm !== 'granted'){
@@ -443,15 +677,37 @@ copyBtn.addEventListener('click', async () => {
     return;
   }
 
+  const overwrite = overwriteChk.checked;
+
+  if (overwrite){
+    copyBtn.disabled = true;
+    copyBtn.textContent = 'Checking destination…';
+    const existingCount = await countExisting(toCopy);
+    copyBtn.textContent = 'Copy matching files →';
+    if (existingCount > 0){
+      const proceed = await confirmOverwrite(existingCount, toCopy.length);
+      if (!proceed){
+        log('Copy cancelled before starting.', 'dim');
+        refreshActionAvailability();
+        return;
+      }
+    }
+  }
+
+  cancelRequested = false;
   copyBtn.disabled = true;
   scanBtn.disabled = true;
-  const overwrite = overwriteChk.checked;
+  cancelCopyBtn.style.display = 'inline-block';
   const dirCache = new Map();
   let done = 0, failed = 0, skipped = 0;
 
   log('Copying ' + toCopy.length + ' file(s) to "' + dstHandle.name + '"…', 'dim');
 
   for (const entry of toCopy){
+    if (cancelRequested){
+      log('Copy cancelled by user.', 'dim');
+      break;
+    }
     const parts = entry.relPath.split('/');
     const dirPart = parts.slice(0, -1).join('/');
     try {
@@ -488,12 +744,14 @@ copyBtn.addEventListener('click', async () => {
     progressLabel.textContent = done + ' / ' + toCopy.length;
   }
 
-  progressLabel.textContent = 'done';
-  log('Finished. ' + (done - failed - skipped) + ' copied, ' + skipped + ' skipped, ' + failed + ' failed.',
+  const wasCancelled = cancelRequested;
+  progressLabel.textContent = wasCancelled ? 'cancelled' : 'done';
+  log('Finished. ' + (done - failed - skipped) + ' copied, ' + skipped + ' skipped, ' + failed + ' failed' + (wasCancelled ? ' (cancelled early)' : '') + '.',
       failed ? 'err' : 'ok');
 
-  scanBtn.disabled = false;
-  copyBtn.disabled = false;
+  cancelRequested = false;
+  cancelCopyBtn.style.display = 'none';
+  refreshActionAvailability();
 });
 </script>
 </body>
