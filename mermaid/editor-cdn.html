@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flowsmith — Mermaid Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script> 
+<!-- <script src='https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'></script> -->
+<style>
+  :root{
+    --ink-950:#12131c;
+    --ink-900:#181a26;
+    --ink-800:#20222f;
+    --ink-700:#2a2d3d;
+    --ink-600:#3a3d52;
+    --ink-400:#6c6f8a;
+    --ink-200:#9a9cb5;
+    --paper:#f5f3ee;
+    --paper-dim:#eae7de;
+    --line:#1e2130;
+    --violet:#8b7ff0;
+    --violet-dim:#5e56a8;
+    --amber:#e2a23b;
+    --coral:#e2795b;
+    --ok:#5cb896;
+    --err:#e2695b;
+    --font-ui:'Söhne', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--font-ui);
+    background:var(--ink-950);
+    color:var(--paper);
+    overflow:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  /* ===== Top bar ===== */
+  #topbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:0 16px;
+    height:52px;
+    background:var(--ink-900);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.2px;
+    color:var(--paper);
+    margin-right:6px;
+  }
+  #brand svg{flex-shrink:0;}
+  #brand .tag{
+    font-size:10px;
+    font-weight:500;
+    color:var(--violet);
+    background:rgba(139,127,240,0.14);
+    border:1px solid rgba(139,127,240,0.3);
+    padding:2px 6px;
+    border-radius:3px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+  }
+  .divider{width:1px;height:24px;background:var(--line);}
+  select, .tbtn{
+    font-family:var(--font-ui);
+    font-size:12.5px;
+    color:var(--paper);
+    background:var(--ink-800);
+    border:1px solid var(--ink-600);
+    border-radius:6px;
+    padding:7px 10px;
+    cursor:pointer;
+    outline:none;
+    transition:border-color .12s, background .12s;
+  }
+  select:hover, .tbtn:hover{border-color:var(--violet-dim); background:var(--ink-700);}
+  .tbtn{display:flex; align-items:center; gap:6px; white-space:nowrap;}
+  .tbtn.primary{
+    background:var(--violet);
+    border-color:var(--violet);
+    color:#100e1c;
+    font-weight:600;
+  }
+  .tbtn.primary:hover{background:#9d92f5;}
+  #topbar .spacer{flex:1;}
+  #topbar .icon{width:14px;height:14px;flex-shrink:0;}
+  #status{
+    font-size:11.5px;
+    color:var(--ink-200);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  #status .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+  #status.error .dot{background:var(--err);}
+  #status.error{color:var(--err);}
+
+  /* ===== Main split ===== */
+  #main{flex:1; display:flex; min-height:0;}
+  #editor-pane{
+    width:44%;
+    min-width:280px;
+    max-width:75%;
+    display:flex;
+    flex-direction:column;
+    background:var(--ink-900);
+    border-right:1px solid var(--line);
+  }
+  #editor-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:var(--ink-400);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #editor-head .actions{display:flex; gap:8px;}
+  #editor-head button{
+    background:none; border:none; color:var(--ink-400);
+    cursor:pointer; font-size:14px; padding:2px 4px; border-radius:4px;
+  }
+  #editor-head button:hover{color:var(--paper); background:var(--ink-700);}
+  #code-wrap{
+    flex:1;
+    display:flex;
+    min-height:0;
+    position:relative;
+  }
+  #line-numbers{
+    padding:14px 10px 14px 14px;
+    text-align:right;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    color:var(--ink-600);
+    user-select:none;
+    overflow:hidden;
+    background:var(--ink-950);
+    flex-shrink:0;
+  }
+  #code{
+    flex:1;
+    resize:none;
+    border:none;
+    outline:none;
+    background:var(--ink-900);
+    color:#dcdbe8;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    padding:14px 14px 14px 8px;
+    tab-size:2;
+    white-space:pre;
+    overflow:auto;
+  }
+  #error-bar{
+    display:none;
+    padding:10px 14px;
+    background:rgba(226,105,91,0.1);
+    border-top:1px solid rgba(226,105,91,0.35);
+    color:#f0a99c;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    line-height:1.5;
+    max-height:110px;
+    overflow:auto;
+    flex-shrink:0;
+  }
+
+  #resizer{
+    width:5px;
+    cursor:col-resize;
+    background:var(--ink-900);
+    flex-shrink:0;
+    position:relative;
+  }
+  #resizer:hover, #resizer.active{background:var(--violet-dim);}
+
+  /* ===== Preview pane ===== */
+  #preview-pane{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+    min-width:0;
+  }
+  #preview-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    background:var(--paper-dim);
+    border-bottom:1px solid #dcd8cc;
+    flex-shrink:0;
+  }
+  #preview-head .spacer{flex:1;}
+  .zbtn{
+    width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    background:#fff;
+    border:1px solid #d8d4c8;
+    border-radius:5px;
+    cursor:pointer;
+    color:#4a4838;
+    font-size:14px;
+    font-weight:600;
+  }
+  .zbtn:hover{background:#f0ede3; border-color:var(--violet-dim);}
+  #zoom-label{
+    font-size:11.5px;
+    color:#6b6858;
+    min-width:42px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  #canvas-scroll{
+    flex:1;
+    overflow:auto;
+    position:relative;
+    cursor:grab;
+    background-image:radial-gradient(#dad6c9 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  #canvas-scroll.grabbing{cursor:grabbing;}
+  #canvas-inner{
+    position:absolute;
+    top:50%; left:50%;
+    transform-origin:center center;
+    padding:40px;
+  }
+  #diagram-host{
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
+    border-radius:10px;
+    padding:36px;
+    display:inline-block;
+  }
+  #diagram-host svg{display:block; max-width:none !important;}
+
+  /* toast */
+  #toast{
+    position:absolute;
+    bottom:18px; left:50%;
+    transform:translateX(-50%) translateY(8px);
+    background:var(--ink-950);
+    color:var(--paper);
+    padding:8px 16px;
+    border-radius:7px;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s, transform .18s;
+    z-index:20;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--ink-600); border-radius:6px;}
+  #canvas-scroll::-webkit-scrollbar-thumb{background:#cfcabb;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <div id="brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <circle cx="5" cy="12" r="3" stroke="#8b7ff0" stroke-width="2"/>
+        <circle cx="19" cy="6" r="3" stroke="#e2a23b" stroke-width="2"/>
+        <circle cx="19" cy="18" r="3" stroke="#e2795b" stroke-width="2"/>
+        <path d="M7.8 10.8L16.2 7.2M7.8 13.2L16.2 16.8" stroke="#6c6f8a" stroke-width="1.6"/>
+      </svg>
+      Flowsmith <span class="tag">mermaid</span>
+    </div>
+    <div class="divider"></div>
+    <select id="examplePicker" title="Load an example"></select>
+    <select id="themePicker" title="Diagram theme">
+      <option value="default">Theme: default</option>
+      <option value="neutral">Theme: neutral</option>
+      <option value="dark">Theme: dark</option>
+      <option value="forest">Theme: forest</option>
+      <option value="base">Theme: base</option>
+    </select>
+    <div class="spacer"></div>
+    <div id="status"><span class="dot"></span><span id="status-text">Rendered</span></div>
+    <div class="divider"></div>
+    <button class="tbtn" id="copyCodeBtn">Copy code</button>
+    <button class="tbtn" id="downloadSvgBtn">Export SVG</button>
+    <button class="tbtn primary" id="downloadPngBtn">Export PNG</button>
+  </div>
+
+  <div id="main">
+    <div id="editor-pane">
+      <div id="editor-head">
+        <span>Diagram source</span>
+        <div class="actions">
+          <button id="clearBtn" title="Clear">Clear</button>
+        </div>
+      </div>
+      <div id="code-wrap">
+        <div id="line-numbers">1</div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      </div>
+      <div id="error-bar"></div>
+    </div>
+
+    <div id="resizer"></div>
+
+    <div id="preview-pane">
+      <div id="preview-head">
+        <button class="zbtn" id="zoomOut">–</button>
+        <span id="zoom-label">100%</span>
+        <button class="zbtn" id="zoomIn">+</button>
+        <button class="zbtn" id="zoomReset" title="Reset view" style="width:auto;padding:0 10px;font-size:11.5px;">Reset</button>
+        <div class="spacer"></div>
+        <span style="font-size:11px;color:#8a876f;">Scroll to zoom · drag to pan</span>
+      </div>
+      <div id="canvas-scroll">
+        <div id="canvas-inner">
+          <div id="diagram-host"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+const EXAMPLES = {
+  "Flowchart": `flowchart TD
+    A[Start] --> B{Has account?}
+    B -- Yes --> C[Log in]
+    B -- No --> D[Sign up]
+    C --> E[Dashboard]
+    D --> F[Verify email]
+    F --> E
+    E --> G[Done]`,
+  "Sequence": `sequenceDiagram
+    participant U as User
+    participant A as App
+    participant S as Server
+    U->>A: Click "Save"
+    A->>S: POST /save
+    S-->>A: 200 OK
+    A-->>U: Show confirmation
+    Note over U,S: Round trip under 300ms`,
+  "Class": `classDiagram
+    class Diagram {
+      +String title
+      +render()
+    }
+    class Flowchart
+    class Sequence
+    Diagram <|-- Flowchart
+    Diagram <|-- Sequence`,
+  "State": `stateDiagram-v2
+    [*] --> Draft
+    Draft --> Review: submit
+    Review --> Draft: request changes
+    Review --> Published: approve
+    Published --> [*]`,
+  "ER": `erDiagram
+    USER ||--o{ DIAGRAM : creates
+    DIAGRAM ||--|{ NODE : contains
+    USER {
+      string name
+      string email
+    }
+    DIAGRAM {
+      string title
+      string theme
+    }`,
+  "Gantt": `gantt
+    title Editor build plan
+    dateFormat YYYY-MM-DD
+    section Core
+    Layout        :a1, 2026-08-01, 3d
+    Live preview  :a2, after a1, 4d
+    section Polish
+    Export        :a3, after a2, 2d
+    Themes        :a4, after a2, 3d`,
+  "Pie": `pie title Diagram types used
+    "Flowchart" : 42
+    "Sequence" : 27
+    "State" : 14
+    "ER" : 10
+    "Other" : 7`,
+  "Journey": `journey
+    title Publishing a diagram
+    section Draft
+      Write syntax: 3: Author
+      Preview live: 5: Author
+    section Share
+      Export SVG: 4: Author
+      Send to team: 5: Author, Team`,
+  "Mindmap": `mindmap
+    root((Diagram))
+      Syntax
+        Nodes
+        Edges
+      Rendering
+        SVG
+        Themes
+      Export
+        PNG
+        SVG`
+};
+
+const codeEl = document.getElementById('code');
+const lineNumbersEl = document.getElementById('line-numbers');
+const hostEl = document.getElementById('diagram-host');
+const innerEl = document.getElementById('canvas-inner');
+const scrollEl = document.getElementById('canvas-scroll');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+const errorBar = document.getElementById('error-bar');
+const examplePicker = document.getElementById('examplePicker');
+const themePicker = document.getElementById('themePicker');
+const zoomLabel = document.getElementById('zoom-label');
+
+let zoom = 1;
+let panX = 0, panY = 0;
+let renderSeq = 0;
+let lastGoodSvg = null;
+
+Object.keys(EXAMPLES).forEach(name => {
+  const opt = document.createElement('option');
+  opt.value = name;
+  opt.textContent = name;
+  examplePicker.appendChild(opt);
+});
+
+mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default', fontFamily: 'var(--font-ui)' });
+
+function updateLineNumbers(){
+  const lines = codeEl.value.split('\n').length;
+  let out = '';
+  for(let i=1;i<=lines;i++) out += i + '\n';
+  lineNumbersEl.textContent = out;
+}
+codeEl.addEventListener('scroll', () => { lineNumbersEl.scrollTop = codeEl.scrollTop; });
+
+function applyTransform(){
+  innerEl.style.transform = `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${zoom})`;
+  zoomLabel.textContent = Math.round(zoom*100) + '%';
+}
+
+async function render(){
+  const src = codeEl.value.trim();
+  updateLineNumbers();
+  if(!src){
+    hostEl.innerHTML = '';
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Empty';
+    return;
+  }
+  const id = 'g' + (++renderSeq);
+  try{
+    const { svg } = await mermaid.render(id, src);
+    hostEl.innerHTML = svg;
+    lastGoodSvg = svg;
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Rendered';
+  }catch(err){
+    errorBar.style.display = 'block';
+    errorBar.textContent = (err && err.message) ? err.message.split('\n').slice(0,4).join('\n') : 'Could not parse diagram.';
+    statusEl.classList.add('error');
+    statusText.textContent = 'Syntax error';
+    const stray = document.getElementById(id);
+    if(stray) stray.remove();
+  }
+}
+
+let debounceTimer;
+codeEl.addEventListener('input', () => {
+  updateLineNumbers();
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 320);
+});
+
+codeEl.addEventListener('keydown', (e) => {
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    codeEl.value = codeEl.value.slice(0,s) + '  ' + codeEl.value.slice(en);
+    codeEl.selectionStart = codeEl.selectionEnd = s+2;
+  }
+});
+
+examplePicker.addEventListener('change', () => {
+  const name = examplePicker.value;
+  if(EXAMPLES[name]){
+    codeEl.value = EXAMPLES[name];
+    render();
+  }
+});
+
+themePicker.addEventListener('change', () => {
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: themePicker.value, fontFamily: 'var(--font-ui)' });
+  render();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  codeEl.value = '';
+  updateLineNumbers();
+  render();
+});
+
+// Toast
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+document.getElementById('copyCodeBtn').addEventListener('click', async () => {
+  try{
+    await navigator.clipboard.writeText(codeEl.value);
+    toast('Code copied to clipboard');
+  }catch(e){ toast('Could not copy'); }
+});
+
+document.getElementById('downloadSvgBtn').addEventListener('click', () => {
+  if(!lastGoodSvg){ toast('Nothing to export yet'); return; }
+  const blob = new Blob([lastGoodSvg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'diagram.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('SVG downloaded');
+});
+
+document.getElementById('downloadPngBtn').addEventListener('click', () => {
+  if(!lastGoodSvg){ toast('Nothing to export yet'); return; }
+  const svgEl = hostEl.querySelector('svg');
+  const bbox = svgEl.getBoundingClientRect();
+  const scale = 2;
+  const img = new Image();
+  const svgBlob = new Blob([lastGoodSvg], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = bbox.width * scale;
+    canvas.height = bbox.height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, bbox.width, bbox.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'diagram.png';
+      a.click();
+      toast('PNG downloaded');
+    });
+  };
+  img.onerror = () => toast('PNG export failed');
+  img.src = url;
+});
+
+// Zoom / pan
+function setZoom(z, cx, cy){
+  zoom = Math.min(3, Math.max(0.2, z));
+  applyTransform();
+}
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.15));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.15));
+document.getElementById('zoomReset').addEventListener('click', () => { zoom=1; panX=0; panY=0; applyTransform(); });
+
+scrollEl.addEventListener('wheel', (e) => {
+  if(e.ctrlKey || e.metaKey || true){
+    e.preventDefault();
+    setZoom(zoom + (e.deltaY < 0 ? 0.08 : -0.08));
+  }
+}, { passive:false });
+
+let isDragging = false, dragStartX=0, dragStartY=0, panStartX=0, panStartY=0;
+scrollEl.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  scrollEl.classList.add('grabbing');
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX = panX; panStartY = panY;
+});
+window.addEventListener('mousemove', (e) => {
+  if(!isDragging) return;
+  panX = panStartX + (e.clientX - dragStartX);
+  panY = panStartY + (e.clientY - dragStartY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; scrollEl.classList.remove('grabbing'); });
+
+// Resizer
+const resizer = document.getElementById('resizer');
+const editorPane = document.getElementById('editor-pane');
+let resizing = false;
+resizer.addEventListener('mousedown', () => { resizing = true; resizer.classList.add('active'); });
+window.addEventListener('mousemove', (e) => {
+  if(!resizing) return;
+  const mainRect = document.getElementById('main').getBoundingClientRect();
+  const w = Math.min(Math.max(e.clientX - mainRect.left, 280), mainRect.width * 0.75);
+  editorPane.style.width = w + 'px';
+});
+window.addEventListener('mouseup', () => { resizing = false; resizer.classList.remove('active'); });
+
+// init
+codeEl.value = EXAMPLES["Flowchart"];
+examplePicker.value = "Flowchart";
+updateLineNumbers();
+applyTransform();
+render();
+</script>
+</body>
+</html>
