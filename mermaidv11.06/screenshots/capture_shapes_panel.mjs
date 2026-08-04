@@ -1,0 +1,26 @@
+import { chromium } from 'playwright';
+
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('http://localhost:5505');
+  await page.waitForSelector('#target svg', { state: 'attached' });
+
+  // Make it a flowchart
+  await page.evaluate(() => {
+    const src = document.getElementById('source');
+    src.value = 'flowchart TD\n  A[Start] --> B(End)\n';
+    src.dispatchEvent(new Event('input'));
+  });
+  await page.waitForTimeout(500);
+
+  // Click the Shapes button
+  await page.click('#shapesToolbarBtn');
+  
+  await page.waitForTimeout(500); // wait for dropdown
+  await page.screenshot({ path: 'd:\\Mermaid\\screenshots\\24_shapes_panel.png' });
+
+  await browser.close();
+})();

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<!--
+  Flowsmith — Mermaid 11.x Editor (ESM)
+  ----------------------------------------------------------------
+  Variant of mermaid-editor.html that loads Mermaid 11.16.0 as a
+  single-file ESM bundle (mermaid.bundled.mjs, ~4.8 MB).
+
+  Why a new file?
+  - Mermaid 11 dropped the UMD/IIFE browser-global build.
+    The old <script src="mermaid.min.js"> pattern no longer works.
+  - The package's "ESM" entry is just a 30 KB shell that imports
+    ~40 chunk files. We bundle those into one self-contained .mjs
+    via esbuild so this file can be served from any static host.
+  - The original mermaid-editor.html (10.9.1, UMD) is untouched.
+
+  Hosting note: because this page uses <script type="module">,
+  it MUST be served over HTTP(S). Opening it via file:// will be
+  blocked by browser CORS rules for ES modules. Use GitHub Pages
+  (which is what this folder ships to) or any local web server.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flowsmith — Mermaid 11 Editor</title>
+<style>
+  :root{
+    --ink-950:#12131c;
+    --ink-900:#181a26;
+    --ink-800:#20222f;
+    --ink-700:#2a2d3d;
+    --ink-600:#3a3d52;
+    --ink-400:#6c6f8a;
+    --ink-200:#9a9cb5;
+    --paper:#f5f3ee;
+    --paper-dim:#eae7de;
+    --line:#1e2130;
+    --violet:#8b7ff0;
+    --violet-dim:#5e56a8;
+    --amber:#e2a23b;
+    --coral:#e2795b;
+    --ok:#5cb896;
+    --err:#e2695b;
+    --font-ui:'Söhne', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--font-ui);
+    background:var(--ink-950);
+    color:var(--paper);
+    overflow:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+
+  /* ===== Top bar ===== */
+  #topbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:0 16px;
+    height:52px;
+    background:var(--ink-900);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.2px;
+    color:var(--paper);
+    margin-right:6px;
+  }
+  #brand svg{flex-shrink:0;}
+  #brand .tag{
+    font-size:10px;
+    font-weight:500;
+    color:var(--violet);
+    background:rgba(139,127,240,0.14);
+    border:1px solid rgba(139,127,240,0.3);
+    padding:2px 6px;
+    border-radius:3px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+  }
+  #version-tag{
+    font-size:10px;
+    color:var(--ink-400);
+    font-weight:400;
+    letter-spacing:0.2px;
+  }
+  .divider{width:1px;height:24px;background:var(--line);}
+  select, .tbtn{
+    font-family:var(--font-ui);
+    font-size:12.5px;
+    color:var(--paper);
+    background:var(--ink-800);
+    border:1px solid var(--ink-600);
+    border-radius:6px;
+    padding:7px 10px;
+    cursor:pointer;
+    outline:none;
+    transition:border-color .12s, background .12s;
+  }
+  select:hover, .tbtn:hover{border-color:var(--violet-dim); background:var(--ink-700);}
+  .tbtn{display:flex; align-items:center; gap:6px; white-space:nowrap;}
+  .tbtn.primary{
+    background:var(--violet);
+    border-color:var(--violet);
+    color:#100e1c;
+    font-weight:600;
+  }
+  .tbtn.primary:hover{background:#9d92f5;}
+  #topbar .spacer{flex:1;}
+  #topbar .icon{width:14px;height:14px;flex-shrink:0;}
+  #status{
+    font-size:11.5px;
+    color:var(--ink-200);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  #status .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+  #status.error .dot{background:var(--err);}
+  #status.error{color:var(--err);}
+
+  /* ===== Main split (vertical) ===== */
+  #main{flex:1; display:flex; flex-direction:column; min-height:0;}
+  #editor-pane{
+    flex:0 0 45%;
+    min-height:200px;
+    max-height:75%;
+    display:flex;
+    flex-direction:column;
+    background:var(--ink-900);
+    border-bottom:1px solid var(--line);
+  }
+  #editor-head{
+    display:flex;
+    align-items:flex-start;
+    gap:6px;
+    padding:8px 14px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    color:var(--ink-400);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  #editor-head .actions{display:flex; gap:8px;}
+  #editor-head button{
+    background:none; border:none; color:var(--ink-400);
+    cursor:pointer; font-size:14px; padding:2px 4px; border-radius:4px;
+  }
+  #editor-head button:hover{color:var(--paper); background:var(--ink-700);}
+  #code-wrap{
+    flex:1;
+    display:flex;
+    min-height:0;
+    position:relative;
+  }
+  #line-numbers{
+    padding:14px 10px 14px 14px;
+    text-align:right;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    color:var(--ink-600);
+    user-select:none;
+    overflow:hidden;
+    white-space:pre;
+    background:var(--ink-950);
+    flex-shrink:0;
+  }
+  #code{
+    flex:1;
+    resize:none;
+    border:none;
+    outline:none;
+    background:var(--ink-900);
+    color:#dcdbe8;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    padding:14px 14px 14px 8px;
+    tab-size:2;
+    white-space:pre;
+    overflow:auto;
+  }
+  #error-bar{
+    display:none;
+    padding:10px 14px;
+    background:rgba(226,105,91,0.1);
+    border-top:1px solid rgba(226,105,91,0.35);
+    color:#f0a99c;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    line-height:1.5;
+    max-height:110px;
+    overflow:auto;
+    flex-shrink:0;
+  }
+
+  #resizer{
+    height:5px;
+    cursor:row-resize;
+    background:var(--ink-900);
+    flex-shrink:0;
+    position:relative;
+  }
+  #resizer:hover, #resizer.active{background:var(--violet-dim);}
+
+  /* ===== Preview pane ===== */
+  #preview-pane{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+    min-height:0;
+  }
+  #preview-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    background:var(--paper-dim);
+    border-bottom:1px solid #dcd8cc;
+    flex-shrink:0;
+  }
+  #preview-head .spacer{flex:1;}
+  .zbtn{
+    width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    background:#fff;
+    border:1px solid #d8d4c8;
+    border-radius:5px;
+    cursor:pointer;
+    color:#4a4838;
+    font-size:14px;
+    font-weight:600;
+  }
+  .zbtn:hover{background:#f0ede3; border-color:var(--violet-dim);}
+  #zoom-label{
+    font-size:11.5px;
+    color:#6b6858;
+    min-width:42px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  #canvas-scroll{
+    flex:1;
+    overflow:auto;
+    position:relative;
+    cursor:grab;
+    background-image:radial-gradient(#dad6c9 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  #canvas-scroll.grabbing{cursor:grabbing;}
+  #canvas-inner{
+    position:absolute;
+    top:50%; left:50%;
+    transform-origin:center center;
+    padding:40px;
+  }
+  #diagram-host{
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
+    border-radius:10px;
+    padding:36px;
+    display:inline-block;
+  }
+  #diagram-host svg{display:block; max-width:none !important;}
+
+  /* toast */
+  #toast{
+    position:absolute;
+    bottom:18px; left:50%;
+    transform:translateX(-50%) translateY(8px);
+    background:var(--ink-950);
+    color:var(--paper);
+    padding:8px 16px;
+    border-radius:7px;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s, transform .18s;
+    z-index:20;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* boot overlay */
+  #boot-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(18,19,28,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+  }
+  #boot-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    text-align:center;
+    max-width:380px;
+  }
+  #boot-spinner{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:3px solid var(--ink-700);
+    border-top-color:var(--violet);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #boot-text{font-size:14px; font-weight:600; color:var(--paper);}
+  #boot-detail{font-size:12px; color:var(--ink-200); line-height:1.5;}
+
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--ink-600); border-radius:6px;}
+  #canvas-scroll::-webkit-scrollbar-thumb{background:#cfcabb;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <div id="brand">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <circle cx="5" cy="12" r="3" stroke="#8b7ff0" stroke-width="2"/>
+        <circle cx="19" cy="6" r="3" stroke="#e2a23b" stroke-width="2"/>
+        <circle cx="19" cy="18" r="3" stroke="#e2795b" stroke-width="2"/>
+        <path d="M7.8 10.8L16.2 7.2M7.8 13.2L16.2 16.8" stroke="#6c6f8a" stroke-width="1.6"/>
+      </svg>
+      Flowsmith <span class="tag">mermaid</span>
+    </div>
+    <span id="version-tag">v11</span>
+    <div class="divider"></div>
+    <select id="examplePicker" title="Load an example"></select>
+    <select id="themePicker" title="Diagram theme">
+      <option value="default">Theme: default</option>
+      <option value="neutral">Theme: neutral</option>
+      <option value="dark">Theme: dark</option>
+      <option value="forest">Theme: forest</option>
+      <option value="base">Theme: base</option>
+    </select>
+    <button class="tbtn" id="toggleSourceBtn" title="Show or hide the diagram source">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>Hide source</span>
+    </button>
+    <div class="spacer"></div>
+    <div id="status"><span class="dot"></span><span id="status-text">Rendered</span></div>
+    <div class="divider"></div>
+    <button class="tbtn" id="copyCodeBtn">Copy code</button>
+    <button class="tbtn" id="downloadSvgBtn">Export SVG</button>
+    <button class="tbtn primary" id="downloadPngBtn">Export PNG</button>
+  </div>
+
+  <div id="main">
+    <div id="editor-pane">
+      <div id="editor-head">
+        <span>Diagram source</span>
+        <div class="actions">
+          <button id="clearBtn" title="Clear">Clear</button>
+        </div>
+      </div>
+      <div id="code-wrap">
+        <div id="line-numbers">1</div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      </div>
+      <div id="error-bar"></div>
+    </div>
+
+    <div id="resizer"></div>
+
+    <div id="preview-pane">
+      <div id="preview-head">
+        <button class="zbtn" id="zoomOut">–</button>
+        <span id="zoom-label">100%</span>
+        <button class="zbtn" id="zoomIn">+</button>
+        <button class="zbtn" id="zoomReset" title="Reset view" style="width:auto;padding:0 10px;font-size:11.5px;">Reset</button>
+        <div class="spacer"></div>
+        <span style="font-size:11px;color:#8a876f;">Scroll to zoom · drag to pan</span>
+      </div>
+      <div id="canvas-scroll">
+        <div id="canvas-inner">
+          <div id="diagram-host"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="boot-overlay">
+    <div id="boot-card">
+      <div id="boot-spinner"></div>
+      <div id="boot-text">Loading Mermaid 11…</div>
+      <div id="boot-detail">Reading <code>mermaid.bundled.mjs</code></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+ *  Non-module setup: DOM refs, examples, colorizer, UI handlers.
+ *  These run before the Mermaid module is loaded, so the boot
+ *  overlay can stay up while we wait for the dynamic import.
+ * ------------------------------------------------------------------ */
+const codeEl       = document.getElementById('code');
+const lineNumbersEl = document.getElementById('line-numbers');
+const hostEl       = document.getElementById('diagram-host');
+const innerEl      = document.getElementById('canvas-inner');
+const scrollEl     = document.getElementById('canvas-scroll');
+const statusEl     = document.getElementById('status');
+const statusText   = document.getElementById('status-text');
+const errorBar     = document.getElementById('error-bar');
+const examplePicker = document.getElementById('examplePicker');
+const themePicker  = document.getElementById('themePicker');
+const zoomLabel    = document.getElementById('zoom-label');
+const versionTag   = document.getElementById('version-tag');
+
+let zoom = 1;
+let panX = 0, panY = 0;
+let renderSeq = 0;
+let lastGoodSvg = null;
+let mermaid = null;        // populated once the dynamic import resolves
+let colorizerOk = true;    // becomes false if the 11.x SVG layout breaks the colorizer
+
+const EXAMPLES = {
+  "Flowchart": `flowchart TD
+    A[Start] --> B{Has account?}
+    B -- Yes --> C[Log in]
+    B -- No --> D[Sign up]
+    C --> E[Dashboard]
+    D --> F[Verify email]
+    F --> E
+    E --> G[Done]`,
+  "Sequence": `sequenceDiagram
+    participant U as User
+    participant A as App
+    participant S as Server
+    participant D as Database
+    participant C as Cache
+    U->>A: Click "Save"
+    A->>S: POST /save
+    S->>D: INSERT row
+    D-->>S: row id
+    S->>C: invalidate(key)
+    S-->>A: 200 OK
+    A-->>U: Show confirmation
+    Note over S,C: Cache invalidated`,
+  "Class": `classDiagram
+    class Diagram {
+      +String title
+      +render()
+    }
+    class Flowchart
+    class Sequence
+    Diagram <|-- Flowchart
+    Diagram <|-- Sequence`,
+  "State": `stateDiagram-v2
+    [*] --> Draft
+    Draft --> Review: submit
+    Review --> Draft: request changes
+    Review --> Published: approve
+    Published --> [*]`,
+  "ER": `erDiagram
+    USER ||--o{ DIAGRAM : creates
+    DIAGRAM ||--|{ NODE : contains
+    USER {
+      string name
+      string email
+    }
+    DIAGRAM {
+      string title
+      string theme
+    }`,
+  "Gantt": `gantt
+    title Editor build plan
+    dateFormat YYYY-MM-DD
+    section Core
+    Layout        :a1, 2026-08-01, 3d
+    Live preview  :a2, after a1, 4d
+    section Polish
+    Export        :a3, after a2, 2d
+    Themes        :a4, after a2, 3d`,
+  "Pie": `pie title Diagram types used
+    "Flowchart" : 42
+    "Sequence" : 27
+    "State" : 14
+    "ER" : 10
+    "Other" : 7`,
+  "Journey": `journey
+    title Publishing a diagram
+    section Draft
+      Write syntax: 3: Author
+      Preview live: 5: Author
+    section Share
+      Export SVG: 4: Author
+      Send to team: 5: Author, Team`,
+  "Mindmap": `mindmap
+    root((Diagram))
+      Syntax
+        Nodes
+        Edges
+      Rendering
+        SVG
+        Themes
+      Export
+        PNG
+        SVG`
+};
+
+Object.keys(EXAMPLES).forEach(name => {
+  const opt = document.createElement('option');
+  opt.value = name;
+  opt.textContent = name;
+  examplePicker.appendChild(opt);
+});
+
+function updateLineNumbers(){
+  const lines = codeEl.value.split('\n').length;
+  let out = '';
+  for(let i=1;i<=lines;i++) out += i + '\n';
+  lineNumbersEl.textContent = out;
+}
+codeEl.addEventListener('scroll', () => { lineNumbersEl.scrollTop = codeEl.scrollTop; });
+
+function applyTransform(){
+  innerEl.style.transform = `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${zoom})`;
+  zoomLabel.textContent = Math.round(zoom*100) + '%';
+}
+
+/* ------------------------------------------------------------------
+ *  Sequence-diagram colorizer
+ *  The selectors below were tuned against Mermaid 10.x. 11.x kept
+ *  the .actor class but small geometry changes are possible, so the
+ *  whole pass is wrapped in try/catch and silently no-ops if anything
+ *  blows up — the diagram itself still renders normally.
+ * ------------------------------------------------------------------ */
+const SEQ_PALETTE = [
+  { fill:'#e2795b', text:'#ffffff' },
+  { fill:'#3fb8af', text:'#ffffff' },
+  { fill:'#8b7ff0', text:'#ffffff' },
+  { fill:'#e2a23b', text:'#1a1a1a' },
+  { fill:'#5b9fe2', text:'#ffffff' },
+  { fill:'#5cb896', text:'#ffffff' },
+  { fill:'#d36ba1', text:'#ffffff' },
+  { fill:'#7d8cf0', text:'#ffffff' },
+  { fill:'#5bc0de', text:'#1a1a1a' },
+  { fill:'#e2824a', text:'#ffffff' },
+];
+
+function colorizeSequence(){
+  if(!colorizerOk) return;
+  try {
+    const svg = hostEl.querySelector('svg');
+    if(!svg) return;
+    const actorRects = svg.querySelectorAll('rect.actor');
+    const actorTexts = svg.querySelectorAll('text.actor');
+    if(!actorRects.length) return;
+
+    const xCentres = [];
+    actorRects.forEach(rect => {
+      const x = parseFloat(rect.getAttribute('x')) || 0;
+      const w = parseFloat(rect.getAttribute('width')) || 0;
+      xCentres.push(Math.round(x + w / 2));
+    });
+    const laneByX = new Map();
+    [...new Set(xCentres)].sort((a, b) => a - b).forEach((cx, i) => laneByX.set(cx, i));
+    const sortedUnique = [...laneByX.keys()].sort((a, b) => a - b);
+
+    actorRects.forEach((rect, i) => {
+      rect.setAttribute('data-lane', String(laneByX.get(xCentres[i]) ?? 0));
+    });
+
+    const laneXOf = (x) => {
+      let bestLane = 0, bestDist = Infinity;
+      sortedUnique.forEach((cx, idx) => {
+        const d = Math.abs(cx - x);
+        if(d < bestDist){ bestDist = d; bestLane = idx; }
+      });
+      return bestLane;
+    };
+    svg.querySelectorAll('line').forEach(line => {
+      const x1 = parseFloat(line.getAttribute('x1'));
+      const x2 = parseFloat(line.getAttribute('x2'));
+      if(isNaN(x1) || isNaN(x2)) return;
+      if(Math.abs(x1 - x2) < 1){
+        line.setAttribute('data-lane', String(laneXOf(x1)));
+      }
+    });
+
+    svg.querySelectorAll('rect[class^="activation"]').forEach(rect => {
+      const x = parseFloat(rect.getAttribute('x')) || 0;
+      const w = parseFloat(rect.getAttribute('width')) || 0;
+      rect.setAttribute('data-lane', String(laneXOf(x + w / 2)));
+    });
+
+    const NS = 'http://www.w3.org/2000/svg';
+    let defs = svg.querySelector('defs');
+    if(!defs){
+      defs = document.createElementNS(NS, 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    // Find a marker template by ID suffix. Mermaid 10.x uses bare ids
+    // (#arrowhead, #sequencenumber); 11.x prefixes them with the diagram id
+    // (#g2-arrowhead, #g2-sequencenumber). Matching on the suffix works for both.
+    const findMarker = (suffix) => {
+      const markers = svg.querySelectorAll('marker');
+      for(const m of markers){
+        const id = m.getAttribute('id') || '';
+        if(id === suffix || id.endsWith('-' + suffix)) return m;
+      }
+      return null;
+    };
+    const tplArrow = findMarker('arrowhead') || findMarker('filled-head');
+    const tplSeq   = findMarker('sequencenumber');
+    defs.querySelectorAll('[data-seq-clone]').forEach(el => el.remove());
+
+    const cloneMarker = (tpl, id, lane) => {
+      if(!tpl) return null;
+      const clone = tpl.cloneNode(true);
+      clone.setAttribute('id', id);
+      clone.setAttribute('data-seq-clone', '1');
+      // 11.x wraps the marker shape in an inner <path>/<circle>; tint every
+      // drawable so the clone shows in the lane colour.
+      const c = SEQ_PALETTE[lane % SEQ_PALETTE.length];
+      clone.querySelectorAll('path, circle, polyline').forEach(el => {
+        el.setAttribute('fill', c.fill);
+        el.setAttribute('stroke', c.fill);
+      });
+      defs.appendChild(clone);
+      return clone;
+    };
+    const lanesPresent = new Set();
+    svg.querySelectorAll('line').forEach(line => {
+      const me = line.getAttribute('marker-end') || line.getAttribute('marker-start');
+      if(!me) return;
+      const x1 = parseFloat(line.getAttribute('x1'));
+      if(isNaN(x1)) return;
+      lanesPresent.add(laneXOf(x1));
+    });
+    lanesPresent.forEach(lane => {
+      cloneMarker(tplArrow, 'arrowhead-l' + lane, lane);
+      cloneMarker(tplSeq,   'sequencenumber-l' + lane, lane);
+    });
+
+    svg.querySelectorAll('line').forEach(line => {
+      const me = line.getAttribute('marker-end');
+      const ms = line.getAttribute('marker-start');
+      if(!me && !ms) return;
+      const x1 = parseFloat(line.getAttribute('x1'));
+      if(isNaN(x1)) return;
+      const lane = laneXOf(x1);
+      if(me)  line.setAttribute('marker-end',   `url(#arrowhead-l${lane})`);
+      if(ms)  line.setAttribute('marker-start', `url(#sequencenumber-l${lane})`);
+      line.setAttribute('data-lane', String(lane));
+    });
+
+    // Match each message label to its arrow to inherit the arrow's source lane.
+    // Mermaid emits a label and its arrow together, in document order, so when
+    // the counts match the Nth label maps to the Nth arrow — exact. When they
+    // differ (loop/note/alt boxes add label-less text or text-less arrows) we
+    // fall back to geometric matching: the label sits on its arrow's midpoint,
+    // so we pick the nearest arrow by weighted (x, y) distance.
+    const arrowEls = Array.from(svg.querySelectorAll('line')).filter(l =>
+      l.getAttribute('marker-end') || l.getAttribute('marker-start')
+    );
+    const textEls = Array.from(svg.querySelectorAll('text.messageText'));
+    const useIndex = arrowEls.length === textEls.length && textEls.length > 0;
+
+    if(useIndex){
+      textEls.forEach((t, i) => {
+        t.setAttribute('data-lane', String(arrowEls[i].getAttribute('data-lane')));
+      });
+    } else {
+      const arrowList = arrowEls.map(line => {
+        const x1 = parseFloat(line.getAttribute('x1')) || 0;
+        const x2 = parseFloat(line.getAttribute('x2')) || 0;
+        return {
+          midX: (x1 + x2) / 2,
+          y: parseFloat(line.getAttribute('y1')) || 0,
+          lane: parseInt(line.getAttribute('data-lane'), 10)
+        };
+      });
+      textEls.forEach(t => {
+        const tx = parseFloat(t.getAttribute('x')) || 0;
+        const ty = parseFloat(t.getAttribute('y')) || 0;
+        let bestLane = null, bestScore = Infinity;
+        arrowList.forEach(a => {
+          const dx = Math.abs(a.midX - tx);
+          if(dx > 12) return;
+          const dy = ty - a.y;
+          const penalty = dy < 0 ? 500 : 0;
+          const score = dx * 5 + Math.abs(dy) + penalty;
+          if(score < bestScore){ bestScore = score; bestLane = a.lane; }
+        });
+        if(bestLane !== null) t.setAttribute('data-lane', String(bestLane));
+      });
+    }
+
+    actorTexts.forEach(t => {
+      const x = parseFloat(t.getAttribute('x')) || 0;
+      let bestLane = 0, bestDist = Infinity;
+      sortedUnique.forEach((cx, idx) => {
+        const d = Math.abs(cx - x);
+        if(d < bestDist){ bestDist = d; bestLane = idx; }
+      });
+      t.setAttribute('data-lane', String(bestLane));
+    });
+
+    svg.querySelector('style#seq-colors')?.remove();
+    const rules = SEQ_PALETTE.map((c, i) =>
+      `svg [data-lane="${i}"]{fill:${c.fill}!important;stroke:${c.fill}!important;}` +
+      `svg text.actor[data-lane="${i}"]{fill:${c.text}!important;font-weight:700!important;}` +
+      `svg text.actor[data-lane="${i}"]>tspan{fill:${c.text}!important;font-weight:700!important;}` +
+      `svg text.messageText[data-lane="${i}"]{fill:${c.fill}!important;stroke:none!important;font-weight:600!important;}` +
+      `svg text.messageText[data-lane="${i}"]>tspan{fill:${c.fill}!important;}`
+    ).join('\n');
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.setAttribute('id', 'seq-colors');
+    style.textContent = rules;
+    svg.insertBefore(style, svg.firstChild);
+  } catch (e) {
+    // 11.x changed something the colorizer doesn't know about. Disable
+    // future attempts so the user gets a working diagram and a single
+    // warning instead of repeated console errors.
+    colorizerOk = false;
+    console.warn('Sequence colorizer disabled:', e && e.message ? e.message : e);
+  }
+}
+
+/* ------------------------------------------------------------------
+ *  Render + UI handlers — same surface as mermaid-editor.html
+ * ------------------------------------------------------------------ */
+async function render(){
+  if(!mermaid) return;
+  const src = codeEl.value.trim();
+  updateLineNumbers();
+  if(!src){
+    hostEl.innerHTML = '';
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Empty';
+    return;
+  }
+  const id = 'g' + (++renderSeq);
+  try{
+    const { svg } = await mermaid.render(id, src);
+    hostEl.innerHTML = svg;
+    colorizeSequence();
+    lastGoodSvg = hostEl.innerHTML;
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Rendered';
+  }catch(err){
+    errorBar.style.display = 'block';
+    errorBar.textContent = (err && err.message) ? err.message.split('\n').slice(0,4).join('\n') : 'Could not parse diagram.';
+    statusEl.classList.add('error');
+    statusText.textContent = 'Syntax error';
+    const stray = document.getElementById(id);
+    if(stray) stray.remove();
+  }
+}
+
+let debounceTimer;
+codeEl.addEventListener('input', () => {
+  updateLineNumbers();
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 320);
+});
+
+codeEl.addEventListener('keydown', (e) => {
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    codeEl.value = codeEl.value.slice(0,s) + '  ' + codeEl.value.slice(en);
+    codeEl.selectionStart = codeEl.selectionEnd = s+2;
+  }
+});
+
+examplePicker.addEventListener('change', () => {
+  const name = examplePicker.value;
+  if(EXAMPLES[name]){
+    codeEl.value = EXAMPLES[name];
+    render();
+  }
+});
+
+themePicker.addEventListener('change', () => {
+  if(!mermaid) return;
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: themePicker.value, fontFamily: 'var(--font-ui)' });
+  render();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  codeEl.value = '';
+  updateLineNumbers();
+  render();
+});
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+document.getElementById('copyCodeBtn').addEventListener('click', async () => {
+  try{
+    await navigator.clipboard.writeText(codeEl.value);
+    toast('Code copied to clipboard');
+  }catch(e){ toast('Could not copy'); }
+});
+
+document.getElementById('downloadSvgBtn').addEventListener('click', () => {
+  if(!lastGoodSvg){ toast('Nothing to export yet'); return; }
+  const blob = new Blob([lastGoodSvg], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'diagram.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('SVG downloaded');
+});
+
+document.getElementById('downloadPngBtn').addEventListener('click', () => {
+  if(!lastGoodSvg){ toast('Nothing to export yet'); return; }
+  const svgEl = hostEl.querySelector('svg');
+  const bbox = svgEl.getBoundingClientRect();
+  const scale = 2;
+  const img = new Image();
+  const svgBlob = new Blob([lastGoodSvg], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = bbox.width * scale;
+    canvas.height = bbox.height * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, bbox.width, bbox.height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'diagram.png';
+      a.click();
+      toast('PNG downloaded');
+    });
+  };
+  img.onerror = () => toast('PNG export failed');
+  img.src = url;
+});
+
+function setZoom(z){
+  zoom = Math.min(5, Math.max(0.2, z));
+  applyTransform();
+}
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.15));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.15));
+document.getElementById('zoomReset').addEventListener('click', () => { zoom=1; panX=0; panY=0; applyTransform(); });
+
+scrollEl.addEventListener('wheel', (e) => {
+  if(e.ctrlKey || e.metaKey || true){
+    e.preventDefault();
+    setZoom(zoom + (e.deltaY < 0 ? 0.08 : -0.08));
+  }
+}, { passive:false });
+
+let isDragging = false, dragStartX=0, dragStartY=0, panStartX=0, panStartY=0;
+scrollEl.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  scrollEl.classList.add('grabbing');
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX = panX; panStartY = panY;
+});
+window.addEventListener('mousemove', (e) => {
+  if(!isDragging) return;
+  panX = panStartX + (e.clientX - dragStartX);
+  panY = panStartY + (e.clientY - dragStartY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; scrollEl.classList.remove('grabbing'); });
+
+const resizer = document.getElementById('resizer');
+const editorPane = document.getElementById('editor-pane');
+let resizing = false;
+resizer.addEventListener('mousedown', () => { resizing = true; resizer.classList.add('active'); });
+window.addEventListener('mousemove', (e) => {
+  if(!resizing) return;
+  const mainRect = document.getElementById('main').getBoundingClientRect();
+  const h = Math.min(Math.max(e.clientY - mainRect.top, 200), mainRect.height * 0.75);
+  editorPane.style.flexBasis = h + 'px';
+});
+window.addEventListener('mouseup', () => { resizing = false; resizer.classList.remove('active'); });
+
+const toggleSourceBtn = document.getElementById('toggleSourceBtn');
+const toggleIcon = toggleSourceBtn.querySelector('svg');
+const toggleLabel = toggleSourceBtn.querySelector('span');
+const eyeOpenSvg = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+const eyeOffSvg = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+let sourceHidden = false;
+toggleSourceBtn.addEventListener('click', () => {
+  sourceHidden = !sourceHidden;
+  editorPane.style.display = sourceHidden ? 'none' : '';
+  resizer.style.display = sourceHidden ? 'none' : '';
+  toggleIcon.innerHTML = sourceHidden ? eyeOffSvg : eyeOpenSvg;
+  toggleLabel.textContent = sourceHidden ? 'Show source' : 'Hide source';
+});
+
+/* ------------------------------------------------------------------
+ *  Boot: load the Mermaid 11 ESM bundle, then initialise.
+ *  Wrapped in dynamic import() so a missing/changed path surfaces as
+ *  a clean "Could not load Mermaid" overlay instead of a console
+ *  error with no UI.
+ * ------------------------------------------------------------------ */
+const BOOT_PATH = './mermaid.bundled.mjs';
+function showLoadFailure(detail){
+  const overlay = document.getElementById('boot-overlay');
+  const bootText = document.getElementById('boot-text');
+  const bootDetail = document.getElementById('boot-detail');
+  bootText.textContent = 'Could not load Mermaid 11';
+  bootText.style.color = 'var(--err)';
+  document.getElementById('boot-spinner').style.display = 'none';
+  bootDetail.innerHTML = (detail || '')
+    + '<br>Make sure <code>mermaid.bundled.mjs</code> sits next to this HTML, and that you\'re serving the page over HTTP(S).'
+    + ' <a href="#" id="bootRetry" style="color:var(--violet);">retry</a>.';
+  const r = document.getElementById('bootRetry');
+  if(r) r.addEventListener('click', (e) => { e.preventDefault(); window.location.reload(); });
+}
+
+(async function boot(){
+  try {
+    const mod = await import(BOOT_PATH);
+    mermaid = mod.default;
+    if(!mermaid || typeof mermaid.render !== 'function'){
+      throw new Error('Bundle loaded but did not export a Mermaid instance.');
+    }
+    // Show the Mermaid version. The runtime API for this has moved around
+    // across builds, so try the common shapes first; if none expose it, read
+    // the version literal baked into the bundle file itself (always present
+    // as `version: "x.y.z"`), which is accurate and build-proof.
+    try {
+      let v = null;
+      if(typeof mermaid.getVersion === 'function') v = mermaid.getVersion();
+      else if(mermaid.meta && mermaid.meta.version) v = mermaid.meta.version;
+      else if(mermaid.version) v = mermaid.version;
+      if(!v){
+        const txt = await (await fetch(BOOT_PATH)).text();
+        const m = txt.match(/version:\s*["'](\d+\.\d+\.\d+)["']/);
+        if(m) v = m[1];
+      }
+      versionTag.textContent = v ? ('v' + v) : 'v11';
+    } catch { versionTag.textContent = 'v11'; /* cosmetic, ignore */ }
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'default',
+      fontFamily: 'var(--font-ui)',
+    });
+
+    document.getElementById('boot-overlay').remove();
+    codeEl.value = EXAMPLES["Flowchart"];
+    examplePicker.value = "Flowchart";
+    updateLineNumbers();
+    applyTransform();
+    render();
+  } catch (err) {
+    console.error('Mermaid 11 boot failed:', err);
+    showLoadFailure('<code>' + (err && err.message ? err.message : 'Unknown error') + '</code>');
+  }
+})();
+</script>
+</body>
+</html>
