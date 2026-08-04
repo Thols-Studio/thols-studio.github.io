@@ -1,6 +1,6 @@
 // --------------------------------------------------------------
 // PLAYLIST CONFIG
-// Exported from TubeVault on 7/28/2026, 12:11:16 PM
+// Exported from TubeVault on 8/4/2026, 12:25:59 PM
 //
 // Each playlist: id, name, color, videoIds, videos (full details)
 // To apply as defaults: replace unity3d-playlist.js and clear localStorage.
@@ -27,23 +27,23 @@ const DEFAULT_PLAYLISTS = [
     id: 'ms2urrqvitqc',
     name: 'Tiled',
     color: '#FF7043',
-    videoIds: ['ms2upihit2hs', 'ms2uwu97kk23'],
+    videoIds: ['ms2upihit2hs', 'ms2uwu97kk23', 'ms79jbxv7frz'],
     videos: [
     {
       url: 'https://www.youtube.com/watch?v=N6xqCwblyiw&t=10s',
       videoId: 'N6xqCwblyiw',
-      title: 'YouTube Video',
+      title: 'A Guide to Level Creation with Tiled',
       channel: '',
       collectionPath: 'Tile Map Editor / Tiled',
-      note: '2D Environment for Match 2 Games'
+      note: 'Basic 2D Level creation for Match 2 Games with Tiled'
     },
     {
       url: 'https://www.youtube.com/watch?v=WEtml6DuwqQ',
       videoId: 'WEtml6DuwqQ',
-      title: 'AET 304: Using the Terrain Brush in Tiled',
+      title: 'Using the Terrain Brush in Tiled',
       channel: 'AET 304 Arts and Entertainment Technologies',
       collectionPath: 'Tile Map Editor / Tiled',
-      note: ''
+      note: 'Terrain Brush in Tiled'
     }
     ]
   }

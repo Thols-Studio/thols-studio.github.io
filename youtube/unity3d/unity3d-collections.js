@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 7/28/2026, 12:11:16 PM
+// Exported from TubeVault on 8/4/2026, 12:25:59 PM
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -107,18 +107,25 @@ const DEFAULT_COLLECTIONS = [
     groups: {
       'Tiled': [
         {
-          url: 'https://www.youtube.com/watch?v=WEtml6DuwqQ',
-          videoId: 'WEtml6DuwqQ',
-          title: 'AET 304: Using the Terrain Brush in Tiled',
-          channel: 'AET 304 Arts and Entertainment Technologies',
-          note: ''
-        },
-        {
           url: 'https://www.youtube.com/watch?v=N6xqCwblyiw&t=10s',
           videoId: 'N6xqCwblyiw',
-          title: 'YouTube Video',
+          title: 'A Guide to Level Creation with Tiled',
           channel: '',
-          note: '2D Environment for Match 2 Games'
+          note: 'Basic 2D Level creation for Match 2 Games with Tiled'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=WEtml6DuwqQ',
+          videoId: 'WEtml6DuwqQ',
+          title: 'Using the Terrain Brush in Tiled',
+          channel: 'AET 304 Arts and Entertainment Technologies',
+          note: 'Terrain Brush in Tiled'
+        },
+        {
+          url: 'https://www.youtube.com/watch?v=uaIQau4woSM',
+          videoId: 'uaIQau4woSM',
+          title: 'Tiled 1.11.0 Automapping',
+          channel: '',
+          note: 'How to Create Rules Set using Tiled'
         },
       ]
     },
@@ -130,6 +137,14 @@ const DEFAULT_COLLECTIONS = [
     color: '#AB47BC',
     groups: {
       'Tutorial': [
+        {
+          url: 'https://www.youtube.com/watch?v=qmEYjJL7jQg&list=PLUQd-0PkiOI5bwRXa6yug5kzIGSUf1i1n&index=2',
+          videoId: 'qmEYjJL7jQg',
+          playlistId: 'PLUQd-0PkiOI5bwRXa6yug5kzIGSUf1i1n',
+          title: 'Design an Inventory Panel with Unity UI Toolkit | Inventory & Equipment Pt. 2',
+          channel: 'Stacey Haffner',
+          note: ''
+        },
         {
           url: 'https://www.youtube.com/watch?v=r39vSzh4iR8',
           videoId: 'r39vSzh4iR8',
