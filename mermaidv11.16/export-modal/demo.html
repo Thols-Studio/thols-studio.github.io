@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Modal Popup — Standalone Demo</title>
+  
+  <!-- Export Modal Stylesheet -->
+  <link rel="stylesheet" href="export-modal.css">
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #11111b;
+      color: #cdd6f4;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #1e1e2e;
+      border-radius: 12px;
+      border: 1px solid #313244;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #ffffff;
+      font-size: 1.5rem;
+    }
+
+    p {
+      color: #a6adc8;
+      line-height: 1.6;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #313244;
+    }
+
+    .btn-export {
+      background: #0e8f7d;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-export:hover {
+      background: #12ab96;
+      transform: translateY(-1px);
+    }
+
+    .diagram-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 250px;
+    }
+
+    .code-preview {
+      background: #181825;
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85rem;
+      color: #a6adc8;
+      margin-top: 1.5rem;
+      border: 1px solid #313244;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="toolbar">
+      <div>
+        <h1>Export Modal Popup Demo</h1>
+        <p style="margin: 0; font-size: 0.9rem;">Interactive test environment for exporting SVG diagrams.</p>
+      </div>
+      <button type="button" class="btn-export" id="openExportBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Export Diagram
+      </button>
+    </div>
+
+    <!-- Sample Diagram Container -->
+    <div class="diagram-card">
+      <svg id="sampleSvg" width="500" height="200" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+        <style>
+          .node { fill: #0e8f7d; stroke: #08554a; stroke-width: 2px; rx: 8px; }
+          .label { fill: #ffffff; font-family: system-ui, sans-serif; font-weight: bold; font-size: 14px; text-anchor: middle; dom-dominant-baseline: middle; }
+          .line { stroke: #313244; stroke-width: 3px; marker-end: url(#arrow); }
+        </style>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#313244"/>
+          </marker>
+        </defs>
+        <rect class="node" x="30" y="70" width="120" height="60"/>
+        <text class="label" x="90" y="105">User Action</text>
+
+        <line class="line" x1="150" y1="100" x2="220" y2="100"/>
+
+        <rect class="node" x="230" y="70" width="130" height="60" style="fill: #9370DB; stroke: #6b46b8;"/>
+        <text class="label" x="295" y="105">Export Modal</text>
+
+        <line class="line" x1="360" y1="100" x2="420" y2="100"/>
+
+        <circle cx="450" cy="100" r="30" style="fill: #3da65a; stroke: #27703b; stroke-width: 2px;"/>
+        <text class="label" x="450" y="105">PNG / SVG</text>
+      </svg>
+    </div>
+
+    <div class="code-preview">
+      <strong>Quick Integration Code:</strong><br><br>
+      <code>
+        import { ExportModal } from './export-modal.js';<br><br>
+        const modal = ExportModal.init({<br>
+        &nbsp;&nbsp;getSvg: () => document.getElementById('sampleSvg'),<br>
+        &nbsp;&nbsp;getSourceCode: () => 'flowchart LR\n  A[User Action] --> B[Export Modal] --> C(PNG / SVG)',<br>
+        &nbsp;&nbsp;getFilename: () => 'my-diagram'<br>
+        });<br><br>
+        document.getElementById('openBtn').addEventListener('click', () => modal.open());
+      </code>
+    </div>
+  </div>
+
+  <!-- Include Export Modal HTML Popup -->
+  <div id="exportModalOverlay" class="export-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="export-modal">
+      <div class="export-modal-header">
+        <h2>Export Diagram</h2>
+        <button class="icon-btn" id="closeExportBtn" aria-label="Close dialog">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="export-modal-body">
+        <div class="export-modal-left">
+          <div class="export-section">
+            <h3>Export Format</h3>
+            <div class="format-list">
+              <label class="format-option active">
+                <input type="radio" name="exportFormat" value="png" checked>
+                <div class="format-text">
+                  <div class="format-title">PNG</div>
+                  <div class="format-desc">High quality raster image (2x HD)</div>
+                </div>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="svg">
+                <div class="format-text">
+                  <div class="format-title">SVG</div>
+                  <div class="format-desc">Scalable vector graphics</div>
+                </div>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="mmd">
+                <div class="format-text">
+                  <div class="format-title">MMD</div>
+                  <div class="format-desc">Mermaid syntax source code</div>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div class="export-section">
+            <h3>Background Color</h3>
+            <div class="bg-color-options">
+              <button type="button" class="bg-swatch active" style="background: #ffffff;" data-bg="white" title="White Background"></button>
+              <button type="button" class="bg-swatch" style="background: #000000;" data-bg="black" title="Black Background"></button>
+              <button type="button" class="bg-swatch transparent-swatch" data-bg="transparent" title="Transparent Background"></button>
+              <label class="bg-swatch color-picker-swatch" title="Custom Background Color">
+                <input type="color" id="exportCustomColorPicker" value="#0e8f7d" style="opacity: 0; width: 0; height: 0; position: absolute;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                </svg>
+              </label>
+            </div>
+          </div>
+          
+          <div class="export-share-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span>Diagrams are exported directly from client memory. No server upload required.</span>
+          </div>
+        </div>
+        
+        <div class="export-modal-right">
+          <h3>Preview</h3>
+          <div class="export-preview-box" id="exportPreviewBox">
+            <div class="export-preview-placeholder">No diagram available</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="export-modal-footer">
+        <button type="button" class="export-btn-cancel" id="exportCancelBtn">Cancel</button>
+        <button type="button" class="export-btn-confirm" id="exportConfirmBtn">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load JS module -->
+  <script type="module">
+    import { ExportModal } from './export-modal.js';
+
+    const modal = ExportModal.init({
+      getSvg: () => document.getElementById('sampleSvg'),
+      getSourceCode: () => 'flowchart LR\n  A[User Action] --> B[Export Modal] --> C(PNG / SVG)',
+      getFilename: () => 'demo-diagram'
+    });
+
+    document.getElementById('openExportBtn').addEventListener('click', () => {
+      modal.open();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,4985 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-teal">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mermaid 11.16.0 — Diagram Explorer</title>
+  <script src="Config.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+
+      /* Dark Theme (Default) */
+      --bg-body: #1e1e2e;
+      --bg-header: #1e1e2e;
+      --bg-toolbar: #1e1e2e;
+      --bg-editor: #12121a;
+      --bg-preview: #1e1e2e;
+      --bg-gutter: #181825;
+      --bg-element: #313244;
+      --bg-element-hover: #45475a;
+      --bg-snippet-btn: #242533;
+      --bg-snippet-btn-hover: #313244;
+      --bg-zoom: #181825;
+      --bg-canvas: #11111b;
+      --bg-dot: #313244;
+
+      --border-color: #313244;
+      --border-element: #45475a;
+      --border-element-hover: #585b70;
+
+      --text-main: #cdd6f4;
+      --text-muted: #a6adc8;
+      --text-gutter: #6c7086;
+
+      --accent: #9370DB;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    :root.theme-teal {
+      /* Teal Theme */
+      --bg-body: #0a1822;
+      --bg-header: #0c1c28;
+      --bg-toolbar: #0c1c28;
+      --bg-editor: #0c1c28;
+      --bg-preview: #0a1822;
+      --bg-gutter: #08151f;
+      --bg-element: #142836;
+      --bg-element-hover: #1c3648;
+      --bg-snippet-btn: #142836;
+      --bg-snippet-btn-hover: #1c3648;
+      --bg-zoom: #0c1c28;
+      --bg-canvas: #0a1822;
+      --bg-dot: #162f42;
+
+      --border-color: #1a2f38;
+      --border-element: #1d3345;
+      --border-element-hover: #2a475d;
+
+      --text-main: #d7ece8;
+      --text-muted: #9fc4c0;
+      --text-gutter: #6b8f8b;
+
+      --accent: #35d0c0;
+      --shadow: rgba(0, 0, 0, 0.5);
+    }
+
+    :root.theme-light {
+      color-scheme: light;
+
+      --bg-body: #eef6f4;
+      --bg-header: #eef6f4;
+      --bg-toolbar: #fff;
+      --bg-editor: #fff;
+      --bg-preview: #eef6f4;
+      --bg-gutter: #f5fbf9;
+      --bg-element: #fff;
+      --bg-element-hover: #e6f0ed;
+      --bg-snippet-btn: #fff;
+      --bg-snippet-btn-hover: #e6f0ed;
+      --bg-zoom: #fff;
+      --bg-canvas: #eef6f4;
+      --bg-dot: #d3e5e1;
+
+      --border-color: #d9e7e4;
+      --border-element: #d9e7e4;
+      --border-element-hover: #b8cfca;
+
+      --text-main: #1d4a43;
+      --text-muted: #4c7a72;
+      --text-gutter: #7a9c97;
+
+      --accent: #0e8f7d;
+      --shadow: rgba(0, 0, 0, 0.12);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+      background: var(--bg-body);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ---- Top Header Bar ---- */
+    .ide-header {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      background: var(--bg-header);
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .ide-header-left,
+    .ide-header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-pill {
+      background: var(--bg-body);
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: var(--bg-body);
+      padding: 4px 8px;
+      border-radius: 12px;
+    }
+
+    /* Simple switch styling */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 28px;
+      height: 16px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border-element);
+      transition: .2s;
+      border-radius: 16px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--accent);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(12px);
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-element-hover);
+      color: var(--text-main);
+    }
+
+    .icon-btn.active {
+      background: var(--bg-element-hover) !important;
+      color: var(--accent) !important;
+    }
+
+    /* ---- Toolbar ---- */
+    .top-toolbar {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-body);
+      border-radius: 9999px;
+      box-shadow: 0 4px 20px var(--shadow);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: .25rem;
+      gap: .25rem;
+      z-index: 10;
+    }
+
+    .toolbar-toggle {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 0 .5rem;
+      font-size: .85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ---- Settings Panel ---- */
+    .settings-panel {
+      position: absolute;
+      top: 4.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-body);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 8px 32px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .settings-panel.show {
+      display: flex;
+    }
+
+    .settings-panel label {
+      font-size: .85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    select,
+    button.setting-btn {
+      font: inherit;
+      padding: .35rem .6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border-element);
+      background: var(--bg-element);
+      color: var(--text-main);
+      font-size: 0.85rem;
+    }
+
+    select:hover,
+    button.setting-btn:hover {
+      border-color: var(--border-element-hover);
+      background: var(--bg-element-hover);
+    }
+
+    #renderBtn.rendered {
+      background: #3da65a;
+      border-color: #3da65a;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ---- Shapes Panel ---- */
+    .shapes-panel {
+      position: absolute;
+      top: 4.5rem;
+      left: 50%;
+      margin-left: -140px;
+      /* offset slightly to align with button */
+      background: var(--bg-body);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 8px 32px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      width: 220px;
+    }
+
+    .shapes-panel.show {
+      display: flex;
+    }
+
+    .shape-category {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shape-category-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .shape-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.25rem;
+    }
+
+    .shape-item {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+
+    .shape-item:hover {
+      background: var(--bg-element-hover);
+    }
+
+    .shape-item svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    /* ---- Floating Layout ---- */
+    body {
+      background-color: var(--bg-canvas);
+      background-image: radial-gradient(var(--bg-dot) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    .preview-container {
+      position: absolute;
+      left: 530px;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .preview-container:fullscreen,
+    .preview-container:-webkit-full-screen {
+      background-color: var(--bg-canvas);
+      background-image: radial-gradient(var(--bg-dot) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+    }
+
+    .preview-container:fullscreen .preview,
+    .preview-container:-webkit-full-screen .preview {
+      padding-bottom: 5rem;
+    }
+
+    .src-hidden .preview-container {
+      left: 0 !important;
+    }
+
+    .preview {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      padding-top: 4.5rem;
+      padding-bottom: 4.5rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    #zoomWrap {
+      transform-origin: 0 0;
+      position: absolute;
+      top: 0;
+      left: 0;
+      will-change: transform;
+    }
+
+    #zoomWrap .mermaid {
+      display: block;
+    }
+
+    .preview .mermaid {
+      text-align: center;
+    }
+
+    .preview.pan-mode {
+      cursor: grab;
+    }
+
+    .preview.pan-mode:active {
+      cursor: grabbing;
+    }
+
+    /* Interactive selection highlight */
+    svg .selection-box {
+      fill: none;
+      stroke: #4CAF50;
+      stroke-width: 1.5px;
+      filter: drop-shadow(0 0 6px #4CAF50);
+      pointer-events: none;
+    }
+
+    /* Messages inside selected loop get a subtle accent underline */
+    svg .inner-loop-message {
+      fill: #7ec8e3 !important;
+      font-weight: bold;
+    }
+
+    .cm-activeLine {
+      background-color: color-mix(in srgb, var(--text-main) 15%, transparent) !important;
+    }
+
+    .cm-selectionBackground {
+      background-color: color-mix(in srgb, var(--text-main) 25%, transparent) !important;
+    }
+
+    /* ---- Top Left Actions (Visible when editor closed) ---- */
+    .top-left-actions {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      z-index: 20;
+      display: none;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .src-hidden .top-left-actions {
+      display: flex;
+    }
+
+    .pill-btn,
+    .pill-badge {
+      background: var(--bg-body);
+      border-radius: 20px;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 8px var(--shadow);
+      font-family: inherit;
+    }
+
+    .pill-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn:hover {
+      background: var(--bg-element-hover);
+      border-color: var(--border-element-hover);
+    }
+
+    .pill-btn svg {
+      color: var(--text-muted);
+    }
+
+    .pill-badge {
+      color: var(--text-muted);
+      background: var(--bg-element);
+      user-select: none;
+      font-size: 0.8rem;
+    }
+
+    /* Combined Top-Left Pill */
+    /* Combined Top-Left Pill */
+    .combined-pill {
+      background: #e6f0f2;
+      border-radius: 12px;
+      border: none;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      padding: 0.1rem;
+    }
+
+    .theme-teal .combined-pill {
+      background: var(--bg-element);
+    }
+
+    .combined-pill-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #355e64;
+      padding: 0.5rem 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s ease;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .theme-teal .combined-pill-btn {
+      color: var(--accent);
+    }
+
+    .combined-pill-btn:hover {
+      background: rgba(53, 94, 100, 0.1);
+      border-radius: 8px;
+    }
+
+    .theme-teal .combined-pill-btn:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .combined-pill-btn svg {
+      color: #355e64;
+      margin-top: -1px;
+    }
+
+    .theme-teal .combined-pill-btn svg {
+      color: var(--accent);
+    }
+
+    .combined-pill-sep {
+      width: 1px;
+      background: #c6dadd;
+      margin: 0.5rem 0.1rem;
+    }
+
+    .theme-teal .combined-pill-sep {
+      background: var(--border-color);
+      opacity: 0.5;
+    }
+
+    .combined-pill-badge {
+      padding: 0.5rem 0.8rem;
+      color: #355e64;
+      display: flex;
+      align-items: center;
+      background: transparent;
+      user-select: none;
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    .theme-teal .combined-pill-badge {
+      color: var(--text-main);
+    }
+
+    .editor-panel {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      bottom: 1rem;
+      width: 35vw;
+      min-width: 35vw;
+      max-width: 60vw;
+      background: var(--bg-body);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px var(--shadow);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 100;
+    }
+
+    @media (max-width: 720px) {
+      .editor-panel {
+        display: none;
+      }
+    }
+
+    /* Quick responsive hide for now */
+
+    .editor-resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: ew-resize;
+      z-index: 100;
+      background: transparent;
+      transition: background 0.2s;
+    }
+
+    .editor-resize-handle:hover,
+    .editor-resize-handle.dragging {
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    .editor-body {
+      display: flex;
+      flex: 1;
+      border: none;
+      background: var(--bg-editor);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .gutter {
+      flex: 0 0 auto;
+      width: 2.5em;
+      padding: .6rem .4rem .6rem .2rem;
+      text-align: right;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: var(--editor-font-size, 13.12px);
+      line-height: 1.5;
+      color: var(--text-gutter);
+      user-select: none;
+      overflow: hidden;
+      white-space: pre;
+      background: var(--bg-gutter);
+      border-right: 1px solid var(--border-color);
+    }
+
+    .gutter-error-line {
+      color: #ff3333 !important;
+      font-weight: 900 !important;
+      background: rgba(255, 51, 51, 0.25) !important;
+      border-radius: 3px !important;
+      display: inline-block !important;
+      width: 100% !important;
+      box-shadow: 0 0 8px rgba(255, 51, 51, 0.4) !important;
+    }
+
+    .gutter-warning-line {
+      color: #f59e0b !important;
+      font-weight: 900 !important;
+      background: rgba(245, 158, 11, 0.25) !important;
+      border-radius: 3px !important;
+      display: inline-block !important;
+      width: 100% !important;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
+    }
+
+    .editor-error-bar {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 0.6rem 0.8rem;
+      background: rgba(239, 68, 68, 0.15);
+      border-top: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      font-size: 0.82rem;
+      font-family: system-ui, sans-serif;
+      line-height: 1.4;
+      flex-shrink: 0;
+      max-height: 90px;
+      overflow-y: auto;
+    }
+
+    .editor-error-bar.warning-mode {
+      background: rgba(245, 158, 11, 0.15) !important;
+      border-top: 1px solid rgba(245, 158, 11, 0.3) !important;
+      color: #fbbf24 !important;
+    }
+
+    textarea {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 0;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: var(--editor-font-size, 13.12px);
+      line-height: 1.5;
+      padding: .6rem;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text-main);
+      resize: none;
+      tab-size: 2;
+      white-space: pre;
+      overflow: auto;
+    }
+
+    textarea:focus,
+    .cm-editor.cm-focused {
+      outline: 1.5px solid color-mix(in srgb, var(--text-main) 30%, transparent) !important;
+      outline-offset: -1.5px;
+    }
+
+    .editor-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: var(--bg-body);
+      border-top: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .editor-footer .left-side,
+    .editor-footer .right-side {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .editor-footer .icon-btn {
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .left-side {
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+
+    .left-side:hover {
+      opacity: 0.8;
+    }
+
+    /* ---- Snippets Panel ---- */
+    .snippets-container {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-body);
+      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
+      transition: flex-basis 0.2s ease;
+      flex-basis: 44px;
+      overflow: hidden;
+    }
+
+    .snippets-container.expanded {
+      flex-basis: 45%;
+    }
+
+    .snippets-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+      height: 44px;
+      box-sizing: border-box;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      transition: background 0.1s;
+    }
+
+    .snippets-header:hover {
+      background: var(--bg-element-hover);
+    }
+
+    .snippets-header .left-side {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      height: 100%;
+    }
+
+    .snippets-header .left-side span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .snippets-header .left-side svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .snippets-header .right-side {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .snippets-header .right-side .icon-btn {
+      padding: 4px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .snippets-header .chevron {
+      display: block;
+      transition: transform 0.2s ease;
+      margin: 0;
+    }
+
+    .snippets-container.expanded .snippets-header .chevron {
+      transform: rotate(180deg);
+    }
+
+    .snippets-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .snippet-category {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    .snippet-category:first-child {
+      margin-top: 0;
+    }
+
+    .snippet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .snippet-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: var(--bg-snippet-btn);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      text-align: left;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      min-height: 40px;
+    }
+
+    .snippet-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .snippet-actions {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      gap: 0.25rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 2;
+    }
+
+    .snippet-btn:hover .snippet-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .snippet-btn:hover {
+      background: var(--bg-snippet-btn-hover);
+      border-color: var(--text-muted);
+      box-shadow: 0 2px 6px var(--shadow);
+    }
+
+    .snippet-btn svg.icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      color: var(--text-main);
+    }
+
+    .action-btn {
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid var(--border-element);
+      background: var(--bg-body);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+    }
+
+    .action-btn:hover {
+      background: var(--text-main);
+      color: var(--bg-body);
+      border-color: var(--text-main);
+    }
+
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ---- Theme Panel ---- */
+    .theme-panel {
+      position: absolute;
+      top: 4.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-snippet-btn);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 320px;
+      box-shadow: 0 10px 25px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 20;
+      display: none;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .theme-panel.show {
+      display: flex;
+    }
+
+    .theme-panel-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .theme-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .theme-switch .slider {
+      background-color: var(--border-element);
+    }
+
+    .theme-switch input:checked+.slider {
+      background-color: #10B981;
+    }
+
+    .theme-switch .sun-icon {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      top: 3px;
+      left: 3px;
+      color: var(--text-main);
+      transition: 0.2s;
+    }
+
+    .theme-switch input:checked+.slider .sun-icon {
+      transform: translateX(14px);
+    }
+
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      row-gap: 1.25rem;
+    }
+
+    .theme-btn {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      background: var(--bg-body);
+      color: var(--text-main);
+      position: relative;
+    }
+
+    .theme-btn[data-theme="default"].active {
+      border-color: #0a6b5e;
+      border-width: 3px;
+    }
+
+    .theme-btn[data-theme="dark"].active {
+      border-color: #7b5dc4;
+      border-width: 3px;
+    }
+
+    .theme-btn[data-theme="teal"].active {
+      border-color: #28a396;
+      border-width: 3px;
+    }
+
+    .theme-btn.active::before,
+    .style-btn.active::before,
+    .font-btn.active::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 8px;
+      background: var(--bg-snippet-btn-hover);
+      z-index: -1;
+    }
+
+    .theme-btn.multicolor-btn {
+      overflow: hidden;
+      padding: 0;
+      position: relative;
+    }
+
+    .theme-btn.multicolor-btn span {
+      position: absolute;
+      z-index: 2;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .mc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 100%;
+      height: 100%;
+      opacity: 0.8;
+    }
+
+    .style-grid {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .style-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .style-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--text-main);
+    }
+
+    .style-box.sharp {
+      border-radius: 2px;
+    }
+
+    .style-box.rounded {
+      border-radius: 6px;
+    }
+
+    .style-box.pill {
+      border-radius: 10px;
+    }
+
+    .font-grid {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+    }
+
+    .font-btn {
+      border: none;
+      background: transparent;
+      font-size: 1.35rem;
+      color: var(--text-main);
+      cursor: pointer;
+      position: relative;
+    }
+
+    /* ---- Autocomplete Panel ---- */
+    .autocomplete-panel {
+      position: absolute;
+      top: 1.25rem;
+      left: 1rem;
+      background: var(--bg-body);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px var(--shadow);
+      z-index: 10;
+      display: none;
+      flex-direction: column;
+      max-height: 250px;
+      overflow-y: auto;
+      min-width: 250px;
+      padding: 4px 0;
+    }
+
+    .autocomplete-panel.show {
+      display: flex;
+    }
+
+    .ac-item {
+      padding: 0.35rem 1rem;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.1s;
+    }
+
+    .ac-item:hover,
+    .ac-item.selected {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .ac-item svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.8;
+    }
+
+    .ac-item:hover svg,
+    .ac-item.selected svg {
+      opacity: 1;
+    }
+
+    /* ---- Floating Toolbars ---- */
+    .top-toolbar {
+      position: absolute;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-body);
+      border-radius: 24px;
+      padding: 0.25rem 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .top-toolbar .icon-btn {
+      padding: 6px;
+      border-radius: 50%;
+      margin: 0;
+    }
+
+    .top-toolbar .icon-btn.active {
+      background: var(--bg-element-hover);
+      color: var(--text-main);
+    }
+
+    .separator {
+      width: 1px;
+      height: 16px;
+      background: var(--border-color);
+      margin: 0 4px;
+    }
+
+    .top-right-action {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-body);
+      border-radius: 8px;
+      padding: 0.25rem;
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .top-right-action .icon-btn {
+      padding: 6px;
+      margin: 0;
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.1rem;
+      background: var(--bg-body);
+      padding: 0.25rem 0.5rem;
+      border-radius: 24px;
+      box-shadow: 0 4px 12px var(--shadow);
+      border: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .zoom-controls button {
+      padding: 6px;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      border-radius: 50%;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .zoom-controls button:hover {
+      background: var(--bg-element-hover);
+      color: var(--text-main);
+    }
+
+    .zoom-controls button.active {
+      background: var(--bg-element-hover);
+      color: var(--text-main);
+      box-shadow: inset 0 2px 4px var(--shadow);
+    }
+
+    /* ---- Bottom AI Action Bar ---- */
+    .ai-action-bar {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      z-index: 10;
+    }
+
+    .ai-btn {
+      background: var(--bg-body);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .ai-btn:hover {
+      background: var(--bg-element-hover);
+    }
+
+    /* ---- Syntax Highlighting ---- */
+    .textarea-wrap {
+      flex: 1 1 auto;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .hl-layer {
+      display: none;
+      position: absolute;
+      inset: 0;
+      padding: .6rem;
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: var(--editor-font-size, 13.12px);
+      line-height: 1.5;
+      tab-size: 2;
+      white-space: pre;
+      overflow: scroll;
+      pointer-events: none;
+      z-index: 0;
+      background: var(--bg-editor);
+      color: var(--text-main);
+      scrollbar-width: none;
+    }
+
+    .hl-layer::-webkit-scrollbar {
+      display: none;
+    }
+
+    textarea.hl-on {
+      position: relative;
+      z-index: 1;
+      background: transparent !important;
+      color: transparent !important;
+      caret-color: #8b7ff0;
+      /* PALETTE[0] — overridden by injectHLPaletteColors */
+      resize: none;
+    }
+
+    /* Token colours — injected from PALETTE by JS (see injectHLPaletteColors below) */
+    /* CodeMirror 6 host */
+    .cm-host {
+      flex: 1 1 auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .cm-host .cm-editor {
+      flex: 1;
+      min-height: 0;
+      font-size: var(--editor-font-size, 13.12px) !important;
+    }
+
+    .cm-host .cm-scroller {
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace !important;
+      overflow: auto !important;
+      min-height: 0;
+    }
+
+    /* CDN loading indicator */
+    .hl-loading {
+      flex: 1;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      color: #888;
+      font-size: .85rem;
+    }
+
+    @keyframes hl-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .hl-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #555;
+      border-top-color: #9370DB;
+      border-radius: 50%;
+      animation: hl-spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="preview-container">
+    <div class="preview" id="preview">
+      <div id="zoomWrap">
+        <pre class="mermaid" id="target"></pre>
+      </div>
+    </div>
+
+    <div class="top-left-actions">
+      <div class="combined-pill">
+        <button class="combined-pill-btn" id="openEditorBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            <path d="M2 9h20"></path>
+            <path d="M6 14h4"></path>
+            <path d="M14 11l3 3-3 3"></path>
+          </svg>
+          <span style="font-weight: 600;">Edit Code</span>
+        </button>
+        <div class="combined-pill-sep"></div>
+        <div class="combined-pill-badge" id="diagramTypeBadge">Flowchart</div>
+      </div>
+    </div>
+
+
+    <div class="top-toolbar">
+      <button class="icon-btn" id="panBtn" title="Pan Tool (Hand)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+          <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+          <path d="M10 10.5V5a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+        </svg>
+      </button>
+      <button class="icon-btn" id="colorWheelBtn" title="Color Wheel">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+      </button>
+
+
+      <button class="icon-btn" id="settingsToggleBtn" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="top-right-action" style="display: flex; gap: 0.5rem; align-items: center;">
+      <button class="pill-btn" id="exportMenuBtn"
+        style="padding: 6px 16px; border-radius: 6px; font-weight: 500; font-size: 0.85rem; background: var(--bg-body); color: var(--text-main);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Export
+      </button>
+      <button class="icon-btn" title="Documentation" id="canvasDocsBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- New Shapes Dropdown Panel -->
+    <div class="shapes-panel" id="shapesPanel">
+      <div class="shape-category">
+        <div class="shape-category-title">Basic</div>
+        <div class="shape-grid">
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="3" y="6" width="18" height="12" rx="6" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="12 3 21 21 3 21" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="12 3 21 12 12 21 3 12" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <path d="M6 3h12l4 9-4 9H6l-4-9 4-9z" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <path d="M4 6h16v12H4z M4 10h16 M4 14h16" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="5" y="3" width="14" height="18" rx="7" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="3" />
+            </svg></div>
+        </div>
+      </div>
+      <div class="shape-category">
+        <div class="shape-category-title">Process</div>
+        <div class="shape-grid">
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="4" y="4" width="16" height="16" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="4" y="4" width="16" height="16" />
+              <line x1="8" y1="4" x2="8" y2="20" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="8 4 20 4 16 20 4 20" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="4 4 20 4 16 20 8 20" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="12 4 20 20 4 20" />
+            </svg></div>
+        </div>
+      </div>
+      <div class="shape-category">
+        <div class="shape-category-title">Technical</div>
+        <div class="shape-grid">
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <ellipse cx="12" cy="6" rx="8" ry="3" />
+              <path d="M4 6v12c0 1.66 3.58 3 8 3s8-1.34 8-3V6" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <path d="M4 6h16v12H4z" />
+              <line x1="8" y1="6" x2="8" y2="18" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <rect x="4" y="4" width="16" height="16" />
+              <line x1="4" y1="12" x2="20" y2="12" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <polygon points="12 2 22 12 12 22 2 12" />
+            </svg></div>
+          <div class="shape-item"><svg viewBox="0 0 24 24">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-panel" id="themePanel">
+      <div class="theme-panel-section">
+        <div class="theme-panel-header">
+          <span>Diagram theme</span>
+          <label class="switch theme-switch">
+            <input type="checkbox" id="diagramThemeToggleBtn">
+            <span class="slider round">
+              <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <path
+                  d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            </span>
+          </label>
+        </div>
+        <div class="theme-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <button class="theme-btn" data-theme="default" style="background: #eef6f4; color: #1d4a43;"
+            title="Light">Aa</button>
+          <button class="theme-btn" data-theme="dark" style="background: #1e1e2e; color: #cdd6f4;"
+            title="Default (Dark)">Aa</button>
+          <button class="theme-btn active" data-theme="teal" style="background: #0a1822; color: #d7ece8;"
+            title="Teal Theme">Aa</button>
+        </div>
+      </div>
+
+      <div class="theme-panel-section">
+        <div class="theme-panel-header">Diagram style</div>
+        <div class="style-grid">
+          <button class="style-btn" data-style="sharp">
+            <div class="style-box sharp"></div>
+          </button>
+          <button class="style-btn" data-style="rounded">
+            <div class="style-box rounded"></div>
+          </button>
+          <button class="style-btn active" data-style="pill">
+            <div class="style-box pill"></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="theme-panel-section">
+        <div class="theme-panel-header">Diagram font</div>
+        <div class="font-grid">
+          <button class="font-btn active" data-font="sans">Aa</button>
+          <button class="font-btn" data-font="serif" style="font-family: serif;">Aa</button>
+          <button class="font-btn" data-font="mono" style="font-family: monospace;">Aa</button>
+          <button class="font-btn" data-font="comic" style="font-family: 'Comic Sans MS', cursive;">Aa</button>
+          <button class="font-btn" data-font="system" style="font-family: system-ui;">Aa</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+      <label>Diagram Type <select class="setting-btn" id="diagramType"></select></label>
+      <label>Theme
+        <select class="setting-btn" id="theme">
+          <option value="teal" selected>Teal Theme</option>
+          <option value="dark">Default (Dark)</option>
+          <option value="default">Light</option>
+        </select>
+      </label>
+
+
+      <label>Syntax
+        <select class="setting-btn" id="hlMode">
+          <option value="off">Off</option>
+          <option value="local">Local (regex)</option>
+          <option value="cdn">CDN (CodeMirror)</option>
+        </select>
+      </label>
+      <div class="settings-row">
+        <button class="setting-btn" id="renderBtn">Render</button>
+        <button class="setting-btn" id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="ai-action-bar">
+      <button class="ai-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg> Use Voice</button>
+    </div>
+  </div>
+
+  <div class="editor-panel" id="sourceCol">
+    <div class="editor-resize-handle" id="editorResizeHandle"></div>
+    <header class="ide-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div
+          style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 6px; padding-left: 4px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          Code
+        </div>
+        <button class="icon-btn" title="Close" id="toggleSrcBtn"><svg width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg></button>
+      </div>
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.25rem; border-top: 1px solid var(--border-color);">
+        <div class="ide-header-left" style="display: flex; align-items: center;">
+          <button class="pill-btn" id="validateBtn"
+            style="padding: 6px 12px; font-size: 0.88rem; font-weight: 600; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Validate
+          </button>
+          <button class="pill-btn" id="fixBtn"
+            style="padding: 6px 12px; font-size: 0.88rem; font-weight: 600; margin-left: 8px; border-radius: 6px; display: none; align-items: center; gap: 5px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            Auto-Fix
+          </button>
+        </div>
+        <div class="ide-header-right">
+          <label class="header-toggle">
+            <label class="switch">
+              <input type="checkbox" id="autoUpdateToggle" checked>
+              <span class="slider"></span>
+            </label>
+            Auto-Update
+          </label>
+          <button class="pill-btn" id="autoAlignBtn"
+            style="padding: 4px 10px; font-size: 0.88rem; font-weight: 600; margin-left: 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer;"
+            title="Auto-Align Code">
+            <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+              <line x1="3" y1="3" x2="21" y2="3"></line>
+              <line x1="3" y1="9" x2="15" y2="9"></line>
+              <line x1="3" y1="15" x2="21" y2="15"></line>
+              <line x1="3" y1="21" x2="15" y2="21"></line>
+            </svg>
+            Auto-Align
+          </button>
+          <button class="icon-btn" title="Copy Code" id="copyBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+          <div style="position: relative;">
+            <button class="icon-btn" title="Text Size" id="textSizeBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                <line x1="9" y1="20" x2="15" y2="20"></line>
+                <line x1="12" y1="4" x2="12" y2="20"></line>
+              </svg>
+            </button>
+            <div id="textSizePopup"
+              style="display: none; position: absolute; top: 100%; right: 0; background: var(--bg-body); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; box-shadow: 0 4px 12px var(--shadow); z-index: 100; min-width: 120px;">
+              <div style="margin-bottom: 4px; font-size: 0.8rem; color: var(--text-muted);">Font Size</div>
+              <input type="range" id="textSizeSlider" min="10" max="24" value="13"
+                style="width: 100%; cursor: pointer;">
+            </div>
+          </div>
+          <button class="icon-btn" title="Clear Code" id="clearBtn"><svg width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="editor-body">
+      <div class="gutter" id="gutter" aria-hidden="true"></div>
+      <div class="textarea-wrap" id="textareaWrap">
+        <textarea id="source" spellcheck="false" aria-label="Mermaid source code"></textarea>
+        <div id="hlLayer" class="hl-layer" aria-hidden="true"></div>
+        <div class="autocomplete-panel" id="autocompletePanel"></div>
+      </div>
+    </div>
+
+    <div class="editor-error-bar" id="editorErrorBar" style="display: none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        style="flex-shrink: 0; margin-top: 2px;">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span id="editorErrorText" style="flex: 1; word-break: break-word;"></span>
+    </div>
+
+    <div class="snippets-container" id="snippetsContainer">
+      <div class="snippets-header" id="snippetsBtn">
+        <div class="left-side">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          </svg>
+          <span>Snippets</span>
+        </div>
+        <div class="right-side">
+          <button class="icon-btn"><svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg></button>
+        </div>
+      </div>
+      <div class="snippets-panel" id="snippetsPanel"></div>
+    </div>
+  </div>
+
+
+
+  <div class="zoom-controls">
+    <button id="undoBtn" title="Undo (Placeholder)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M3 7v6h6"></path>
+        <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+      </svg></button>
+    <button id="redoBtn" title="Redo (Placeholder)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M21 7v6h-6"></path>
+        <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
+      </svg></button>
+    <div class="separator"></div>
+    <button id="zoomOutBtn" title="Zoom out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <line x1="8" y1="11" x2="14" y2="11"></line>
+      </svg></button>
+    <button id="zoomInBtn" title="Zoom in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <line x1="11" y1="8" x2="11" y2="14"></line>
+        <line x1="8" y1="11" x2="14" y2="11"></line>
+      </svg></button>
+    <button id="zoomFitBtn" title="Fit to screen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M15 3h6v6"></path>
+        <path d="M9 21H3v-6"></path>
+        <path d="M21 3l-7 7"></path>
+        <path d="M3 21l7-7"></path>
+      </svg></button>
+    <button id="fullscreenBtn" title="Fullscreen mode"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+      </svg></button>
+  </div>
+
+  <script type="module">
+    import mermaid from './mermaid-11.16.0/package/dist/mermaid.esm.min.mjs';
+
+    const DIAGRAMS = {
+      'architecture': { label: 'Architecture', hint: 'architecture — cloud topology', src: `architecture-beta\n    group core(cloud)[Core]\n    service db(database)[DB] in core\n    service api(server)[API] in core\n    db:R -- L:api` },
+      'block': { label: 'Block', hint: 'block-beta — nested blocks', src: `block-beta\n  columns 3\n  doc["Document"]\n  space\n  process["Process"]:2\n  doc --> process\n  process --> result["Result"]` },
+      'c4': { label: 'C4 Context', hint: 'C4Context — architecture', src: `C4Context\n    title Banking system\n    Person(customer, "Customer", "A customer")\n    System(banking, "Banking System", "Allows deposits")\n    Rel(customer, banking, "Uses")` },
+      'class': { label: 'Class', hint: 'classDiagram — OOP classes & relations', src: `classDiagram\n    class Animal {\n      +String name\n      +int age\n      +makeSound() void\n    }\n    class Dog {\n      +fetch() void\n    }\n    class Cat {\n      +purr() void\n    }\n    Animal <|-- Dog\n    Animal <|-- Cat` },
+      'er': { label: 'Entity Relationship', hint: 'erDiagram — DB schema', src: `erDiagram\n    CUSTOMER ||--o{ ORDER : places\n    ORDER ||--|{ LINE-ITEM : contains\n    CUSTOMER {\n      string name\n      string email\n    }\n    ORDER {\n      int id\n      string status\n    }` },
+      'flowchart': { label: 'Flowchart', hint: 'graph / flowchart — nodes & edges', src: `flowchart TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Do it]\n    B -->|No| D[Skip]\n    C --> E([Done])\n    D --> E` },
+      'gantt': { label: 'Gantt', hint: 'gantt — project schedule', src: `gantt\n    title Project plan\n    dateFormat YYYY-MM-DD\n    section Design\n    Spec      :done, a1, 2024-01-01, 7d\n    Mockups   :active, a2, after a1, 5d\n    section Build\n    Implement :b1, after a2, 10d\n    Test      :b2, after b1, 5d` },
+      'gitGraph': { label: 'Git Graph', hint: 'gitGraph — branch history', src: `gitGraph\n    commit\n    commit\n    branch develop\n    checkout develop\n    commit\n    commit\n    checkout main\n    merge develop` },
+      'ishikawa': { label: 'Ishikawa', hint: 'ishikawa / mindmap', src: `mindmap\n  root((Problem))\n    Cause 1\n      Detail\n    Cause 2\n      Detail` },
+      'journey': { label: 'Journey', hint: 'journey — user journey map', src: `journey\n    title Buying a coffee\n    section Morning\n      Arrive: 5: Me\n      Order: 4: Me\n      Pay: 3: Me, Barista\n    section Done\n      Receive coffee: 5: Me` },
+      'kanban': { label: 'Kanban', hint: 'kanban', src: `kanban\n  Todo\n    [Create Task]\n  In Progress\n    [Working]` },
+      'mindmap': { label: 'Mindmap', hint: 'mindmap — radial ideas', src: `mindmap\n  root((Ideas))\n    A\n      B\n      C\n    D\n      E\n      F` },
+      'packet': { label: 'Packet', hint: 'packet-beta', src: `packet-beta\n  0-15: "Source Port"\n  16-31: "Destination Port"\n  32-63: "Sequence Number"\n  64-95: "Acknowledgment Number"` },
+      'pie': { label: 'Pie', hint: 'pie — proportion chart', src: `pie title Browser share\n    "Chrome" : 65\n    "Safari" : 18\n    "Firefox" : 5\n    "Other" : 12` },
+      'quadrant': { label: 'Quadrant', hint: 'quadrantChart — 2x2 matrix', src: `quadrantChart\n    title Reach vs. Effort\n    x-axis Low Reach --> High Reach\n    y-axis Low Effort --> High Effort\n    quadrant-1 Plan\n    quadrant-2 Skip\n    quadrant-3 Reconsider\n    quadrant-4 Do now\n    "Feature A": [0.8, 0.25]\n    "Feature B": [0.3, 0.75]` },
+      'requirement': { label: 'Requirement', hint: 'requirementDiagram — req engineering', src: `requirementDiagram\n    requirement TestReq {\n      id: 1\n      text: the test req\n      risk: high\n      verifymethod: test\n    }\n    element TestEntity {\n      type: simulation\n    }\n    TestReq - satisfies -> TestEntity` },
+      'sankey': { label: 'Sankey', hint: 'sankey-beta — flow magnitude', src: `sankey-beta\n    Energy, Electricity, 5\n    Electricity, Homes, 3\n    Electricity, Industry, 2\n    Energy, Transport, 4\n    Transport, Road, 3\n    Transport, Air, 1` },
+      'sequence': { label: 'Sequence', hint: 'sequenceDiagram — message lifelines', src: `sequenceDiagram\n    participant Alice\n    participant Bob\n    Alice->>Bob: Hello\n    Bob-->>Alice: Hi there\n    Alice->>Bob: How are you?\n    Bob-->>Alice: Great!` },
+      'state': { label: 'State', hint: 'stateDiagram-v2 — state machines', src: `stateDiagram-v2\n    [*] --> Idle\n    Idle --> Processing: event\n    Processing --> Done: success\n    Processing --> Failed: error\n    Done --> [*]\n    Failed --> [*]` },
+      'timeline': { label: 'Timeline', hint: 'timeline — chronological events', src: `timeline\n    title Project history\n    section 2023\n      Q1 : Kickoff\n      Q2 : Prototype\n    section 2024\n      Q1 : Launch\n      Q2 : Scale` }
+    };
+
+    const elType = document.getElementById('diagramType');
+    const elTheme = document.getElementById('theme');
+    const elSrc = document.getElementById('source');
+    const elTarget = document.getElementById('target');
+    const btnRender = document.getElementById('renderBtn');
+    const btnReset = document.getElementById('resetBtn');
+    const diagramTypeBadge = document.getElementById('diagramTypeBadge');
+
+    // Populate Diagram Type dropdown
+    for (const key in DIAGRAMS) {
+      if (typeof CONFIG !== 'undefined' && CONFIG.allowedDiagramTypes) {
+        const typeMatch = DIAGRAMS[key].src.trim().match(/^[a-zA-Z0-9-]+/);
+        if (typeMatch && !CONFIG.allowedDiagramTypes.includes(typeMatch[0])) continue;
+      }
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = DIAGRAMS[key].label;
+      elType.appendChild(opt);
+    }
+    elType.addEventListener('change', () => {
+      elSrc.value = DIAGRAMS[elType.value].src + '\n';
+      elSrc.dispatchEvent(new Event('input'));
+    });
+
+    // Zoom DOM refs — declared early so resetZoom() can reference them before
+    // the zoom block below executes.
+    let zoomWrap = document.getElementById('zoomWrap');
+    let elZoomSel = document.getElementById('zoomSel');
+    let previewEl = document.querySelector('.preview');
+
+    // ---- Line numbers in the editor & Error highlighting ----
+    const elGutter = document.getElementById('gutter');
+    let editorErrorLines = new Set();
+    let editorWarningLines = new Set();
+
+    function syncGutter() {
+      const lines = elSrc.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= lines; i++) {
+        const isErr = (window.hlErrorLines && window.hlErrorLines.has(i - 1)) || editorErrorLines.has(i);
+        const isWarn = editorWarningLines.has(i);
+        if (isErr) {
+          html += `<span class="gutter-error-line">${i}</span>\n`;
+        } else if (isWarn) {
+          html += `<span class="gutter-warning-line">${i}</span>\n`;
+        } else {
+          html += `<span>${i}</span>\n`;
+        }
+      }
+      elGutter.innerHTML = html;
+      elGutter.scrollTop = elSrc.scrollTop;
+    }
+    elSrc.addEventListener('input', syncGutter);
+    elSrc.addEventListener('scroll', () => { elGutter.scrollTop = elSrc.scrollTop; });
+
+    const VALID_DIAGRAM_TYPES = [
+      'flowchart', 'graph', 'sequenceDiagram', 'classDiagram', 'stateDiagram-v2', 'stateDiagram',
+      'erDiagram', 'gantt', 'pie', 'gitGraph', 'mindmap', 'quadrantChart', 'timeline',
+      'zenuml', 'requirementDiagram', 'sankey-beta', 'block-beta', 'architecture-beta',
+      'C4Context', 'kanban', 'xychart-beta', 'packet-beta'
+    ];
+
+    function extractErrorLineNumber(err, hash) {
+      if (hash && typeof hash.line === 'number' && hash.line > 0) {
+        return hash.line;
+      }
+      if (err && typeof err.line === 'number' && err.line > 0) {
+        return err.line;
+      }
+      if (err && err.hash && typeof err.hash.line === 'number' && err.hash.line > 0) {
+        return err.hash.line;
+      }
+      if (err && err.loc && typeof err.loc.first_line === 'number' && err.loc.first_line > 0) {
+        return err.loc.first_line;
+      }
+      const msg = (typeof err === 'string' ? err : (err?.message || err?.str || String(err || '')));
+      const m = msg.match(/line\s*:?\s*(\d+)/i) || msg.match(/on\s+line\s*:?\s*(\d+)/i) || msg.match(/:\s*(\d+)\s*:/);
+      if (m) {
+        return parseInt(m[1], 10);
+      }
+      if (/diagram type|no diagram|unknown diagram|lexical error/i.test(msg)) {
+        return 1;
+      }
+      return null;
+    }
+
+    function findAllErrorLines(text, mainErr, hash) {
+      const errLines = new Set();
+
+      const firstLineNum = extractErrorLineNumber(mainErr, hash);
+      if (firstLineNum !== null && firstLineNum > 0) {
+        errLines.add(firstLineNum);
+      }
+
+      const cleanText = (text || '').replace(/\r/g, '');
+      const lines = cleanText.split('\n');
+
+      // Check line 1 diagram type
+      const firstLineText = (lines[0] || '').trim();
+      const firstWordMatch = firstLineText.match(/^---[\s\S]*?---\s*\n?([a-zA-Z0-9-]+)/) || firstLineText.match(/^([a-zA-Z0-9-]+)/);
+      const firstWord = firstWordMatch ? firstWordMatch[1] : '';
+      if (firstWord && !VALID_DIAGRAM_TYPES.some(t => t.toLowerCase() === firstWord.toLowerCase())) {
+        errLines.add(1);
+      }
+
+      // Scan each line for syntax flaws
+      lines.forEach((line, idx) => {
+        const lineNum = idx + 1;
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('%%')) return;
+
+        // Incomplete arrow line (e.g. "A ->", "A -->", "A ->>", "A ==>", "A -.->")
+        if (/[\w\-[\]()]+?\s*(?:-->|->>|->|==>|-\.-\|>|-\.->|--x|-x)\s*$/.test(trimmed)) {
+          errLines.add(lineNum);
+        }
+
+        // Unclosed quotes on line
+        const quoteCount = (line.match(/"/g) || []).length;
+        if (quoteCount % 2 !== 0) {
+          errLines.add(lineNum);
+        }
+
+        // Unclosed brackets
+        if (/[\w\-[\]()]+\s*\[[^\]\n]+$/.test(trimmed) || /[\w\-[\]()]+\s*\([^)\n]+$/.test(trimmed) || /[\w\-[\]()]+\s*\{[^}\n]+$/.test(trimmed)) {
+          errLines.add(lineNum);
+        }
+      });
+
+      return Array.from(errLines).sort((a, b) => a - b);
+    }
+
+    function autoFixMermaidCode(code) {
+      let fixed = (code || '').replace(/\r/g, '');
+
+      // 0. Auto-fix invalid diagram type on line 1
+      const lines = fixed.split('\n');
+      if (lines.length > 0) {
+        const firstLine = lines[0].trim();
+        const m = firstLine.match(/^([a-zA-Z0-9-]+)(\s.*)?$/);
+        if (m) {
+          const typeWord = m[1].toLowerCase();
+          if (!VALID_DIAGRAM_TYPES.some(t => t.toLowerCase() === typeWord)) {
+            let bestMatch = 'flowchart';
+            if (typeWord.includes('seq') || typeWord.includes('sequence')) bestMatch = 'sequenceDiagram';
+            else if (typeWord.includes('class')) bestMatch = 'classDiagram';
+            else if (typeWord.includes('state')) bestMatch = 'stateDiagram-v2';
+            else if (typeWord.includes('er') || typeWord.includes('entity')) bestMatch = 'erDiagram';
+            else if (typeWord.includes('gant')) bestMatch = 'gantt';
+            else if (typeWord.includes('pie')) bestMatch = 'pie';
+            else if (typeWord.includes('git')) bestMatch = 'gitGraph';
+            else if (typeWord.includes('mind')) bestMatch = 'mindmap';
+            else if (typeWord.includes('graph')) bestMatch = 'graph';
+            else if (typeWord.includes('flow')) bestMatch = 'flowchart';
+
+            lines[0] = bestMatch + (m[2] || '');
+            fixed = lines.join('\n');
+          }
+        }
+      }
+
+      // 0.5 Auto-fix keyword typos (e.g. participan -> participant, actr -> actor, subgrap -> subgraph)
+      fixed = fixed.replace(/^(\s*)part[ic][a-z]*\b/gmi, '$1participant');
+      fixed = fixed.replace(/^(\s*)act[or]*\b(?=\s+[A-Za-z0-9_])/gmi, '$1actor');
+      fixed = fixed.replace(/^(\s*)subgrap[a-z]*\b/gmi, '$1subgraph');
+
+      const isSeq = /^sequenceDiagram\b/i.test(fixed.trim().replace(/^---[\s\S]*?---\s*/, ''));
+
+      // 1. Fix sequence diagram arrows, missing messages & alias usages
+      if (isSeq) {
+        // Find participant aliases: participant A as Alice -> maps 'Alice' to 'A'
+        const aliasMap = new Map();
+        const aliasRegex = /^(?:\s*)(?:participant|actor)\s+([A-Za-z0-9_]+)\s+as\s+([A-Za-z0-9_]+)/gmi;
+        let match;
+        while ((match = aliasRegex.exec(fixed)) !== null) {
+          aliasMap.set(match[2], match[1]); // e.g. map 'Alice' -> 'A'
+        }
+
+        // If there are aliases, replace usages of the display name with the alias
+        if (aliasMap.size > 0) {
+          const lines = fixed.split('\n');
+          for (let i = 0; i < lines.length; i++) {
+            let l = lines[i];
+            // Only affect lines that are not declarations (e.g. arrows, notes)
+            if (!/^\s*(?:participant|actor)\b/i.test(l)) {
+              for (const [display, alias] of aliasMap.entries()) {
+                // Replace whole word matches of the display name
+                const displayRegex = new RegExp(`\\b${display}\\b`, 'g');
+                l = l.replace(displayRegex, alias);
+              }
+              lines[i] = l;
+            }
+          }
+          fixed = lines.join('\n');
+        }
+
+        // Replace single dash -> with solid arrow ->> in sequenceDiagram
+        fixed = fixed.replace(/^(\s*[\w\-[\]()]+?\s*)->(\s*[\w\-[\]()]*\s*)$/gm, '$1->>$2');
+        // Append missing target and message if arrow is incomplete at line end
+        fixed = fixed.replace(/^(\s*[\w\-[\]()]+?\s*(?:->>|-->>))\s*$/gm, '$1 B: Message');
+        // Append missing message label if target exists but no colon message
+        fixed = fixed.replace(/^(\s*[\w\-[\]()]+?\s*(?:->>|-->>)\s*[\w\-[\]()]+)\s*$/gm, '$1: Message');
+      } else {
+        // 2. Fix incomplete flowchart arrows at end of line (convert single -> to --> B)
+        fixed = fixed.replace(/^(\s*[\w\-[\]()]+\s*)->\s*$/gm, '$1--> B');
+        fixed = fixed.replace(/^(\s*[\w\-[\]()]+\s*(?:-->|==>|-\.-\|>|-\.->|--x|-x)\s*)$/gm, '$1 B');
+      }
+      const lineArr = fixed.split('\n');
+      lineArr.forEach((line, i) => {
+        const quoteCount = (line.match(/"/g) || []).length;
+        if (quoteCount % 2 !== 0) {
+          lineArr[i] = line + '"';
+        }
+      });
+      fixed = lineArr.join('\n');
+
+      const lineArr2 = fixed.split('\n');
+      lineArr2.forEach((line, i) => {
+        let l = line.trimEnd();
+        if (/[\w\-[\]()]+\s*\[[^\]]+$/.test(l) && !l.endsWith(']')) {
+          lineArr2[i] = line + ']';
+        } else if (/[\w\-[\]()]+\s*\([^)]+$/.test(l) && !l.endsWith(')')) {
+          lineArr2[i] = line + ')';
+        } else if (/[\w\-[\]()]+\s*\{[^}]+$/.test(l) && !l.endsWith('}')) {
+          lineArr2[i] = line + '}';
+        }
+      });
+      fixed = lineArr2.join('\n');
+
+      // 5. Fix sequence diagram empty alt/opt/else blocks
+      const matchActor = fixed.match(/(?:participant|actor)\s+([A-Za-z0-9_]+)/);
+      const dummyActor = matchActor ? matchActor[1] : 'System';
+      fixed = fixed.replace(/((?:alt|opt|else)[^\n]*\n)(?=\s*(?:else|end))/g, `$1    Note over ${dummyActor}: (auto-fix empty block)\n`);
+
+      // 6. Fix missing 'end' for subgraphs / loops / alts / opts / pars / rects
+      const openCount = (fixed.match(/\b(subgraph|loop|alt|opt|par|rect)\b/gi) || []).length;
+      const endCount = (fixed.match(/\bend\b/gi) || []).length;
+      if (openCount > endCount) {
+        for (let i = 0; i < (openCount - endCount); i++) {
+          fixed += '\nend';
+        }
+      }
+
+      // 7. Target line fallback fix for remaining error lines if code hasn't changed
+      if (fixed === code && editorErrorLines.size > 0) {
+        const lArr = code.split('\n');
+        editorErrorLines.forEach(errLine => {
+          if (errLine > 0 && errLine <= lArr.length) {
+            const idx = errLine - 1;
+            let line = lArr[idx];
+            if (/\s*(?:-->|->>|->)\s*$/.test(line)) {
+              lArr[idx] = line + ' TargetNode';
+            } else if (line.trim()) {
+              lArr[idx] = '%% ' + line;
+            }
+          }
+        });
+        fixed = lArr.join('\n');
+      }
+
+      return fixed;
+    }
+
+    function updateParticipantAliasesInCode(code) {
+      if (!code) return code;
+      const lines = code.split('\n');
+      const aliasMap = new Map();
+
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i];
+        // Match: participant A as Alice OR actor A as Alice
+        const match = l.match(/^\s*(participant|actor)\s+([A-Za-z0-9_]+)\s+as\s+(.+)$/i);
+        if (match) {
+          const alias = match[2].trim();
+          const name = match[3].trim();
+          if (alias && name && alias !== name) {
+            aliasMap.set(name, alias);
+          }
+        }
+      }
+
+      if (aliasMap.size === 0) return code;
+
+      const updatedLines = lines.map(line => {
+        if (/^\s*(participant|actor)\b/i.test(line)) {
+          return line;
+        }
+
+        let modifiedLine = line;
+        aliasMap.forEach((alias, name) => {
+          const safeName = name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const regex = new RegExp('\\b' + safeName + '\\b', 'g');
+          modifiedLine = modifiedLine.replace(regex, alias);
+        });
+        return modifiedLine;
+      });
+
+      return updatedLines.join('\n');
+    }
+
+    function formatAndAlignMermaidCode(code) {
+      if (!code) return code;
+      const lines = code.split('\n');
+      let indent = 0;
+      const result = [];
+      const INDENT_STR = '    '; // 4 spaces
+
+      const isHeaderLine = (line) => {
+        return /^(?:sequenceDiagram|flowchart|graph|classDiagram|stateDiagram(?:-v2)?|erDiagram|gantt|pie|gitGraph|journey|mindmap|timeline|quadrantChart|sankey-beta)\b/i.test(line);
+      };
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (!line) {
+          result.push('');
+          continue;
+        }
+
+        if (/^(?:end|else|option|and)\b/i.test(line)) {
+          indent = Math.max(1, indent - 1);
+        }
+
+        let currentLineIndent = indent;
+        if (isHeaderLine(line)) {
+          currentLineIndent = 0;
+        }
+
+        const indented = INDENT_STR.repeat(currentLineIndent) + line;
+        result.push(indented);
+
+        if (isHeaderLine(line)) {
+          indent = 1;
+        } else if (/^(?:subgraph|loop|alt|opt|par|rect|critical|break)\b/i.test(line)) {
+          indent++;
+        }
+      }
+      return result.join('\n');
+    }
+
+    const VALIDATE_DEFAULT_HTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      Validate
+    `;
+
+    function showEditorError(err, hash) {
+      const text = elSrc.value;
+      const linesArray = findAllErrorLines(text, err, hash);
+
+      editorErrorLines.clear();
+      linesArray.forEach(lineNum => editorErrorLines.add(lineNum));
+
+      if (window.hlErrorLines) {
+        window.hlErrorLines.clear();
+        linesArray.forEach(lineNum => window.hlErrorLines.add(lineNum - 1));
+      }
+
+      syncGutter();
+      syncLocalHL();
+
+      let displayMsg = '';
+      if (linesArray.length === 1) {
+        displayMsg = `Error in line ${linesArray[0]}`;
+      } else if (linesArray.length > 1) {
+        displayMsg = `Errors in lines ${linesArray.join(', ')}`;
+      } else {
+        displayMsg = `Error in code editor`;
+      }
+
+      const errBar = document.getElementById('editorErrorBar');
+      const errText = document.getElementById('editorErrorText');
+      if (errBar && errText) {
+        errText.textContent = displayMsg;
+        errBar.style.display = 'flex';
+      }
+
+      const btnValidate = document.getElementById('validateBtn');
+      if (btnValidate) {
+        btnValidate.innerHTML = '<span style="color: #e2795b; font-weight: 600;">Invalid ✗</span>';
+      }
+
+      const btnFix = document.getElementById('fixBtn');
+      if (btnFix) btnFix.style.display = 'inline-flex';
+    }
+
+    function checkSequenceDiagramWarnings(text) {
+      const cleanText = (text || '').replace(/\r/g, '');
+      const lines = cleanText.split('\n');
+
+      if (!/^sequenceDiagram\b/i.test(cleanText.trim().replace(/^---[\s\S]*?---\s*/, ''))) {
+        return [];
+      }
+
+      const declared = new Set();
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        const pMatch = trimmed.match(/^(?:participant|actor)\s+([A-Za-z0-9_]+)/i);
+        if (pMatch) {
+          declared.add(pMatch[1]);
+        }
+      });
+
+      const warnings = [];
+      lines.forEach((line, idx) => {
+        const lineNum = idx + 1;
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('%%') || /^sequenceDiagram\b/i.test(trimmed) || /^(?:participant|actor|autonumber|title)\b/i.test(trimmed)) {
+          return;
+        }
+
+        const lineUndeclared = new Set();
+
+        const noteMatch = trimmed.match(/^Note\s+(?:over|left of|right of)\s+([A-Za-z0-9_,\s]+):/i);
+        if (noteMatch) {
+          const parts = noteMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+          parts.forEach(p => {
+            if (declared.size > 0 && !declared.has(p)) {
+              lineUndeclared.add(p);
+            } else if (declared.size === 0 && (p === 'S' || p === 'C' || /^[A-Z0-9_]+$/.test(p))) {
+              lineUndeclared.add(p);
+            }
+          });
+        }
+
+        const arrowMatch = trimmed.match(/^([A-Za-z0-9_]+)\s*(?:->>|->|-->>|-->)\s*([A-Za-z0-9_]+)/);
+        if (arrowMatch && declared.size > 0) {
+          const src = arrowMatch[1];
+          const dest = arrowMatch[2];
+          if (!declared.has(src)) lineUndeclared.add(src);
+          if (!declared.has(dest)) lineUndeclared.add(dest);
+        }
+
+        if (lineUndeclared.size > 0) {
+          warnings.push({
+            line: lineNum,
+            participants: Array.from(lineUndeclared)
+          });
+        }
+      });
+
+      return warnings;
+    }
+
+    function showEditorWarnings(warnings) {
+      editorWarningLines.clear();
+      if (!warnings || warnings.length === 0) {
+        return;
+      }
+
+      const allParts = new Set();
+      const lineNums = [];
+      warnings.forEach(w => {
+        editorWarningLines.add(w.line);
+        lineNums.push(w.line);
+        w.participants.forEach(p => allParts.add(`'${p}'`));
+      });
+
+      syncGutter();
+
+      const partsStr = Array.from(allParts).join(', ');
+      const displayMsg = lineNums.length === 1
+        ? `Warning in line ${lineNums[0]}: ${partsStr} not declared as participant`
+        : `Warnings in lines ${lineNums.join(', ')}: ${partsStr} not declared as participant`;
+
+      const errBar = document.getElementById('editorErrorBar');
+      const errText = document.getElementById('editorErrorText');
+      if (errBar && errText) {
+        errText.textContent = displayMsg;
+        errBar.classList.add('warning-mode');
+        errBar.style.display = 'flex';
+      }
+
+      const btnFix = document.getElementById('fixBtn');
+      if (btnFix) btnFix.style.display = 'inline-flex';
+    }
+
+    function clearEditorError() {
+      editorErrorLines.clear();
+      editorWarningLines.clear();
+      if (window.hlErrorLines) {
+        window.hlErrorLines.clear();
+      }
+      syncGutter();
+      syncLocalHL();
+
+      const errBar = document.getElementById('editorErrorBar');
+      if (errBar) {
+        errBar.classList.remove('warning-mode');
+        errBar.style.display = 'none';
+      }
+
+      const btnValidate = document.getElementById('validateBtn');
+      if (btnValidate) {
+        btnValidate.innerHTML = VALIDATE_DEFAULT_HTML;
+      }
+
+      const btnFix = document.getElementById('fixBtn');
+      if (btnFix) btnFix.style.display = 'none';
+    }
+
+    // ---- Editor Autocomplete ----
+    const acItems = Object.keys(DIAGRAMS).map(k => ({ key: k, ...DIAGRAMS[k] })).filter(item => {
+      if (typeof CONFIG !== 'undefined' && CONFIG.allowedDiagramTypes) {
+        const typeMatch = item.src.trim().match(/^[a-zA-Z0-9-]+/);
+        if (typeMatch && !CONFIG.allowedDiagramTypes.includes(typeMatch[0])) return false;
+      }
+      return true;
+    });
+    let filteredAcItems = acItems;
+    let acSelectedIndex = 0;
+
+    function renderAutocomplete() {
+      let html = '';
+      const cubeSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`;
+      filteredAcItems.forEach((item, i) => {
+        const sel = i === acSelectedIndex ? 'selected' : '';
+        html += `<div class="ac-item ${sel}" data-index="${i}">${cubeSvg}${item.label}</div>`;
+      });
+      autocompletePanel.innerHTML = html;
+    }
+
+    function checkAutocomplete() {
+      const val = elSrc.value.trim().toLowerCase();
+
+      if (document.activeElement === elSrc) {
+        if (val === '') {
+          filteredAcItems = acItems;
+        } else {
+          filteredAcItems = acItems.filter(item => {
+            const firstWord = item.src.split(/[ \n]/)[0].toLowerCase();
+            return firstWord.startsWith(val);
+          });
+        }
+
+        // Show if empty, OR if filtering has results but user hasn't typed the exact full type yet
+        if (filteredAcItems.length > 0 && (val === '' || filteredAcItems.some(item => {
+          const firstWord = item.src.split(/[ \n]/)[0].toLowerCase();
+          return firstWord.startsWith(val) && firstWord !== val;
+        }))) {
+          if (acSelectedIndex >= filteredAcItems.length) acSelectedIndex = 0;
+          renderAutocomplete();
+          autocompletePanel.classList.add('show');
+        } else {
+          autocompletePanel.classList.remove('show');
+        }
+      } else {
+        autocompletePanel.classList.remove('show');
+      }
+    }
+
+    elSrc.addEventListener('input', checkAutocomplete);
+    elSrc.addEventListener('focus', checkAutocomplete);
+    elSrc.addEventListener('blur', () => {
+      setTimeout(() => autocompletePanel.classList.remove('show'), 150);
+    });
+
+    autocompletePanel.addEventListener('mousedown', (e) => e.preventDefault());
+    autocompletePanel.addEventListener('click', (e) => {
+      const itemEl = e.target.closest('.ac-item');
+      if (itemEl) {
+        const idx = parseInt(itemEl.getAttribute('data-index'), 10);
+        elSrc.value = filteredAcItems[idx].src + '\\n';
+        autocompletePanel.classList.remove('show');
+        elSrc.dispatchEvent(new Event('input'));
+        elSrc.focus();
+        elSrc.selectionStart = elSrc.selectionEnd = elSrc.value.length;
+      }
+    });
+
+    elSrc.addEventListener('keydown', (e) => {
+      if (autocompletePanel.classList.contains('show')) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          acSelectedIndex = (acSelectedIndex + 1) % filteredAcItems.length;
+          renderAutocomplete();
+          const sel = autocompletePanel.querySelector('.selected');
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          acSelectedIndex = (acSelectedIndex - 1 + filteredAcItems.length) % filteredAcItems.length;
+          renderAutocomplete();
+          const sel = autocompletePanel.querySelector('.selected');
+          if (sel) sel.scrollIntoView({ block: 'nearest' });
+          return;
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          elSrc.value = filteredAcItems[acSelectedIndex].src + '\\n';
+          autocompletePanel.classList.remove('show');
+          elSrc.dispatchEvent(new Event('input'));
+          elSrc.selectionStart = elSrc.selectionEnd = elSrc.value.length;
+          return;
+        } else if (e.key === 'Escape') {
+          autocompletePanel.classList.remove('show');
+          return;
+        }
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const s = elSrc.selectionStart, en = elSrc.selectionEnd;
+        elSrc.value = elSrc.value.slice(0, s) + '  ' + elSrc.value.slice(en);
+        elSrc.selectionStart = elSrc.selectionEnd = s + 2;
+        syncGutter();
+      }
+    });
+
+    // ---- Splitter logic removed for floating panel layout ----
+
+    // ---- Splitter logic removed for floating panel layout ----
+
+    let lastRenderedSrc = '';
+    let renderSeq = 0;   // incremented each render; cancels stale colorize passes
+
+    // ---- Coloring ----
+    // Outlined "pill badge" treatment: light tint fill + colored border +
+    // colored text. Every node reads as its palette colour without the heavy
+    // solid fill of the old colorizer.
+    const PALETTE = ['#8b7ff0', '#e2795b', '#3fb8af', '#e2a23b', '#5b9fe2', '#5cb896', '#d36ba1', '#7d8cf0', '#e2824a', '#5bc0de', '#a98bd9', '#6abe5c'];
+
+    // Inject syntax-highlight token colours explicitly for light and dark themes.
+    // This strictly separates code editor keyword colours from diagram actor colours.
+    function injectHLPaletteColors() {
+      const style = document.createElement('style');
+      style.id = 'hl-palette-colors';
+      style.textContent = [
+        `:root, :root.theme-teal {`,
+        `  --hl-kw: #c792ea;`,
+        `  --hl-bi: #82d4f5;`,
+        `  --hl-str: #b5e8a0;`,
+        `  --hl-num: #f0a45d;`,
+        `  --hl-arr: #35d0c0;`,
+        `  --hl-cmt: #46656f;`,
+        `}`,
+        `:root.theme-light {`,
+        `  --hl-kw: #a33f9b;`,
+        `  --hl-bi: #0d7ea3;`,
+        `  --hl-str: #147a52;`,
+        `  --hl-num: #b4560f;`,
+        `  --hl-arr: #123c36;`,
+        `  --hl-cmt: #8fa9a5;`,
+        `}`,
+        `.hl-keyword { color: var(--hl-kw); font-weight:700; }`,
+        `.hl-builtin { color: var(--hl-bi); }`,
+        `.hl-string  { color: var(--hl-str); }`,
+        `.hl-number  { color: var(--hl-num); }`,
+        `.hl-arrow   { color: var(--hl-arr); }`,
+        `.hl-comment { color: var(--hl-cmt); font-style:italic; }`,
+        `textarea.hl-on { caret-color: var(--hl-kw); }`
+      ].join('\n');
+      document.head.appendChild(style);
+    }
+    injectHLPaletteColors();
+
+    function contrastText(hex) {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? '#1a1a1a' : '#ffffff';
+    }
+    // A light translucent tint of `hex` for the pill fill (~18% opacity over white).
+    function tint(hex) {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},0.18)`;
+    }
+    // A richer tint (~55%) for area-fill shapes (pie slices, gantt bands) where
+    // a pale tint would read as blank — they need to read as coloured regions.
+    function tintStrong(hex) {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},0.55)`;
+    }
+
+    // Set/merge inline style props with !important on an element. Inline
+    // !important beats stylesheet rules, so these survive mermaid's async
+    // post-render theme re-injection (which clobbers any <style> we add).
+    function setInline(el, props) {
+      const keep = (el.getAttribute('style') || '')
+        .split(';').map(s => s.trim()).filter(Boolean)
+        .filter(s => !Object.keys(props).some(k => s.toLowerCase().startsWith(k.toLowerCase() + ':')));
+      for (const [k, v] of Object.entries(props)) keep.push(`${k}:${v}!important`);
+      el.setAttribute('style', keep.join(';'));
+    }
+
+    // Vivid per-actor coloring for sequence diagrams (mermaid 11.16.0 layout).
+    // Each object becomes a "lane": actor boxes, lifelines, message arrows and
+    // message labels all take the SOURCE actor's colour.
+    function colorizeSequence() {
+      const svg = currentSvg();
+      if (!svg) return false;
+      const actorRects = svg.querySelectorAll('rect.actor');
+      if (!actorRects.length) return false;
+
+      // Lane = distinct actor x-centre, left-to-right.
+      const xCentres = [];
+      actorRects.forEach(rect => {
+        const x = parseFloat(rect.getAttribute('x')) || 0;
+        const w = parseFloat(rect.getAttribute('width')) || 0;
+        xCentres.push(Math.round(x + w / 2));
+      });
+      const laneByX = new Map();
+      [...new Set(xCentres)].sort((a, b) => a - b).forEach((cx, i) => laneByX.set(cx, i));
+      const sortedX = [...laneByX.keys()];
+      const laneXOf = (x) => {
+        let best = 0, bestDist = Infinity;
+        sortedX.forEach((cx, idx) => { const d = Math.abs(cx - x); if (d < bestDist) { bestDist = d; best = idx; } });
+        return best;
+      };
+
+      // Actor boxes + labels (pill: tint fill, colored border, colored text).
+      actorRects.forEach((rect, i) => {
+        const lane = laneByX.get(xCentres[i]) ?? 0;
+        rect.setAttribute('data-lane', String(lane));
+        setInline(rect, { fill: tint(PALETTE[lane]), stroke: PALETTE[lane], 'stroke-width': '2' });
+      });
+      svg.querySelectorAll('text.actor').forEach(t => {
+        const x = parseFloat(t.getAttribute('x')) || 0;
+        const lane = laneXOf(x);
+        setInline(t, { fill: PALETTE[lane], 'font-weight': '700' });
+        t.querySelectorAll('tspan').forEach(ts => setInline(ts, { fill: PALETTE[lane], 'font-weight': '700' }));
+      });
+
+      // Lifelines: vertical actor-lines take their actor's colour.
+      svg.querySelectorAll('line.actor-line').forEach(line => {
+        const x1 = parseFloat(line.getAttribute('x1'));
+        const x2 = parseFloat(line.getAttribute('x2'));
+        if (!isNaN(x1) && !isNaN(x2) && Math.abs(x1 - x2) < 1) {
+          const lane = laneXOf(x1);
+          setInline(line, { fill: 'none', stroke: PALETTE[lane] });
+        }
+      });
+
+      // Message arrows: line[class*="messageLine"], coloured by SOURCE actor.
+      const msgLines = svg.querySelectorAll('line[class*="messageLine"]');
+      const arrows = [];
+      msgLines.forEach(line => {
+        const x1 = parseFloat(line.getAttribute('x1')) || 0;
+        const x2 = parseFloat(line.getAttribute('x2')) || 0;
+        const y1 = parseFloat(line.getAttribute('y1')) || 0;
+        const lane = laneXOf(x1);
+        setInline(line, { stroke: PALETTE[lane] });
+        arrows.push({ midX: (x1 + x2) / 2, y: y1, lane });
+      });
+
+      // Message labels: match each to its arrow by midpoint x + nearest-below y.
+      svg.querySelectorAll('text.messageText').forEach(t => {
+        const tx = parseFloat(t.getAttribute('x')) || 0;
+        const ty = parseFloat(t.getAttribute('y')) || 0;
+        let bestLane = null, bestScore = Infinity;
+        arrows.forEach(a => {
+          const dx = Math.abs(a.midX - tx);
+          if (dx > 14) return;
+          const dy = a.y - ty;
+          const penalty = dy < 0 ? 500 : 0;
+          const score = dx * 5 + Math.abs(dy) + penalty;
+          if (score < bestScore) { bestScore = score; bestLane = a.lane; }
+        });
+        if (bestLane !== null) {
+          setInline(t, { fill: PALETTE[bestLane], stroke: 'none', 'font-weight': '600' });
+          t.querySelectorAll('tspan').forEach(ts => setInline(ts, { fill: PALETTE[bestLane] }));
+        }
+      });
+      return true;
+    }
+
+    // Class diagram coloring — matches the sequence actor "pill" treatment:
+    // each class box gets a light tint fill + colored border + colored title,
+    // and the inheritance arrows take their source class's colour.
+    function colorizeClass() {
+      const svg = currentSvg();
+      if (!svg) return false;
+      // Only class diagrams draw extension/aggregation relation paths.
+      const relPaths = svg.querySelectorAll('path.relation, path[class*=" relation"]');
+      const nodes = svg.querySelectorAll('g.node');
+      if (!nodes.length || !relPaths.length) return false;
+
+      // Assign each class a distinct colour by document index, and record its
+      // centre-x so inheritance arrows can match the colour of their source class.
+      const nodeCentres = [];
+      nodes.forEach((n, i) => {
+        const t = n.getAttribute('transform') || '';
+        const m = t.match(/translate\(([-\d.]+)/);
+        nodeCentres.push({ node: n, cx: m ? parseFloat(m[1]) : 0, lane: i });
+      });
+      // Match an x coordinate to the nearest class node (for arrow source colouring).
+      const laneOf = (x) => {
+        let best = 0, bestDist = Infinity;
+        nodeCentres.forEach((nc) => { const d = Math.abs(nc.cx - x); if (d < bestDist) { bestDist = d; best = nc.lane; } });
+        return best;
+      };
+
+      // Pill treatment per class: tint fill + coloured border on the box path,
+      // coloured title text. The box is the first <path> inside g.outer-path.
+      nodes.forEach((n, i) => {
+        const lane = i;
+        const c = PALETTE[lane % PALETTE.length];
+        n.setAttribute('data-lane', String(lane));
+        // Box outline path(s) inside the label-container.
+        n.querySelectorAll('g.outer-path path, g.label-container path').forEach((p, pi) => {
+          // First path is the box fill/outline; others are dividers (keep them subtle).
+          if (pi === 0) setInline(p, { fill: tint(c), stroke: c, 'stroke-width': '2' });
+          else setInline(p, { stroke: c });
+        });
+        // Title text (first label) — coloured, bold. Members/methods stay neutral.
+        const titleGroup = n.querySelector('g.label-group text');
+        if (titleGroup) {
+          setInline(titleGroup, { fill: c, 'font-weight': '700' });
+          titleGroup.querySelectorAll('tspan').forEach(ts => setInline(ts, { fill: c, 'font-weight': '700' }));
+        }
+        // HTML title (foreignObject) — colour the class name. In mermaid 11.x
+        // the title is the first child element (div/span/p) inside the foreignObject.
+        const fo = n.querySelector('foreignObject');
+        if (fo) {
+          const foTitle = fo.querySelector('div > b, div > p, div > span, p, span, b') || fo.firstElementChild;
+          if (foTitle) {
+            setInline(foTitle, { color: c, 'font-weight': '700' });
+            foTitle.querySelectorAll('span, p, b').forEach(ch => setInline(ch, { color: c, 'font-weight': '700' }));
+          }
+        }
+      });
+
+      // Inheritance arrows: colour each relation path by its SOURCE node and
+      // repoint its marker to a per-lane coloured clone.
+      const NS = 'http://www.w3.org/2000/svg';
+      let defs = svg.querySelector('defs');
+      if (!defs) { defs = document.createElementNS(NS, 'defs'); svg.insertBefore(defs, svg.firstChild); }
+      svg.querySelectorAll('[data-class-clone]').forEach(el => el.remove());
+
+      // Find the base extension marker id(s) used by relation paths.
+      const markerIds = [...svg.querySelectorAll('marker')].map(m => m.getAttribute('id'));
+      const extStart = markerIds.find(id => /-extensionStart$/.test(id));
+      const extEnd = markerIds.find(id => /-extensionEnd$/.test(id));
+
+      const cloneMarker = (baseId, lane) => {
+        if (!baseId) return null;
+        const base = svg.querySelector(`marker[id="${baseId}"]`);
+        if (!base) return null;
+        const clone = base.cloneNode(true);
+        const id = baseId + '-l' + lane;
+        clone.setAttribute('id', id);
+        clone.setAttribute('data-class-clone', '1');
+        const c = PALETTE[lane % PALETTE.length];
+        clone.querySelectorAll('path, polygon').forEach(el => { el.setAttribute('fill', c); el.setAttribute('stroke', c); });
+        (base.parentNode || defs).appendChild(clone);
+        return id;
+      };
+
+      relPaths.forEach(path => {
+        // Source = the path's starting point (x of first coordinate).
+        const d = path.getAttribute('d') || '';
+        const m = d.match(/M\s*([-\d.]+)/);
+        const startX = m ? parseFloat(m[1]) : 0;
+        const lane = laneOf(startX);
+        const c = PALETTE[lane % PALETTE.length];
+        setInline(path, { stroke: c, 'stroke-width': '1.5' });
+        // Repoint markers to coloured clones.
+        const ms = path.getAttribute('marker-start');
+        const me = path.getAttribute('marker-end');
+        if (ms && extStart) { const id = cloneMarker(extStart, lane); if (id) path.setAttribute('marker-start', `url(#${id})`); }
+        if (me && extEnd) { const id = cloneMarker(extEnd, lane); if (id) path.setAttribute('marker-end', `url(#${id})`); }
+      });
+      return true;
+    }
+
+    // Flowchart diagram coloring — matches arrows and edge labels to their source node.
+    function colorizeFlowchart() {
+      const svg = currentSvg();
+      if (!svg || !svg.classList.contains('flowchart')) return false;
+      const edges = svg.querySelectorAll('path.flowchart-link');
+      if (!edges.length) return false;
+
+      const nodeCentres = [];
+      svg.querySelectorAll('g.node').forEach((n) => {
+        const cnode = n.getAttribute('data-cnode');
+        if (cnode != null) {
+          const t = n.getAttribute('transform') || '';
+          const m = t.match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+          if (m) {
+            nodeCentres.push({
+              cx: parseFloat(m[1]),
+              cy: parseFloat(m[2]),
+              cindex: parseInt(cnode, 10)
+            });
+          }
+        }
+      });
+      if (!nodeCentres.length) return false;
+
+      let defs = svg.querySelector('defs');
+      if (!defs) {
+        const NS = 'http://www.w3.org/2000/svg';
+        defs = document.createElementNS(NS, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+      }
+
+      edges.forEach(edge => {
+        const d = edge.getAttribute('d') || '';
+        const m = d.match(/M\s*([-\d.]+)[,\s]+([-\d.]+)/);
+        if (m) {
+          const startX = parseFloat(m[1]);
+          const startY = parseFloat(m[2]);
+          let bestDist = Infinity, bestCNode = 0;
+          nodeCentres.forEach(nc => {
+            const dist = Math.hypot(nc.cx - startX, nc.cy - startY);
+            if (dist < bestDist) { bestDist = dist; bestCNode = nc.cindex; }
+          });
+
+          const c = PALETTE[bestCNode % PALETTE.length];
+          setInline(edge, { stroke: c, 'stroke-width': '2' });
+
+          const me = edge.getAttribute('marker-end');
+          if (me) {
+            const idMatch = me.match(/url\(#([^)]+)\)/);
+            if (idMatch) {
+              const baseId = idMatch[1];
+              const newId = baseId + '-c' + bestCNode;
+              if (!svg.querySelector(`marker[id="${newId}"]`)) {
+                const base = svg.querySelector(`marker[id="${baseId}"]`);
+                if (base) {
+                  const clone = base.cloneNode(true);
+                  clone.setAttribute('id', newId);
+                  clone.setAttribute('data-class-clone', '1');
+                  clone.querySelectorAll('path, polygon, circle').forEach(el => {
+                    setInline(el, { fill: c, stroke: c });
+                  });
+                  (base.parentNode || defs).appendChild(clone);
+                }
+              }
+              edge.setAttribute('marker-end', `url(#${newId})`);
+            }
+          }
+
+          const dataId = edge.getAttribute('data-id');
+          if (dataId) {
+            const label = svg.querySelector(`g.label[data-id="${dataId}"]`);
+            if (label) {
+              label.querySelectorAll('span, p, div, text').forEach(el => {
+                setInline(el, { color: c, fill: c, 'font-weight': '700' });
+              });
+            }
+          }
+        }
+      });
+      return true;
+    }
+
+    // Generic per-node coloring for every other diagram type. Uses a <style>
+    // block with !important (these types don't trigger mermaid's async theme
+    // re-injection, unlike sequence).
+    function colorizeDiagram() {
+      const svg = currentSvg();
+      if (!svg) return;
+      const NS = 'http://www.w3.org/2000/svg';
+      if (svg.querySelector('rect.actor')) return; // sequence owns itself
+      // Class diagrams own themselves (pill box + inheritance arrows).
+      if (svg.querySelector('path.relation, path[class*=" relation"]')) return;
+
+      const groups = [];
+      svg.querySelectorAll('g.node').forEach(el => groups.push(el));
+      svg.querySelectorAll('g.mindmap-node').forEach(el => groups.push(el));
+      const shapes = [];
+      svg.querySelectorAll('rect.outer.title-state').forEach(el => shapes.push(el));
+      svg.querySelectorAll('.er.entityBox').forEach(el => shapes.push(el));
+      svg.querySelectorAll('path.pieCircle').forEach(el => shapes.push(el));
+      svg.querySelectorAll('rect.section, rect.journey-section').forEach(el => shapes.push(el));
+      svg.querySelectorAll('circle.commit').forEach(el => shapes.push(el));
+      svg.querySelectorAll('.quadrant').forEach(el => shapes.push(el));
+      svg.querySelectorAll('rect.background').forEach(el => { if (!el.closest('g.mindmap-node')) shapes.push(el); });
+      if (!groups.length && !shapes.length) {
+        svg.querySelectorAll('g > rect:not([class])').forEach(el => shapes.push(el));
+      }
+
+      const seen = new Set();
+      const uniqG = [];
+      groups.forEach(el => { if (!seen.has(el)) { seen.add(el); uniqG.push(el); } });
+      if (!uniqG.length && !shapes.length) return;
+
+      uniqG.forEach((el, i) => el.setAttribute('data-cnode', String(i % PALETTE.length)));
+      shapes.forEach((el, i) => el.setAttribute('data-cshape', String(i % PALETTE.length)));
+
+      svg.querySelector('style#diagram-colors')?.remove();
+      const rules = PALETTE.map((c, i) => {
+        // Group-tagged nodes: pill = tint fill + colored border + colored text.
+        // The visible shape (rect/polygon/circle) keeps its own class, so target
+        // the shape elements directly to avoid tinting the text node.
+        return [
+          `svg [data-cnode="${i}"] rect,svg [data-cnode="${i}"] polygon,svg [data-cnode="${i}"] circle,svg [data-cnode="${i}"] ellipse{fill:${tint(c)}!important;stroke:${c}!important;stroke-width:2!important;}`,
+          `svg [data-cnode="${i}"] text{fill:${c}!important;color:${c}!important;font-weight:600!important;}`,
+          `svg [data-cnode="${i}"] text>tspan{fill:${c}!important;color:${c}!important;}`,
+          `svg [data-cnode="${i}"] p,svg [data-cnode="${i}"] span,svg [data-cnode="${i}"] div{color:${c}!important;font-weight:600!important;}`,
+          // Standalone area shapes (pie slices, gantt/journey bands, git
+          // commits): richer tint so they read as coloured regions, not blanks.
+          `svg [data-cshape="${i}"]{fill:${tintStrong(c)}!important;stroke:${c}!important;stroke-width:2!important;}`,
+        ].join('\n');
+      }).join('\n');
+      const style = document.createElementNS(NS, 'style');
+      style.setAttribute('id', 'diagram-colors');
+      style.textContent = rules;
+      svg.insertBefore(style, svg.firstChild);
+    }
+
+    async function renderOne(text) {
+      if (text.trim() === '') {
+        btnRender.classList.remove('rendered');
+        elTarget.removeAttribute('data-processed');
+        elTarget.innerHTML = `<div style="padding:2rem;color:var(--text-muted);text-align:center;display:flex;flex-direction:column;align-items:center;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:1rem;opacity:0.5;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          Start typing to create a diagram, or choose a snippet.</div>`;
+        return;
+      }
+
+      if (typeof CONFIG !== 'undefined' && CONFIG.allowedDiagramTypes) {
+        const match = text.trim().match(/^[a-zA-Z0-9-]+/);
+        if (match && !CONFIG.allowedDiagramTypes.includes(match[0])) {
+          btnRender.classList.remove('rendered');
+          elTarget.removeAttribute('data-processed');
+          showEditorError(`Diagram type '${match[0]}' is not permitted`);
+          return;
+        }
+      }
+      btnRender.classList.remove('rendered');   // white while (re)rendering
+      elTarget.removeAttribute('data-processed');
+      elTarget.textContent = text;
+      lastRenderedSrc = text;
+      try {
+        const isValid = await mermaid.parse(text);
+        if (isValid === false) {
+          showEditorError('Syntax error: invalid diagram syntax');
+          btnRender.classList.remove('rendered');
+          return;
+        }
+        await mermaid.run({ nodes: [elTarget], suppressErrors: false });
+        btnRender.classList.add('rendered');    // green once rendered
+        resetZoom();
+        clearEditorError();
+
+        // Check for non-fatal sequence diagram warnings (undeclared participants)
+        const warnings = checkSequenceDiagramWarnings(text);
+        if (warnings && warnings.length > 0) {
+          showEditorWarnings(warnings);
+        }
+        // Coloring: mermaid 11.x does an async post-render theme step after
+        // run() resolves. Apply now AND again shortly after, so colours land
+        // whether or not that step has run yet. Sequence uses inline styles
+        // (clobber-proof); other types use a <style> block.
+        const mySeq = ++renderSeq;
+        const applyColors = () => {
+          if (mySeq !== renderSeq) return;   // a newer render superseded this one
+          colorizeSequence();
+          colorizeClass();
+          colorizeDiagram();
+          colorizeFlowchart();
+          applyDiagramStyle();
+          applyDiagramFont();
+          // Sync actor lane-colours into the local HL layer after SVG is painted
+          refreshActorColors();
+          syncLocalHL();
+        };
+        applyColors();
+        setTimeout(applyColors, 150);
+      } catch (e) {
+        btnRender.classList.remove('rendered'); // error → stays white
+        console.error(e);
+        showEditorError(e);
+      }
+    }
+
+    mermaid.parseError = (err, hash) => {
+      showEditorError(err);
+    };
+
+    function loadExample(key) {
+      const d = DIAGRAMS[key];
+      elSrc.value = d.src;
+      syncGutter();
+      renderOne(d.src);
+    }
+
+    await mermaid.initialize({ startOnLoad: false, theme: elTheme.value === 'teal' ? 'dark' : elTheme.value, securityLevel: 'loose' });
+    loadExample(elType.value);
+
+    elType.addEventListener('change', () => {
+      loadExample(elType.value);
+    });
+    elTheme.addEventListener('change', async () => {
+      document.documentElement.classList.toggle('theme-light', elTheme.value === 'default');
+      document.documentElement.classList.toggle('theme-teal', elTheme.value === 'teal');
+
+      const isLight = elTheme.value === 'default';
+      document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+
+      const diagramThemeToggleBtn = document.getElementById('diagramThemeToggleBtn');
+      if (diagramThemeToggleBtn) diagramThemeToggleBtn.checked = !isLight;
+
+
+      let mmTheme = elTheme.value;
+      if (mmTheme === 'teal') mmTheme = 'dark';
+
+      await mermaid.initialize({ startOnLoad: false, theme: mmTheme, securityLevel: 'loose' });
+      renderOne(elSrc.value);
+    });
+    btnRender.addEventListener('click', () => renderOne(elSrc.value));
+    const btnValidate = document.getElementById('validateBtn');
+    const btnFix = document.getElementById('fixBtn');
+    if (btnValidate) {
+      btnValidate.addEventListener('click', async () => {
+        try {
+          window.hlErrorLines.clear();
+          const isValid = await mermaid.parse(elSrc.value);
+          const { svg } = await mermaid.render('validator_dummy', elSrc.value);
+          if (svg.match(/="NaN"|NaN,|undefined,/)) {
+            let match;
+            const regex = /((?:alt|opt|else)[^\n]*\n)(?=\s*(?:else|end))/g;
+            while ((match = regex.exec(elSrc.value)) !== null) {
+              const lineNum = elSrc.value.substring(0, match.index).split('\n').length - 1;
+              window.hlErrorLines.add(lineNum);
+            }
+            throw new Error('Layout failed (NaN coordinates)');
+          }
+          if (isValid) {
+            btnValidate.innerHTML = '<span style="color: var(--accent); font-weight: 600;">Valid ✓</span>';
+            if (btnFix) btnFix.style.display = 'none';
+            clearEditorError();
+            setTimeout(() => {
+              if (editorErrorLines.size === 0) {
+                btnValidate.innerHTML = VALIDATE_DEFAULT_HTML;
+              }
+            }, 1500);
+          }
+        } catch (err) {
+          const m = err.message?.match(/Parse error on line (\d+)/);
+          if (m) {
+            window.hlErrorLines.add(parseInt(m[1], 10) - 1);
+          }
+          showEditorError(err);
+        }
+        syncLocalHL();
+      });
+    }
+    if (btnFix) {
+      btnFix.addEventListener('click', async () => {
+        const code = elSrc.value;
+        const fixedCode = autoFixMermaidCode(code);
+        if (fixedCode !== code) {
+          elSrc.value = fixedCode;
+          clearTimeout(inputTimer);
+          syncGutter();
+          clearEditorError();
+          await renderOne(fixedCode);
+        } else {
+          btnFix.style.display = 'none';
+        }
+      });
+    }
+    btnReset.addEventListener('click', () => loadExample(elType.value));
+
+    elSrc.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        renderOne(elSrc.value);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        const start = elSrc.selectionStart;
+        const end = elSrc.selectionEnd;
+        const val = elSrc.value;
+
+        // Find line boundaries for current cursor or selection
+        const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+        let lineEnd = val.indexOf('\n', end);
+        if (lineEnd === -1) lineEnd = val.length;
+
+        const selectedText = val.substring(lineStart, lineEnd);
+        const lines = selectedText.split('\n');
+
+        // Check if all selected lines are already commented with %%
+        const allCommented = lines.every(l => l.trim().startsWith('%%'));
+
+        const newLines = lines.map(l => {
+          if (allCommented) {
+            return l.replace(/^(\s*)%%\s?/, '$1');
+          } else {
+            return l.replace(/^(\s*)/, '$1%% ');
+          }
+        });
+
+        const newText = newLines.join('\n');
+        elSrc.value = val.substring(0, lineStart) + newText + val.substring(lineEnd);
+
+        elSrc.selectionStart = lineStart;
+        elSrc.selectionEnd = lineStart + newText.length;
+
+        syncGutter();
+        elSrc.dispatchEvent(new Event('input'));
+      }
+    });
+
+    const autoAlignBtn = document.getElementById('autoAlignBtn');
+
+    function autoAlignCode() {
+      const val = elSrc.value;
+      if (!val) return;
+
+      let newVal = val;
+      const cleanSrc = val.trim().replace(/^---[\s\S]*?---\s*/, '');
+      if (/^sequenceDiagram\b/i.test(cleanSrc)) {
+        newVal = updateParticipantAliasesInCode(newVal);
+      }
+      newVal = formatAndAlignMermaidCode(newVal);
+
+      if (newVal !== val) {
+        const start = elSrc.selectionStart;
+        const end = elSrc.selectionEnd;
+        elSrc.value = newVal;
+        syncGutter();
+        try {
+          elSrc.setSelectionRange(Math.min(start, newVal.length), Math.min(end, newVal.length));
+        } catch (e) { }
+      }
+    }
+
+    const autoUpdateToggle = document.getElementById('autoUpdateToggle');
+    if (autoUpdateToggle) {
+      autoUpdateToggle.addEventListener('change', () => {
+        if (autoUpdateToggle.checked) {
+          lastRenderedSrc = null;
+          renderOne(elSrc.value);
+        }
+      });
+    }
+
+    if (autoAlignBtn) {
+      autoAlignBtn.addEventListener('click', () => {
+        autoAlignCode();
+        lastRenderedSrc = null;
+        renderOne(elSrc.value);
+      });
+    }
+
+    // Debounced auto-render on input (typing OR pasting).
+    let inputTimer = null;
+    let inputSeq = 0;
+    elSrc.addEventListener('input', () => {
+      clearTimeout(inputTimer);
+      const mySeq = ++inputSeq;
+      inputTimer = setTimeout(async () => {
+        if (mySeq !== inputSeq) return;
+        const autoUpdateToggle = document.getElementById('autoUpdateToggle');
+        if (autoUpdateToggle && !autoUpdateToggle.checked) return;
+        if (elSrc.value === lastRenderedSrc) return;
+        await renderOne(elSrc.value);
+        lastRenderedSrc = elSrc.value;
+      }, 500);
+    });
+
+    // ---- Export helpers & Clear button ----
+    const btnCopy = document.getElementById('copyBtn');
+    const btnClear = document.getElementById('clearBtn');
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        elSrc.value = '';
+        syncGutter();
+        clearEditorError();
+        elSrc.dispatchEvent(new Event('input'));
+        elSrc.focus();
+      });
+    }
+
+    const canvasDocsBtn = document.getElementById('canvasDocsBtn');
+    if (canvasDocsBtn) {
+      canvasDocsBtn.addEventListener('click', () => {
+        window.open('https://mermaid.js.org/intro/', '_blank');
+      });
+    }
+
+    function flashIcon(btn) {
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      setTimeout(() => { btn.innerHTML = originalHtml; }, 1200);
+    }
+    function currentSvg() { return elTarget.querySelector('svg') || null; }
+    function serializeSvg(svg) {
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+      const w = svg.getAttribute('width') || svg.viewBox?.baseVal?.width || 800;
+      const h = svg.getAttribute('height') || svg.viewBox?.baseVal?.height || 600;
+      clone.setAttribute('width', w);
+      clone.setAttribute('height', h);
+
+      const activeBgSwatch = document.querySelector('.bg-swatch.active');
+      if (activeBgSwatch && activeBgSwatch.dataset.bg && activeBgSwatch.dataset.bg !== 'transparent') {
+        const bg = activeBgSwatch.style.background || activeBgSwatch.dataset.bg;
+        clone.style.background = bg;
+      }
+      return new XMLSerializer().serializeToString(clone);
+    }
+    function download(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    if (btnCopy) {
+      btnCopy.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(elSrc.value); flashIcon(btnCopy); }
+        catch (e) { elSrc.select(); document.execCommand('copy'); flashIcon(btnCopy); }
+      });
+    }
+
+    // Export Modal Logic
+    const exportMenuBtn = document.getElementById('exportMenuBtn');
+    const exportModalOverlay = document.getElementById('exportModalOverlay');
+    const closeExportBtn = document.getElementById('closeExportBtn');
+    const exportCancelBtn = document.getElementById('exportCancelBtn');
+    const exportConfirmBtn = document.getElementById('exportConfirmBtn');
+    const exportPreviewBox = document.getElementById('exportPreviewBox');
+    const formatOptions = document.querySelectorAll('.format-option');
+    const bgSwatches = document.querySelectorAll('.bg-swatch');
+
+    function updateExportPreview() {
+      const svg = currentSvg();
+      if (!svg) {
+        exportPreviewBox.innerHTML = '<div style="color:var(--text-muted)">No diagram to preview</div>';
+        return;
+      }
+      const clone = svg.cloneNode(true);
+      clone.style.width = '100%';
+      clone.style.height = '100%';
+      clone.style.maxWidth = '100%';
+
+      const activeBgSwatch = document.querySelector('.bg-swatch.active');
+      if (activeBgSwatch && activeBgSwatch.dataset.bg !== 'transparent') {
+        exportPreviewBox.style.background = activeBgSwatch.style.background || activeBgSwatch.dataset.bg;
+      } else {
+        exportPreviewBox.style.background = 'repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 50% / 10px 10px';
+      }
+
+      exportPreviewBox.innerHTML = '';
+      exportPreviewBox.appendChild(clone);
+    }
+
+    if (exportMenuBtn) {
+      exportMenuBtn.addEventListener('click', () => {
+        exportModalOverlay.style.display = 'flex';
+        updateExportPreview();
+      });
+    }
+
+    function closeExportModal() {
+      exportModalOverlay.style.display = 'none';
+    }
+    if (closeExportBtn) closeExportBtn.addEventListener('click', closeExportModal);
+    if (exportCancelBtn) exportCancelBtn.addEventListener('click', closeExportModal);
+    if (exportModalOverlay) {
+      exportModalOverlay.addEventListener('click', (e) => {
+        if (e.target === exportModalOverlay) closeExportModal();
+      });
+    }
+
+    formatOptions.forEach(opt => {
+      if (opt.querySelector('input').disabled) return;
+      opt.addEventListener('click', () => {
+        formatOptions.forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        opt.querySelector('input').checked = true;
+      });
+    });
+
+    bgSwatches.forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        bgSwatches.forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        updateExportPreview();
+      });
+    });
+
+    if (exportConfirmBtn) {
+      exportConfirmBtn.addEventListener('click', () => {
+        const formatInput = document.querySelector('input[name="exportFormat"]:checked');
+        if (!formatInput) return;
+        const format = formatInput.value;
+        const svg = currentSvg();
+        if (!svg) return;
+
+        const oldText = exportConfirmBtn.textContent;
+        exportConfirmBtn.textContent = 'Exporting...';
+
+        setTimeout(() => {
+          if (format === 'svg') {
+            download(`mermaid-${elType.value}.svg`, new Blob([serializeSvg(svg)], { type: 'image/svg+xml' }));
+          } else if (format === 'mmd') {
+            download(`mermaid-${elType.value}.mmd`, new Blob([elSrc.value], { type: 'text/plain' }));
+          } else if (format === 'png') {
+            const vb = svg.viewBox?.baseVal;
+            const w = Math.max(1, vb?.width || svg.clientWidth || 800);
+            const h = Math.max(1, vb?.height || svg.clientHeight || 600);
+            const scale = 2;
+            const dataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(serializeSvg(svg))));
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = w * scale; canvas.height = h * scale;
+              const ctx = canvas.getContext('2d');
+              const activeBgSwatch = document.querySelector('.bg-swatch.active');
+              if (activeBgSwatch && activeBgSwatch.dataset.bg !== 'transparent') {
+                ctx.fillStyle = activeBgSwatch.dataset.bg === 'white' ? '#ffffff' : (activeBgSwatch.dataset.bg === 'black' ? '#000000' : activeBgSwatch.style.background);
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+              }
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              canvas.toBlob((blob) => {
+                if (blob) download(`mermaid-${elType.value}.png`, blob);
+                exportConfirmBtn.textContent = 'Done ✓';
+                setTimeout(() => { exportConfirmBtn.textContent = oldText; closeExportModal(); }, 1000);
+              }, 'image/png');
+            };
+            img.onerror = () => { exportConfirmBtn.textContent = 'Failed'; setTimeout(() => exportConfirmBtn.textContent = oldText, 1000); };
+            img.src = dataUrl;
+            return;
+          }
+          exportConfirmBtn.textContent = 'Done ✓';
+          setTimeout(() => { exportConfirmBtn.textContent = oldText; closeExportModal(); }, 1000);
+        }, 50);
+      });
+    }
+
+    // ---- Hide / show the source editor ----
+    const btnToggleSrc = document.getElementById('toggleSrcBtn');
+    const btnOpenEditor = document.getElementById('openEditorBtn');
+    const sourceCol = document.getElementById('sourceCol');
+
+    function toggleEditor() {
+      const hidden = sourceCol.style.display === 'none';
+      sourceCol.style.display = hidden ? '' : 'none';
+      document.body.classList.toggle('src-hidden', !hidden);
+      if (typeof syncPreviewContainerPosition === 'function') {
+        syncPreviewContainerPosition();
+      }
+    }
+
+    btnToggleSrc.addEventListener('click', toggleEditor);
+    if (btnOpenEditor) btnOpenEditor.addEventListener('click', toggleEditor);
+
+    // ---- Toggle Settings Panel ----
+    const btnSettingsToggle = document.getElementById('settingsToggleBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const shapesPanel = document.getElementById('shapesPanel');
+    const colorWheelBtn = document.getElementById('colorWheelBtn');
+    const themePanel = document.getElementById('themePanel');
+    const shapesToolbarBtn = document.getElementById('shapesToolbarBtn');
+
+    btnSettingsToggle.addEventListener('click', () => {
+      settingsPanel.classList.toggle('show');
+      themePanel.classList.remove('show');
+      if (shapesPanel) shapesPanel.classList.remove('show');
+    });
+
+    // ---- Theme / Styling Panel ----
+    colorWheelBtn.addEventListener('click', () => {
+      themePanel.classList.toggle('show');
+      settingsPanel.classList.remove('show');
+      if (shapesPanel) shapesPanel.classList.remove('show');
+
+      if (themePanel.classList.contains('show') && elTheme) {
+        const currentTheme = elTheme.value || 'default';
+        document.querySelectorAll('.theme-btn').forEach(b => {
+          if (b.getAttribute('data-theme') === currentTheme) {
+            b.classList.add('active');
+          } else {
+            b.classList.remove('active');
+          }
+        });
+      }
+    });
+
+    // ---- Shapes Panel ----
+    if (shapesToolbarBtn && shapesPanel) {
+      shapesToolbarBtn.addEventListener('click', () => {
+        shapesPanel.classList.toggle('show');
+        settingsPanel.classList.remove('show');
+        themePanel.classList.remove('show');
+      });
+    }
+
+    // ---- Click Outside to Close Panels ----
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#settingsToggleBtn') && !e.target.closest('#settingsPanel')) {
+        settingsPanel.classList.remove('show');
+      }
+      if (!e.target.closest('#colorWheelBtn') && !e.target.closest('#themePanel')) {
+        themePanel.classList.remove('show');
+      }
+      if (!e.target.closest('#shapesToolbarBtn') && !e.target.closest('#shapesPanel') && shapesPanel) {
+        shapesPanel.classList.remove('show');
+      }
+    });
+
+    function syncDiagramThemeToggleState() {
+      if (diagramThemeToggleBtn) {
+        const isNonDefault = document.documentElement.classList.contains('theme-teal') ||
+          document.documentElement.classList.contains('theme-dark') ||
+          (elTheme && elTheme.value !== 'default');
+        diagramThemeToggleBtn.checked = isNonDefault;
+      }
+    }
+
+    diagramThemeToggleBtn.addEventListener('change', (e) => {
+      const newTheme = e.target.checked ? (localStorage.getItem('mermaid-last-dark-theme') || 'teal') : 'default';
+      if (elTheme && elTheme.value !== newTheme) {
+        if (e.target.checked && newTheme !== 'default') {
+          localStorage.setItem('mermaid-last-dark-theme', newTheme);
+        }
+        elTheme.value = newTheme;
+        elTheme.dispatchEvent(new Event('change'));
+      }
+    });
+
+    if (elTheme) {
+      elTheme.addEventListener('change', () => {
+        if (elTheme.value !== 'default') {
+          localStorage.setItem('mermaid-last-dark-theme', elTheme.value);
+        }
+        syncDiagramThemeToggleState();
+      });
+    }
+
+    // Set initial state based on active theme
+    syncDiagramThemeToggleState();
+
+
+
+    // Editor Font Size Slider
+    const textSizeBtn = document.getElementById('textSizeBtn');
+    const textSizePopup = document.getElementById('textSizePopup');
+    const textSizeSlider = document.getElementById('textSizeSlider');
+
+    if (textSizeBtn && textSizePopup) {
+      textSizeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        textSizePopup.style.display = textSizePopup.style.display === 'none' ? 'block' : 'none';
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#textSizePopup') && !e.target.closest('#textSizeBtn')) {
+          textSizePopup.style.display = 'none';
+        }
+      });
+    }
+
+    if (textSizeSlider) {
+      const savedFontSize = localStorage.getItem('editorFontSize');
+      if (savedFontSize) {
+        document.documentElement.style.setProperty('--editor-font-size', savedFontSize + 'px');
+        textSizeSlider.value = savedFontSize;
+      }
+      textSizeSlider.addEventListener('input', (e) => {
+        document.documentElement.style.setProperty('--editor-font-size', e.target.value + 'px');
+        localStorage.setItem('editorFontSize', e.target.value);
+      });
+    }
+
+    function applyDiagramStyle() {
+      const activeStyleBtn = document.querySelector('.style-btn.active');
+      const style = activeStyleBtn ? activeStyleBtn.getAttribute('data-style') : 'pill';
+
+      const svg = currentSvg();
+      if (!svg) return;
+
+      const isFlowchart = svg.classList.contains('flowchart') ||
+        /^(flowchart|graph)\b/i.test(elSrc.value.trim().replace(/^---[\s\S]*?---\s*/, ''));
+
+      if (!isFlowchart) return;
+
+      const rects = svg.querySelectorAll('g.node rect, g.node .label-container');
+      rects.forEach(rect => {
+        if (style === 'sharp') {
+          rect.setAttribute('rx', '0');
+          rect.setAttribute('ry', '0');
+          setInline(rect, { rx: '0px', ry: '0px' });
+        } else if (style === 'rounded') {
+          rect.setAttribute('rx', '8');
+          rect.setAttribute('ry', '8');
+          setInline(rect, { rx: '8px', ry: '8px' });
+        } else if (style === 'pill') {
+          const h = parseFloat(rect.getAttribute('height')) || rect.getBoundingClientRect().height || 40;
+          const radius = Math.round(h / 2) || 18;
+          rect.setAttribute('rx', String(radius));
+          rect.setAttribute('ry', String(radius));
+          setInline(rect, { rx: radius + 'px', ry: radius + 'px' });
+        }
+      });
+
+      const shapes = svg.querySelectorAll('g.node polygon, g.node path');
+      shapes.forEach(shape => {
+        if (style === 'sharp') {
+          setInline(shape, { 'stroke-linejoin': 'miter', 'stroke-linecap': 'square' });
+        } else {
+          setInline(shape, { 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+        }
+      });
+    }
+
+    function applyDiagramFont() {
+      const activeFontBtn = document.querySelector('.font-btn.active');
+      const fontKey = activeFontBtn ? activeFontBtn.getAttribute('data-font') : 'sans';
+
+      const FONT_MAP = {
+        'sans': 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        'serif': 'Georgia, Cambria, "Times New Roman", Times, serif',
+        'mono': 'ui-monospace, "SFMono-Regular", Consolas, monospace',
+        'comic': '"Comic Sans MS", "Comic Sans", cursive',
+        'system': 'system-ui, sans-serif'
+      };
+
+      const fontFamily = FONT_MAP[fontKey] || FONT_MAP['sans'];
+      const svg = currentSvg();
+      if (!svg) return;
+
+      svg.querySelectorAll('text, tspan, foreignObject div, foreignObject span, foreignObject p').forEach(el => {
+        setInline(el, { 'font-family': fontFamily });
+      });
+    }
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        const newTheme = e.currentTarget.getAttribute('data-theme');
+        if (elTheme && elTheme.value !== newTheme) {
+          elTheme.value = newTheme;
+          elTheme.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    document.querySelectorAll('.style-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        applyDiagramStyle();
+      });
+    });
+
+    document.querySelectorAll('.font-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        applyDiagramFont();
+      });
+    });
+
+    // ---- Snippets Panel ----
+    const snippetsContainer = document.getElementById('snippetsContainer');
+    const snippetsBtn = document.getElementById('snippetsBtn');
+    const snippetsPanel = document.getElementById('snippetsPanel');
+
+    snippetsBtn.addEventListener('click', () => {
+      snippetsContainer.classList.toggle('expanded');
+    });
+
+    const SNIPPETS = [
+      {
+        cat: 'Flowchart shapes', type: 'flowchart', items: [
+          { name: 'Rectangle', icon: '<rect x="4" y="6" width="16" height="12"/>', text: 'id1[Node]' },
+          { name: 'Rounded', icon: '<rect x="4" y="6" width="16" height="12" rx="4"/>', text: 'id1(Node)' },
+          { name: 'Stadium', icon: '<rect x="4" y="6" width="16" height="12" rx="6"/>', text: 'id1([Node])' },
+          { name: 'Subroutine', icon: '<rect x="4" y="6" width="16" height="12"/><line x1="7" y1="6" x2="7" y2="18"/><line x1="17" y1="6" x2="17" y2="18"/>', text: 'id1[[Node]]' },
+          { name: 'Database', icon: '<path d="M4 9c0-1.7 3.6-3 8-3s8 1.3 8 3v6c0 1.7-3.6 3-8 3s-8-1.3-8-3V9z"/><path d="M4 9c0 1.7 3.6 3 8 3s8-1.3 8-3"/>', text: 'id1[(Database)]' },
+          { name: 'Decision', icon: '<polygon points="12 4 20 12 12 20 4 12"/>', text: 'id1{Decision}' },
+          { name: 'Circle', icon: '<circle cx="12" cy="12" r="8"/>', text: 'id1((Circle))' },
+          { name: 'Asymmetric', icon: '<path d="M4 6h12l4 6-4 6H4z"/>', text: 'id1>Asymmetric]' },
+          { name: 'Hexagon', icon: '<polygon points="8 6 16 6 20 12 16 18 8 18 4 12"/>', text: 'id1{{Hexagon}}' },
+          { name: 'Parallelogram', icon: '<polygon points="6 6 20 6 18 18 4 18"/>', text: 'id1[/Parallelogram/]' },
+          { name: 'Parallelogram reversed', icon: '<polygon points="4 6 18 6 20 18 6 18"/>', text: 'id1[\\Parallelogram\\]' },
+          { name: 'Trapezoid', icon: '<polygon points="6 6 18 6 20 18 4 18"/>', text: 'id1[/Trapezoid\\]' },
+          { name: 'Trapezoid reversed', icon: '<polygon points="4 6 20 6 18 18 6 18"/>', text: 'id1[\\Trapezoid/]' },
+          { name: 'Double Circle', icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="5"/>', text: 'id1(((Double Circle)))' }
+        ]
+      },
+      {
+        cat: 'Flowchart edges', type: 'flowchart', items: [
+          { name: 'Arrow', icon: '<line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/>', text: 'A --> B' },
+          { name: 'Thick Arrow', icon: '<line x1="4" y1="10" x2="18" y2="10"/><line x1="4" y1="14" x2="18" y2="14"/><polyline points="14 6 20 12 14 18"/>', text: 'A ==> B' },
+          { name: 'Dashed arrow', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="4 4"/><polyline points="14 6 20 12 14 18"/>', text: 'A -.-> B' },
+          { name: 'Arrow with Label', icon: '<line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/><rect x="10" y="9" width="4" height="6" fill="var(--bg-body)" stroke="none"/>', text: 'A -->|Label| B' },
+          { name: 'Thick Arrow with Label', icon: '<line x1="4" y1="10" x2="18" y2="10"/><line x1="4" y1="14" x2="18" y2="14"/><polyline points="14 6 20 12 14 18"/><rect x="10" y="7" width="4" height="10" fill="var(--bg-body)" stroke="none"/>', text: 'A ==>|Label| B' },
+          { name: 'Dashed arrow with Label', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-dasharray="4 4"/><polyline points="14 6 20 12 14 18"/><rect x="10" y="9" width="4" height="6" fill="var(--bg-body)" stroke="none"/>', text: 'A -.->|Label| B' }
+        ]
+      },
+      {
+        cat: 'Flowchart other', type: 'flowchart', items: [
+          { name: 'Subgraph', icon: '<rect x="4" y="6" width="16" height="12" rx="2" stroke-dasharray="2 2"/><rect x="6" y="10" width="12" height="6" rx="1"/>', text: 'subgraph Title\n  direction TB\n  node1\nend' },
+          { name: 'Add class to a node', icon: '<rect x="4" y="8" width="16" height="8" rx="2"/><circle cx="20" cy="8" r="3" fill="currentColor"/>', text: 'class id className' },
+          { name: 'Add class definition', icon: '<rect x="4" y="8" width="16" height="8" rx="2" stroke-dasharray="2 2"/><circle cx="20" cy="8" r="3" fill="currentColor"/>', text: 'classDef className fill:#f9f,stroke:#333,stroke-width:4px;' }
+        ]
+      },
+      {
+        cat: 'Sequence diagram actors', type: 'sequence', items: [
+          { name: 'Participant', icon: '<rect x="4" y="6" width="16" height="10" rx="2"/><path d="M12 16v4"/><path d="M8 20h8"/>', text: 'participant Name' },
+          { name: 'Actor', icon: '<circle cx="12" cy="7" r="4"/><path d="M12 11v6"/><path d="M8 21l4-4 4 4"/><path d="M8 15h8"/>', text: 'actor Name' }
+        ]
+      },
+      {
+        cat: 'Sequence diagram notes', type: 'sequence', items: [
+          { name: 'Note left of', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8l3-3m-3 3 3 3"/>', text: 'Note left of Name: text' },
+          { name: 'Note over life line', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15h6"/>', text: 'Note over Name: text' },
+          { name: 'Note right of', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8l-3-3m3 3-3 3"/>', text: 'Note right of Name: text' }
+        ]
+      },
+      {
+        cat: 'Sequence diagram messages', type: 'sequence', items: [
+          { name: 'Solid Line', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2"/>', text: 'A->B: message' },
+          { name: 'Dotted Line', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2" stroke-dasharray="4 4"/>', text: 'A-->B: message' },
+          { name: 'Solid Line Arrow', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2"/><polyline points="14 6 20 12 14 18"/>', text: 'A->>B: message' },
+          { name: 'Dotted Line Arrow', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2" stroke-dasharray="4 4"/><polyline points="14 6 20 12 14 18"/>', text: 'A-->>B: message' },
+          { name: 'Solid Line Cross', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2"/><path d="M16 8l4 8M20 8l-4 8"/>', text: 'A-xB: message' },
+          { name: 'Dotted Line Cross', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2" stroke-dasharray="4 4"/><path d="M16 8l4 8M20 8l-4 8"/>', text: 'A--xB: message' },
+          { name: 'Solid Line Async', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2"/><path d="M16 6l4 6-4 6"/>', text: 'A-)B: message' },
+          { name: 'Dotted Line Async', icon: '<line x1="4" y1="12" x2="20" y2="12" stroke-width="2" stroke-dasharray="4 4"/><path d="M16 6l4 6-4 6"/>', text: 'A--)B: message' }
+        ]
+      },
+      {
+        cat: 'Sequence diagram other', type: 'sequence', items: [
+          { name: 'Loop', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/>', text: 'loop text\n  \nend' },
+          { name: 'Alt', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16"/>', text: 'alt text\n  \nelse text\n  \nend' },
+          { name: 'Opt', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/>', text: 'opt text\n  \nend' },
+          { name: 'Par', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16"/>', text: 'par text\n  \nand text\n  \nend' },
+          { name: 'Highlight', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/>', text: 'rect rgb(200, 255, 200)\n  \nend' },
+          { name: 'Critical Region', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16"/>', text: 'critical text\n  \noption text\n  \nend' },
+          { name: 'Break', icon: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 10h16"/>', text: 'break text\n  \nend' }
+        ]
+      }
+    ];
+
+    let snippetsHtml = '';
+    for (const cat of SNIPPETS) {
+      if (typeof CONFIG !== 'undefined' && CONFIG.allowedDiagramTypes && cat.type !== 'all') {
+        const allowed = CONFIG.allowedDiagramTypes;
+        const matchesType = allowed.includes(cat.type) ||
+          (cat.type === 'sequence' && allowed.includes('sequenceDiagram')) ||
+          (cat.type === 'sequenceDiagram' && allowed.includes('sequence'));
+        if (!matchesType) continue;
+      }
+      const typeAttr = cat.type || 'all';
+      snippetsHtml += `<div class="snippet-category" data-type="${typeAttr}">${cat.cat}</div><div class="snippet-grid" data-type="${typeAttr}">`;
+      for (const item of cat.items) {
+        const svg = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${item.icon}</svg>`;
+        const copySvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        const insertSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`;
+        snippetsHtml += `<div class="snippet-btn" data-text="${encodeURIComponent(item.text)}">
+          <div class="snippet-label">${svg}${item.name}</div>
+          <div class="snippet-actions">
+            <button class="action-btn action-copy" title="Copy to clipboard">${copySvg}</button>
+            <button class="action-btn action-insert" title="Insert snippet">${insertSvg}</button>
+          </div>
+        </div>`;
+      }
+      snippetsHtml += `</div>`;
+    }
+    snippetsHtml += `<div class="no-snippets-msg" style="padding: 1rem; color: var(--text-muted); text-align: center; width: 100%; display: none;">No snippets available for this diagram type.</div>`;
+    snippetsPanel.innerHTML = snippetsHtml;
+
+    function updateSnippetsVisibility() {
+      const src = elSrc.value.trim();
+      const cleanSrc = src.replace(/^---[\s\S]*?---\s*/, '');
+      let currentType = 'other';
+      if (/^(flowchart|graph)\b/i.test(cleanSrc)) currentType = 'flowchart';
+      else if (/^sequenceDiagram\b/i.test(cleanSrc)) currentType = 'sequence';
+      else if (/^classDiagram\b/i.test(cleanSrc)) currentType = 'class';
+      else if (/^stateDiagram\b/i.test(cleanSrc)) currentType = 'state';
+      else if (/^erDiagram\b/i.test(cleanSrc)) currentType = 'er';
+      else if (/^gantt\b/i.test(cleanSrc)) currentType = 'gantt';
+      else if (/^pie\b/i.test(cleanSrc)) currentType = 'pie';
+      else if (/^gitGraph\b/i.test(cleanSrc)) currentType = 'git';
+      else if (/^mindmap\b/i.test(cleanSrc)) currentType = 'mindmap';
+      else if (elType && elType.value) {
+        currentType = elType.value;
+      }
+
+      if (diagramTypeBadge) {
+        diagramTypeBadge.textContent = DIAGRAMS[elType.value]?.label || 'Diagram';
+      }
+
+      const fcTools = document.getElementById('flowchartTools');
+      if (fcTools) fcTools.style.display = (currentType === 'flowchart') ? 'flex' : 'none';
+
+      let hasVisible = false;
+      const children = snippetsPanel.children;
+      for (let i = 0; i < children.length; i++) {
+        const el = children[i];
+        if (el.classList.contains('no-snippets-msg')) {
+          el.style.display = hasVisible ? 'none' : 'block';
+          continue;
+        }
+        const type = el.getAttribute('data-type');
+        if (type === currentType || type === 'all') {
+          el.style.display = '';
+          if (el.classList.contains('snippet-grid')) hasVisible = true;
+        } else {
+          el.style.display = 'none';
+        }
+      }
+    }
+
+    elSrc.addEventListener('input', updateSnippetsVisibility);
+    if (elType) elType.addEventListener('change', updateSnippetsVisibility);
+    updateSnippetsVisibility(); // initialize on load
+
+    snippetsPanel.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.snippet-btn');
+      if (!btn) return;
+      let text = decodeURIComponent(btn.getAttribute('data-text') || '');
+      text = text.replace(/\n+$/, '');
+
+      if (e.target.closest('.action-copy')) {
+        try {
+          await navigator.clipboard.writeText(text.trim());
+        } catch (e) { }
+        return;
+      }
+
+      // Insert text at cursor without forcing extra trailing newline
+      elSrc.focus();
+      const start = elSrc.selectionStart;
+      const end = elSrc.selectionEnd;
+      elSrc.setRangeText(text, start, end, 'end');
+      elSrc.dispatchEvent(new Event('input'));
+    });
+
+    // ---- Zoom (25%–500%) ----
+    const ZOOM_MIN = 0.25, ZOOM_MAX = 5;
+    const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 4, 5];
+    const btnZoomIn = document.getElementById('zoomInBtn');
+    const btnZoomOut = document.getElementById('zoomOutBtn');
+    const btnZoomFit = document.getElementById('zoomFitBtn');
+    zoomWrap = document.getElementById('zoomWrap');
+    previewEl = document.querySelector('.preview');
+
+    let currentZoom = 'fit';
+
+    // Natural size from the viewBox ONLY (transform-independent, no feedback loop).
+    function naturalSize() {
+      const svg = currentSvg();
+      if (!svg) return { w: 0, h: 0 };
+      const vb = svg.viewBox?.baseVal;
+      if (vb && vb.width > 0 && vb.height > 0) return { w: vb.width, h: vb.height };
+      const parts = (svg.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) return { w: parts[2], h: parts[3] };
+      return { w: 0, h: 0 };
+    }
+    function fitScale() {
+      const { w, h } = naturalSize();
+      if (!w || !h) return 1;
+      const cs = getComputedStyle(previewEl);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      return Math.min(Math.max(1, previewEl.clientWidth - padX) / w, Math.max(1, previewEl.clientHeight - padY) / h, 1);
+    }
+    // Pan offset (px) applied via translate() inside the fixed viewport.
+    let panX = 0, panY = 0;
+    function applyZoom() {
+      if (!zoomWrap) return;
+      const { w, h } = naturalSize();
+      const scale = currentZoom === 'fit' ? fitScale() : currentZoom;
+      // Keep the SVG at its NATURAL px size; transform does all the scaling.
+      // The .preview viewport is overflow:hidden, so the zoomed diagram is
+      // clipped — pan moves it via translate() within the fixed window.
+      const svg = currentSvg();
+      if (svg) {
+        svg.style.width = (w || 0) + 'px';
+        svg.style.height = (h || 0) + 'px';
+        svg.style.maxWidth = 'none';
+      }
+      zoomWrap.style.width = (w || 0) + 'px';
+      zoomWrap.style.height = (h || 0) + 'px';
+      clampPan(scale);
+      zoomWrap.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+    // Clamp pan so at least part of the diagram stays visible within the viewport.
+    function clampPan(scale) {
+      const { w, h } = naturalSize();
+      if (!w || !h) return;
+      const cs = getComputedStyle(previewEl);
+      const padTop = parseFloat(cs.paddingTop) || 0;
+      const padBottom = parseFloat(cs.paddingBottom) || 0;
+      const padLeft = parseFloat(cs.paddingLeft) || 0;
+      const padRight = parseFloat(cs.paddingRight) || 0;
+      const vw = previewEl.clientWidth - padLeft - padRight;
+      const vh = previewEl.clientHeight - padTop - padBottom;
+      const cw = w * scale, ch = h * scale;   // scaled content size
+
+      const minPanX = padLeft + Math.min(100 - cw, (vw - cw) / 2);
+      const maxPanX = padLeft + Math.max(vw - 100, (vw - cw) / 2);
+      const minPanY = padTop + Math.min(100 - ch, (vh - ch) / 2);
+      const maxPanY = padTop + Math.max(vh - 100, (vh - ch) / 2);
+
+      panX = Math.max(minPanX, Math.min(maxPanX, panX));
+      panY = Math.max(minPanY, Math.min(maxPanY, panY));
+    }
+    function updateZoomUI() {
+      // Zoom select removed, we just maintain currentZoom internally
+    }
+
+    function setZoom(z) {
+      if (z !== 'fit') {
+        const val = parseFloat(z);
+        if (isNaN(val) || val < ZOOM_MIN || val > ZOOM_MAX) return;
+      }
+      currentZoom = z;
+      applyZoom();
+    }
+    function resetZoom() {
+      currentZoom = 'fit';
+      const scale = fitScale();
+      const { w, h } = naturalSize();
+      if (w && h) {
+        const cs = getComputedStyle(previewEl);
+        const padTop = parseFloat(cs.paddingTop) || 0;
+        const padBottom = parseFloat(cs.paddingBottom) || 0;
+        const padLeft = parseFloat(cs.paddingLeft) || 0;
+        const padRight = parseFloat(cs.paddingRight) || 0;
+        const vw = previewEl.clientWidth - padLeft - padRight;
+        const vh = previewEl.clientHeight - padTop - padBottom;
+        panX = padLeft + (vw - w * scale) / 2;
+        panY = padTop + (vh - h * scale) / 2;
+      } else {
+        panX = 0; panY = 0;
+      }
+      applyZoom();
+    }
+    btnZoomIn.addEventListener('click', () => {
+      const base = currentZoom === 'fit' ? fitScale() : currentZoom;
+      setZoom(ZOOM_STEPS.find(s => s > base + 0.001) ?? (base + 0.25));
+    });
+    btnZoomOut.addEventListener('click', () => {
+      const base = currentZoom === 'fit' ? fitScale() : currentZoom;
+      setZoom([...ZOOM_STEPS].reverse().find(s => s < base - 0.001) ?? (base - 0.25));
+    });
+    btnZoomFit.addEventListener('click', resetZoom);
+    previewEl.addEventListener('wheel', (e) => {
+      if (e.shiftKey) return;
+      e.preventDefault();
+      const base = currentZoom === 'fit' ? fitScale() : currentZoom;
+      setZoom(base + (e.deltaY < 0 ? 0.1 : -0.1));
+    }, { passive: false });
+    let lastVw = 0, lastVh = 0;
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const cs = getComputedStyle(entry.target);
+        const padY = parseFloat(cs.paddingTop) || 0;
+        const vw = entry.contentRect.width;
+        const vh = entry.contentRect.height - padY;
+
+        if (lastVw && lastVh) {
+          panX += (vw - lastVw) / 2;
+          panY += (vh - lastVh) / 2;
+        }
+        lastVw = vw;
+        lastVh = vh;
+        applyZoom();
+      }
+    });
+    if (previewEl) resizeObserver.observe(previewEl);
+    // ---- Hand tool (pan mode) ----
+    // Drag inside the fixed viewport moves the diagram via translate(panX, panY).
+    const btnPan = document.getElementById('panBtn');
+    let isPanMode = false;
+    let isPanning = false;
+    let panStartX, panStartY, panOrigX, panOrigY;
+    btnPan.addEventListener('click', () => {
+      isPanMode = !isPanMode;
+      isPanning = false;
+      btnPan.classList.toggle('active', isPanMode);
+      previewEl.classList.toggle('pan-mode', isPanMode);
+      if (!isPanMode) {
+        previewEl.style.cursor = '';
+      }
+    });
+    previewEl.addEventListener('mousedown', (e) => {
+      if (!isPanMode) return;
+      e.preventDefault();
+      isPanning = true;
+      panStartX = e.clientX; panStartY = e.clientY;
+      panOrigX = panX; panOrigY = panY;
+      previewEl.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!isPanning) return;
+      e.preventDefault();
+      panX = panOrigX + (e.clientX - panStartX);
+      panY = panOrigY + (e.clientY - panStartY);
+      applyZoom();   // re-clamps + applies transform
+    });
+    window.addEventListener('mouseup', () => {
+      if (!isPanning) return;
+      isPanning = false;
+      if (isPanMode) previewEl.style.cursor = 'grab';
+    });
+
+    // ---- Editor Panel Resize ----
+    const editorResizeHandle = document.getElementById('editorResizeHandle');
+    let isResizingEditor = false;
+    let editorStartWidth = 500;
+    let resizeStartX = 0;
+
+    function syncPreviewContainerPosition() {
+      const previewContainerEl = document.querySelector('.preview-container');
+      if (previewContainerEl && sourceCol) {
+        if (document.body.classList.contains('src-hidden') || sourceCol.style.display === 'none') {
+          previewContainerEl.style.left = '0';
+        } else {
+          const actualRight = sourceCol.getBoundingClientRect().right;
+          previewContainerEl.style.left = (actualRight + 16) + 'px';
+        }
+      }
+    }
+
+    editorResizeHandle.addEventListener('mousedown', (e) => {
+      isResizingEditor = true;
+      resizeStartX = e.clientX;
+      editorStartWidth = sourceCol.offsetWidth;
+      editorResizeHandle.classList.add('dragging');
+      document.body.style.cursor = 'ew-resize';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isResizingEditor) return;
+      e.preventDefault();
+
+      const minW = window.innerWidth * 0.35;
+      const maxW = window.innerWidth * 0.60;
+
+      let newWidth = editorStartWidth + (e.clientX - resizeStartX);
+      newWidth = Math.max(minW, Math.min(maxW, newWidth));
+
+      sourceCol.style.width = newWidth + 'px';
+      syncPreviewContainerPosition();
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isResizingEditor) {
+        isResizingEditor = false;
+        editorResizeHandle.classList.remove('dragging');
+        document.body.style.cursor = '';
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      syncPreviewContainerPosition();
+    });
+
+    // Initial positioning sync
+    syncPreviewContainerPosition();
+
+    // ---- Fullscreen ----
+    const btnFullscreen = document.getElementById('fullscreenBtn');
+    const previewContainer = document.querySelector('.preview-container');
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        previewContainer.requestFullscreen().catch(console.error);
+      } else {
+        document.exitFullscreen();
+      }
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const isFs = !!document.fullscreenElement;
+      btnFullscreen.classList.toggle('active', isFs);
+      // Re-fit after the layout resize settles.
+      setTimeout(() => { if (currentZoom === 'fit') applyZoom(); }, 50);
+    });
+
+    // ================================================================
+    // SYNTAX HIGHLIGHTING  —  Local regex  |  CDN CodeMirror 6
+    // ================================================================
+    const elHlMode = document.getElementById('hlMode');
+    const elHlLayer = document.getElementById('hlLayer');
+    const textareaWrap = document.getElementById('textareaWrap');
+
+    let cmView = null;   // CodeMirror 6 EditorView (CDN mode)
+    let hlActive = false;  // true when local-regex mode is running
+
+    // ---- Mermaid keyword lists ----
+    const _DKW = [
+      'sequenceDiagram', 'flowchart', 'graph', 'classDiagram',
+      'stateDiagram-v2', 'stateDiagram', 'erDiagram', 'gantt', 'pie',
+      'journey', 'gitGraph', 'requirementDiagram', 'quadrantChart',
+      'mindmap', 'timeline', 'sankey-beta', 'block-beta',
+      'C4Context', 'C4Container', 'C4Component', 'C4Deployment',
+      'architecture-beta'
+    ].join('|');
+
+    const _BKW = [
+      'participant', 'actor', 'loop', 'alt', 'else', 'opt', 'par', 'break', 'end',
+      'Note', 'over', 'activate', 'deactivate', 'subgraph', 'section', 'title',
+      'dateFormat', 'commit', 'branch', 'checkout', 'merge', 'autonumber',
+      'as', 'in', 'columns', 'requirement', 'element', 'satisfies',
+      'Person', 'System', 'Rel', 'Container', 'Component', 'Boundary',
+      'group', 'service', 'junction', 'done', 'active', 'crit', 'after',
+      'click', 'call', 'href', 'TD', 'TB', 'LR', 'RL', 'BT'
+    ].join('|');
+
+    // ---- Actor colour map (populated from SVG after every render) ----
+    // Maps actorDisplayName → hex colour matching its lane in the rendered diagram.
+    let actorColorMap = {};
+
+    function refreshActorColors() {
+      if (!hlActive) return;                  // only needed in local-regex HL mode
+      const svg = currentSvg();
+      if (!svg) { actorColorMap = {}; return; }
+      const map = {};
+
+      // Sequence diagrams:
+      svg.querySelectorAll('text.actor').forEach(t => {
+        const name = t.textContent.trim();
+        if (!name) return;
+        const style = t.getAttribute('style') || '';
+        const m = style.match(/fill:\s*(#[0-9a-fA-F]{6})/);
+        if (m) map[name] = m[1];
+      });
+
+      // Flowchart diagrams (and others using data-cnode):
+      svg.querySelectorAll('g.node').forEach(node => {
+        const cnode = node.getAttribute('data-cnode');
+        if (cnode != null) {
+          const color = PALETTE[parseInt(cnode, 10) % PALETTE.length];
+          // 1. Map the node ID (e.g. A in A[Start])
+          const idAttr = node.getAttribute('id') || '';
+          const match = idAttr.match(/flowchart-(.+)-\d+$/);
+          if (match && match[1]) {
+            map[match[1]] = color;
+          }
+          // 2. Map the node Label (e.g. Start in A[Start])
+          const textEl = node.querySelector('.nodeLabel, text');
+          if (textEl) {
+            const label = textEl.textContent.trim();
+            if (label) map[label] = color;
+          }
+        }
+      });
+
+      actorColorMap = map;
+    }
+
+    // Replace `regex` with `replacement` only in text nodes (not inside HTML tags).
+    function replaceOutsideTags(html, regex, replacement) {
+      return html.split(/(<[^>]*>)/).map((part, i) =>
+        i % 2 === 0 ? part.replace(regex, replacement) : part
+      ).join('');
+    }
+
+    // ---- Local regex tokenizer ----
+    function _escHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightLine(line) {
+      let s = _escHtml(line);
+      // Comments — handled first and returned immediately; no further processing.
+      const cm = s.match(/^(\s*)(%%.*)/);
+      if (cm) return cm[1] + '<span class="hl-comment">' + cm[2] + '</span>';
+      // All subsequent passes go through replaceOutsideTags so no regex ever
+      // matches inside a <span ...> tag generated by a prior pass.
+      const safe = (rx, repl) => { s = replaceOutsideTags(s, rx, repl); };
+      // Diagram-type keyword (first meaningful token on the line)
+      safe(new RegExp('(^\\s*)(' + _DKW + ')(\\s|$)'), '$1<span class="hl-keyword">$2</span>$3');
+      // Builtin / directive keywords
+      safe(new RegExp('(\\s|^)(' + _BKW + ')(\\s|$|:|[(])', 'g'), '$1<span class="hl-builtin">$2</span>$3');
+      // Quoted strings
+      safe(/"([^"]*?)"/g, '"<span class="hl-string">$1</span>"');
+      // Numbers (including Gantt durations like 5d, 2w)
+      safe(/\b(\d+\.?\d*[dw]?)\b/g, '<span class="hl-number">$1</span>');
+      // HTML-escaped arrows
+      safe(/(--&gt;&gt;|--&gt;|-&gt;&gt;|-&gt;|==&gt;|&lt;--&gt;|&lt;--|~~~)/g,
+        '<span class="hl-arrow">$1</span>');
+      // Pipe labels  |text|
+      safe(/\|([^|\n]*)\|/g, '|<span class="hl-string">$1</span>|');
+      // Actor names: colour them with their exact diagram lane colour (last pass).
+      for (const [name, color] of Object.entries(actorColorMap)) {
+        if (!name) continue;
+        const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        safe(new RegExp('(?<![\\w-])(' + esc + ')(?![\\w-])', 'g'),
+          '<span style="color:' + color + ';font-weight:700">$1</span>');
+      }
+      return s;
+    }
+
+    window.hlErrorLines = new Set();
+    function syncLocalHL() {
+      if (!hlActive) return;
+      elHlLayer.innerHTML = elSrc.value.split('\n').map((line, i) => {
+        let hl = highlightLine(line);
+        if (window.hlErrorLines.has(i)) {
+          hl = `<span class="hl-error-line" style="background: rgba(226, 121, 91, 0.25); display: inline-block; width: 100%; border-radius: 2px;">${hl || ' '}</span>`;
+        }
+        return hl;
+      }).join('\n') + '\n';
+      elHlLayer.scrollTop = elSrc.scrollTop;
+      elHlLayer.scrollLeft = elSrc.scrollLeft;
+    }
+
+    // ---- Tear-down (resets to plain textarea) ----
+    function teardownHL() {
+      if (cmView) {
+        const doc = cmView.state.doc.toString();
+        // Remove CM6 host element
+        textareaWrap.querySelector('.cm-host')?.remove();
+        cmView.destroy();
+        cmView = null;
+        elSrc.style.display = '';
+        elSrc.value = doc;
+        syncGutter();
+        elGutter.style.display = '';  // restore our gutter
+      }
+      elHlLayer.innerHTML = '';
+      elHlLayer.style.display = 'none';
+      elSrc.classList.remove('hl-on');
+      hlActive = false;
+    }
+
+    // ---- Local regex mode ----
+    function setupLocalHL() {
+      teardownHL();
+      hlActive = true;
+      elHlLayer.style.display = 'block';
+      elSrc.classList.add('hl-on');
+      syncLocalHL();
+    }
+
+    // ---- CDN / CodeMirror 6 mode ----
+    async function setupCdnHL() {
+      teardownHL();
+
+      const loadEl = document.createElement('div');
+      loadEl.className = 'hl-loading';
+      loadEl.innerHTML = '<div class="hl-spinner"></div>Loading CodeMirror…';
+      textareaWrap.appendChild(loadEl);
+      elSrc.style.display = 'none';
+      elGutter.style.display = 'none';   // CM6 provides its own line numbers
+
+      try {
+        const [
+          cmView_mod,
+          cmState_mod,
+          cmCommands_mod,
+          cmLanguage_mod,
+          cmTheme_mod
+        ] = await Promise.all([
+          import('https://esm.sh/@codemirror/view@6'),
+          import('https://esm.sh/@codemirror/state@6'),
+          import('https://esm.sh/@codemirror/commands@6'),
+          import('https://esm.sh/@codemirror/language@6'),
+          import('https://esm.sh/@codemirror/theme-one-dark@6'),
+        ]);
+
+        const { EditorView, keymap, drawSelection, highlightActiveLine,
+          lineNumbers, highlightActiveLineGutter } = cmView_mod;
+        const { EditorState } = cmState_mod;
+        const { defaultKeymap, history, historyKeymap, indentWithTab } = cmCommands_mod;
+        const { StreamLanguage, indentUnit, syntaxHighlighting,
+          defaultHighlightStyle } = cmLanguage_mod;
+        const { oneDark } = cmTheme_mod;
+
+        window.CMEditorView = EditorView;
+
+        // Lightweight Mermaid stream-language tokenizer for CodeMirror
+        const mermaidLang = StreamLanguage.define({
+          name: 'mermaid',
+          startState: () => ({}),
+          token(stream) {
+            if (stream.match('%%')) { stream.skipToEnd(); return 'comment'; }
+            if (stream.match(new RegExp(_DKW + '(?=\\s|$)'))) return 'keyword';
+            if (stream.match(new RegExp(_BKW + '(?=\\s|$|[(])'))) return 'operatorKeyword';
+            if (stream.match(/"(?:[^"\\]|\\.)*"/)) return 'string';
+            if (stream.match(/\d+\.?\d*[dw]?/)) return 'number';
+            if (stream.match(/-->>/) || stream.match(/-->/) || stream.match(/->>/) ||
+              stream.match(/->/) || stream.match(/==>/) || stream.match(/~~~/)) return 'operator';
+            stream.next(); return null;
+          },
+        });
+
+        loadEl.remove();
+
+        const cmHost = document.createElement('div');
+        cmHost.className = 'cm-host';
+        textareaWrap.appendChild(cmHost);
+
+        cmView = new EditorView({
+          state: EditorState.create({
+            doc: elSrc.value,
+            extensions: [
+              lineNumbers(),
+              highlightActiveLineGutter(),
+              history(),
+              drawSelection(),
+              highlightActiveLine(),
+              keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
+              indentUnit.of('  '),
+              mermaidLang,
+              syntaxHighlighting(defaultHighlightStyle),
+              oneDark,
+              EditorView.theme({
+                '&': { fontSize: '.82rem', height: '100%' },
+                '.cm-scroller': {
+                  fontFamily: 'ui-monospace,"SFMono-Regular",Consolas,monospace',
+                  minHeight: '320px', overflow: 'auto',
+                },
+              }),
+              EditorView.updateListener.of(update => {
+                if (update.selectionSet && typeof highlightDiagramNodeByText === 'function') {
+                  try {
+                    const lineInfo = update.state.doc.lineAt(update.state.selection.main.head);
+                    highlightDiagramNodeByText(lineInfo.text.trim());
+                  } catch (e) { }
+                }
+                if (!update.docChanged) return;
+                const val = update.state.doc.toString();
+                elSrc.value = val;
+                elSrc.dispatchEvent(new Event('input'));  // trigger auto-render
+              }),
+            ],
+          }),
+          parent: cmHost,
+        });
+
+        hlActive = true;   // so teardown can clean up cmView later
+
+      } catch (err) {
+        console.error('CodeMirror CDN load failed:', err);
+        loadEl.remove();
+        elSrc.style.display = '';
+        elGutter.style.display = '';
+        elHlMode.value = 'off';
+        const errEl = document.createElement('div');
+        errEl.style.cssText = 'padding:.5rem .75rem;color:#c0392b;font-size:.82rem;flex-shrink:0;';
+        errEl.textContent = '\u26a0 CodeMirror failed to load. Check your internet connection.';
+        textareaWrap.prepend(errEl);
+        setTimeout(() => errEl.remove(), 4000);
+      }
+    }
+
+    // ---- Apply the chosen mode ----
+    function applyHlMode(mode) {
+      if (mode === 'local') setupLocalHL();
+      else if (mode === 'cdn') setupCdnHL();
+      else teardownHL();
+      try { localStorage.setItem('mermaid-hl-mode', mode); } catch (_) { }
+    }
+
+    elHlMode.addEventListener('change', () => applyHlMode(elHlMode.value));
+
+    // Keep the local HL layer in sync while typing / scrolling
+    elSrc.addEventListener('input', () => {
+      syncLocalHL();
+      const activeBg = document.getElementById('textarea-active-bg');
+      if (activeBg) activeBg.style.display = 'none';
+    });
+
+    elSrc.addEventListener('scroll', () => {
+      if (hlActive && !cmView) {
+        elHlLayer.scrollTop = elSrc.scrollTop;
+        elHlLayer.scrollLeft = elSrc.scrollLeft;
+      }
+      const activeBg = document.getElementById('textarea-active-bg');
+      if (activeBg && activeBg.style.display !== 'none') {
+        activeBg.style.transform = `translateY(${activeBg.dataset.top - elSrc.scrollTop}px)`;
+      }
+    });
+
+    // Restore persisted mode on startup
+    (() => {
+      try {
+        const saved = localStorage.getItem('mermaid-hl-mode') || 'off';
+        elHlMode.value = saved;
+        if (saved !== 'off') applyHlMode(saved);
+      } catch (_) { }
+    })();
+
+    function clearDiagramSelection() {
+      const oldBox = document.getElementById('diagram-selection-box');
+      if (oldBox) oldBox.remove();
+      document.querySelectorAll('.inner-loop-message').forEach(el => el.classList.remove('inner-loop-message'));
+    }
+
+    function getMessagesInLoop(loopNode) {
+      if (!loopNode) return [];
+      const svg = loopNode.closest ? loopNode.closest('svg') : document.querySelector('.preview svg');
+      if (!svg) return [];
+
+      const loopGroup = loopNode.closest ? (loopNode.closest('g') ? (loopNode.closest('g').querySelector('.loopLine, .loopText') ? loopNode.closest('g') : (loopNode.querySelector && loopNode.querySelector('.loopLine, .loopText') ? loopNode : null)) : null) : null;
+      if (!loopGroup) return [];
+
+      const allEls = loopGroup.querySelectorAll('polygon, text, line, rect, path, tspan');
+      let minY = Infinity, maxY = -Infinity;
+
+      const getSVGOffset = (el) => {
+        let y = 0;
+        let current = el;
+        while (current && current !== svg) {
+          const transform = current.getAttribute('transform');
+          if (transform) {
+            const translateMatch = transform.match(/translate\s*\(\s*[\d.-]+\s*(?:[,\s]+\s*([\d.-]+)\s*)?\)/);
+            if (translateMatch) y += parseFloat(translateMatch[1] || 0);
+          }
+          current = current.parentElement;
+        }
+        return y;
+      };
+
+      allEls.forEach(el => {
+        const b = el.getBBox();
+        const offY = getSVGOffset(el);
+        minY = Math.min(minY, offY + b.y);
+        maxY = Math.max(maxY, offY + b.y + b.height);
+      });
+
+      const messages = Array.from(svg.querySelectorAll('.messageText, .noteText, .edgeLabel'));
+      return messages.filter(msg => {
+        const b = msg.getBBox();
+        const offY = getSVGOffset(msg);
+        const y = offY + b.y;
+        return y >= minY && y <= maxY;
+      });
+    }
+
+    window.getMessagesInLoop = getMessagesInLoop;
+
+    // ---- Interactive Diagram Selection ----
+    function highlightDiagramNode(node) {
+      if (!node) return;
+      clearDiagramSelection();
+
+      try {
+        const svg = node.closest('svg');
+        if (!svg) return;
+
+        // Helper to get total transform matrix / offset relative to SVG root
+        const getSVGOffset = (el) => {
+          let x = 0, y = 0;
+          let current = el;
+          while (current && current !== svg) {
+            const transform = current.getAttribute('transform');
+            if (transform) {
+              const translateMatch = transform.match(/translate\s*\(\s*([\d.-]+)\s*(?:[,\s]+\s*([\d.-]+)\s*)?\)/);
+              if (translateMatch) {
+                x += parseFloat(translateMatch[1] || 0);
+                y += parseFloat(translateMatch[2] || 0);
+              } else {
+                const matrixMatch = transform.match(/matrix\s*\(\s*[^,]+,[^,]+,[^,]+,[^,]+,\s*([\d.-]+)\s*,\s*([\d.-]+)\s*\)/);
+                if (matrixMatch) {
+                  x += parseFloat(matrixMatch[1] || 0);
+                  y += parseFloat(matrixMatch[2] || 0);
+                }
+              }
+            }
+            current = current.parentElement;
+          }
+          return { x, y };
+        };
+
+        let nodeBBox = node.getBBox();
+        let nodeOffset = getSVGOffset(node);
+
+        let minX = nodeOffset.x + nodeBBox.x;
+        let minY = nodeOffset.y + nodeBBox.y;
+        let maxX = minX + nodeBBox.width;
+        let maxY = minY + nodeBBox.height;
+
+        // Check if this is a sequence diagram note (combine text & background rect)
+        const noteGroup = node.closest('.note, g.note, g[class*="note"], .noteGroup') || (node.classList.contains('note') ? node : null);
+        if (noteGroup) {
+          try {
+            const allEls = noteGroup.querySelectorAll('rect, text, path, tspan');
+            for (const el of allEls) {
+              const elBBox = el.getBBox();
+              const elOffset = getSVGOffset(el);
+              const ex1 = elOffset.x + elBBox.x;
+              const ey1 = elOffset.y + elBBox.y;
+              const ex2 = ex1 + elBBox.width;
+              const ey2 = ey1 + elBBox.height;
+
+              minX = Math.min(minX, ex1);
+              minY = Math.min(minY, ey1);
+              maxX = Math.max(maxX, ex2);
+              maxY = Math.max(maxY, ey2);
+            }
+          } catch (e) { }
+        }
+
+        // Check if this is a loop/cluster group (combine label box, lines, texts)
+        const loopGroup = node.closest('g') ? (node.closest('g').querySelector('.loopLine, .loopText') ? node.closest('g') : (node.querySelector && node.querySelector('.loopLine, .loopText') ? node : null)) : null;
+        if (loopGroup) {
+          try {
+            const allEls = loopGroup.querySelectorAll('polygon, text, line, rect, path, tspan');
+            for (const el of allEls) {
+              const elBBox = el.getBBox();
+              const elOffset = getSVGOffset(el);
+              const ex1 = elOffset.x + elBBox.x;
+              const ey1 = elOffset.y + elBBox.y;
+              const ex2 = ex1 + elBBox.width;
+              const ey2 = ey1 + elBBox.height;
+
+              minX = Math.min(minX, ex1);
+              minY = Math.min(minY, ey1);
+              maxX = Math.max(maxX, ex2);
+              maxY = Math.max(maxY, ey2);
+            }
+
+            // Identify & highlight all messages inside this loop
+            const innerMsgs = getMessagesInLoop(loopGroup);
+            innerMsgs.forEach(msg => msg.classList.add('inner-loop-message'));
+          } catch (e) { }
+        }
+
+        // Check if this is a sequence diagram actor with top + bottom boxes
+        const actorElement = node.closest('.actor') || (node.classList && node.classList.contains('actor') ? node : null);
+        if (actorElement) {
+          const actorText = actorElement.textContent.trim();
+          const allActors = svg.querySelectorAll('.actor');
+          for (const a of allActors) {
+            const aText = a.textContent.trim();
+            if (aText === actorText) {
+              try {
+                const aBBox = a.getBBox();
+                const aOffset = getSVGOffset(a);
+                const ax1 = aOffset.x + aBBox.x;
+                const ay1 = aOffset.y + aBBox.y;
+                const ax2 = ax1 + aBBox.width;
+                const ay2 = ay1 + aBBox.height;
+
+                minX = Math.min(minX, ax1);
+                minY = Math.min(minY, ay1);
+                maxX = Math.max(maxX, ax2);
+                maxY = Math.max(maxY, ay2);
+              } catch (e) { }
+            }
+          }
+        }
+
+        let boxX = minX - 4;
+        let boxY = minY - 4;
+        let boxW = (maxX - minX) + 8;
+        let boxH = (maxY - minY) + 8;
+
+        // Critical NaN & Finite Validation Check
+        if (isNaN(boxX) || isNaN(boxY) || isNaN(boxW) || isNaN(boxH) ||
+          !isFinite(boxX) || !isFinite(boxY) || !isFinite(boxW) || !isFinite(boxH) ||
+          boxW <= 0 || boxH <= 0) {
+          return;
+        }
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.id = 'diagram-selection-box';
+        rect.classList.add('selection-box');
+        rect.setAttribute('x', boxX);
+        rect.setAttribute('y', boxY);
+        rect.setAttribute('width', boxW);
+        rect.setAttribute('height', boxH);
+        rect.setAttribute('rx', 6);
+        svg.appendChild(rect);
+      } catch (e) { }
+    }
+
+    function highlightDiagramNodeByText(lineText, occurrenceIndex = 0) {
+      if (!lineText) return;
+      const previewEl = document.querySelector('.preview');
+      if (!previewEl) return;
+
+      let labelToFind = lineText;
+      if (lineText.includes(':') && !lineText.toLowerCase().startsWith('note')) {
+        labelToFind = lineText.split(':').slice(1).join(':').trim();
+      } else if (/^\s*(?:participant|actor)\s+/i.test(lineText)) {
+        let pText = lineText.replace(/^\s*(?:participant|actor)\s+/i, '').trim();
+        if (/\s+as\s+/i.test(pText)) {
+          labelToFind = pText.split(/\s+as\s+/i)[1].trim(); // Display text
+        } else {
+          labelToFind = pText;
+        }
+      } else if (/^\s*(?:loop|alt|opt|par|critical|break|rect|subgraph)\b/i.test(lineText)) {
+        labelToFind = lineText.replace(/^\s*(?:loop|alt|opt|par|critical|break|rect|subgraph)\s*/i, '').trim();
+      } else {
+        labelToFind = lineText.trim();
+      }
+
+      const rawNodes = previewEl.querySelectorAll('.messageText, .edgeLabel, .node, .actor, .note, .classGroup, .loopText, .labelText, .cluster, .labelBox, g');
+      const filteredNodes = Array.from(rawNodes).filter(n => {
+        if (n.querySelector && (n.querySelector('.loopLine') || n.querySelector('.loopText'))) return true;
+        return !n.parentElement.closest('.messageText, .edgeLabel, .node, .actor, .note, .classGroup');
+      });
+
+      const matchingNodes = [];
+
+      for (const n of filteredNodes) {
+        let nodeText = n.textContent.trim();
+        if (nodeText) {
+          const cleanNodeText = nodeText.replace(/^[a-z]+\[|\]$/gi, '').trim();
+          if (cleanNodeText === labelToFind || nodeText === labelToFind || (labelToFind && nodeText.includes(labelToFind))) {
+            matchingNodes.push(n);
+          }
+        }
+      }
+
+      clearDiagramSelection();
+
+      if (matchingNodes.length > 0) {
+        const targetNode = matchingNodes[occurrenceIndex] || matchingNodes[0];
+        highlightDiagramNode(targetNode);
+      }
+    }
+
+    window.highlightDiagramNode = highlightDiagramNode;
+    window.highlightDiagramNodeByText = highlightDiagramNodeByText;
+    window.forceRenderOne = function (txt) {
+      lastRenderedSrc = null;
+      return renderOne(txt || elSrc.value);
+    };
+
+    function updateTextareaActiveBg(linesBefore) {
+      const computed = getComputedStyle(elSrc);
+      const lineHeight = parseFloat(computed.lineHeight) || 20;
+      const paddingTop = parseFloat(computed.paddingTop) || 0;
+
+      let activeBg = document.getElementById('textarea-active-bg');
+      if (!activeBg) {
+        activeBg = document.createElement('div');
+        activeBg.id = 'textarea-active-bg';
+        Object.assign(activeBg.style, {
+          position: 'absolute', top: 0, left: 0, right: 0, height: lineHeight + 'px',
+          backgroundColor: 'color-mix(in srgb, var(--text-main) 15%, transparent)', pointerEvents: 'none', zIndex: 1
+        });
+        document.getElementById('textareaWrap').appendChild(activeBg);
+      }
+      activeBg.style.display = 'block';
+      activeBg.dataset.top = (linesBefore - 1) * lineHeight + paddingTop;
+      activeBg.style.transform = `translateY(${activeBg.dataset.top - elSrc.scrollTop}px)`;
+    }
+
+    // Given the full source text and the character offset of an 'end' line,
+    // walk backwards to find the opening block keyword (loop/alt/opt/par/etc.)
+    // and return that line's text. Returns null if not found.
+    function resolveEndToBlock(val, endLineStart) {
+      const BLOCK_OPENERS = /^\s*(?:loop|alt|else|opt|par|critical|break|rect|subgraph)\b/i;
+      const BLOCK_CLOSER = /^\s*end\b/i;
+
+      // Split into lines up to and including the 'end' line
+      const upTo = val.substring(0, endLineStart);
+      const lines = upTo.split('\n');
+
+      let depth = 1; // We're at 'end' depth 1, need to find matching opener
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const l = lines[i];
+        if (BLOCK_CLOSER.test(l)) {
+          depth++;
+        } else if (BLOCK_OPENER_MATCH(l)) {
+          depth--;
+          if (depth === 0) return l.trim();
+        }
+      }
+      return null;
+    }
+
+    function BLOCK_OPENER_MATCH(line) {
+      return /^\s*(?:loop|alt|else|opt|par|critical|break|rect|subgraph)\b/i.test(line);
+    }
+
+    function handleTextareaSelection() {
+      const val = elSrc.value;
+      const pos = elSrc.selectionStart;
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      let lineEnd = val.indexOf('\n', pos);
+      if (lineEnd === -1) lineEnd = val.length;
+      let lineText = val.substring(lineStart, lineEnd).trim();
+
+      // If the line is 'end', resolve it back to the matching opening block
+      if (/^\s*end\s*$/.test(lineText)) {
+        const resolved = resolveEndToBlock(val, lineStart);
+        if (resolved) lineText = resolved;
+        else {
+          clearDiagramSelection();
+          const textBefore = val.substring(0, lineStart);
+          const linesBefore = textBefore.split('\n').length;
+          updateTextareaActiveBg(linesBefore);
+          return;
+        }
+      }
+
+      // Calculate occurrence index for duplicate lines (e.g. two 'Alice->>Bob: Hello' lines)
+      let occurrenceIndex = 0;
+      if (lineText) {
+        let searchPos = 0;
+        while (searchPos < lineStart) {
+          const found = val.indexOf(lineText, searchPos);
+          if (found !== -1 && found < lineStart) {
+            occurrenceIndex++;
+            searchPos = found + lineText.length;
+          } else {
+            break;
+          }
+        }
+      }
+
+      highlightDiagramNodeByText(lineText, occurrenceIndex);
+
+      const textBefore = val.substring(0, lineStart);
+      const linesBefore = textBefore.split('\n').length;
+      updateTextareaActiveBg(linesBefore);
+    }
+
+    elSrc.addEventListener('keyup', handleTextareaSelection);
+    elSrc.addEventListener('mouseup', handleTextareaSelection);
+
+    const previewElForClick = document.querySelector('.preview');
+    previewElForClick.addEventListener('click', (e) => {
+      let node = e.target.closest('.node, .actor, .classGroup, .edgeLabel, .note, g[id]');
+      if (!node) node = e.target.closest('text, rect, polygon, circle, path');
+      if (!node) return;
+
+      highlightDiagramNode(node);
+
+      const targetGroup = node.closest('g') || node;
+
+      // --- Detect if click is on a loop/block group ---
+      const isLoopElement = !!(
+        node.classList.contains('loopLine') || node.classList.contains('loopText') ||
+        node.classList.contains('labelText') || node.classList.contains('labelBox') ||
+        targetGroup.querySelector('.loopLine, .loopText')
+      );
+
+      const sourceText = elSrc.value;
+      let startIndex = -1;
+
+      if (isLoopElement) {
+        // Extract loop label from the group's loopText element (e.g. "[Everyday]" → "Everyday")
+        const loopTextEl = targetGroup.querySelector('.loopText, .labelText');
+        const labelEl = targetGroup.querySelector('.labelText');
+        const keyword = labelEl ? labelEl.textContent.trim() : 'loop';
+        const loopLabel = loopTextEl ? loopTextEl.textContent.replace(/^\[|\]$/g, '').trim() : '';
+        // Search for 'loop Everyday' or 'loop[Everyday]' in source
+        const loopLine = loopLabel
+          ? new RegExp(`^\\s*${keyword}\\s+${loopLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'im')
+          : new RegExp(`^\\s*${keyword}\\b`, 'im');
+        const m = sourceText.match(loopLine);
+        if (m) startIndex = m.index;
+      } else {
+        let textEls = targetGroup.querySelectorAll('text, .label-container');
+        if (textEls.length === 0) textEls = node.querySelectorAll('text, .label-container');
+
+        let searchText = '';
+        if (textEls.length > 0) {
+          searchText = Array.from(textEls).map(el => el.textContent).join(' ').trim();
+        } else {
+          searchText = (targetGroup.textContent || node.textContent || '').trim();
+        }
+
+        if (searchText) {
+          const escaped = searchText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+          const declRegex = new RegExp(`(?:participant|actor|subgraph|class)\\s+${escaped}\\b`, 'i');
+          const declMatch = sourceText.match(declRegex);
+          if (declMatch) {
+            startIndex = declMatch.index;
+          } else {
+            // Count which SVG occurrence was clicked to map to correct source line
+            const allSvgNodes = Array.from(document.querySelectorAll('.preview .messageText, .preview .node, .preview .note, .preview .edgeLabel, .preview g, .preview text'));
+            const matchingSvgNodes = allSvgNodes.filter(n => {
+              const txt = (n.textContent || '').trim();
+              return txt === searchText || txt.includes(searchText);
+            });
+
+            let svgOccurrenceIndex = 0;
+            for (let i = 0; i < matchingSvgNodes.length; i++) {
+              if (matchingSvgNodes[i] === targetGroup || matchingSvgNodes[i] === node || matchingSvgNodes[i].contains(node)) {
+                svgOccurrenceIndex = i;
+                break;
+              }
+            }
+
+            let currPos = 0;
+            let matchCount = 0;
+            while (currPos < sourceText.length) {
+              const foundIdx = sourceText.indexOf(searchText, currPos);
+              if (foundIdx !== -1) {
+                if (matchCount === svgOccurrenceIndex) {
+                  startIndex = foundIdx;
+                  break;
+                }
+                matchCount++;
+                currPos = foundIdx + searchText.length;
+              } else {
+                break;
+              }
+            }
+            if (startIndex === -1) {
+              startIndex = sourceText.indexOf(searchText);
+            }
+          }
+        }
+      }
+
+      if (startIndex !== -1) {
+        const lineStart = sourceText.lastIndexOf('\n', startIndex) + 1;
+        let lineEnd = sourceText.indexOf('\n', startIndex);
+        if (lineEnd === -1) lineEnd = sourceText.length;
+
+        const selStart = lineStart;
+
+        if (cmView && window.CMEditorView) {
+          cmView.dispatch({
+            selection: { anchor: selStart },
+            effects: window.CMEditorView.scrollIntoView(selStart, { y: 'center' })
+          });
+          cmView.focus();
+        } else {
+          elSrc.focus();
+          elSrc.setSelectionRange(selStart, selStart);
+          const textBefore = sourceText.substring(0, selStart);
+          const linesBefore = textBefore.split('\n').length;
+          const computed = getComputedStyle(elSrc);
+          const lineHeight = parseFloat(computed.lineHeight) || 20;
+          const paddingTop = parseFloat(computed.paddingTop) || 0;
+          elSrc.scrollTop = Math.max(0, (linesBefore - 1) * lineHeight + paddingTop - (elSrc.clientHeight / 2));
+          updateTextareaActiveBg(linesBefore);
+        }
+      }
+    });
+
+  </script>
+
+
+  <!-- Export Modal -->
+  <div id="exportModalOverlay" class="export-modal-overlay" style="display: none;">
+    <div class="export-modal">
+      <div class="export-modal-header">
+        <h2>Export diagram</h2>
+        <button class="icon-btn" id="closeExportBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="export-modal-body">
+        <div class="export-modal-left">
+          <div class="export-section">
+            <h3>Export format</h3>
+            <div class="format-list">
+              <label class="format-option active">
+                <input type="radio" name="exportFormat" value="png" checked>
+                <div class="format-text">
+                  <div class="format-title">PNG</div>
+                  <div class="format-desc">High quality raster image</div>
+                </div>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="pdf" disabled>
+                <div class="format-text">
+                  <div class="format-title">PDF</div>
+                  <div class="format-desc">Portable document format</div>
+                </div>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="svg">
+                <div class="format-text">
+                  <div class="format-title">SVG</div>
+                  <div class="format-desc">Scalable vector graphics</div>
+                </div>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="mmd">
+                <div class="format-text">
+                  <div class="format-title">MMD</div>
+                  <div class="format-desc">Mermaid syntax code</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="export-section">
+            <h3>Background color</h3>
+            <div class="bg-color-options">
+              <button class="bg-swatch active" style="background: #ffffff;" data-bg="white"></button>
+              <button class="bg-swatch" style="background: #000000;" data-bg="black"></button>
+              <button class="bg-swatch transparent-swatch" data-bg="transparent"></button>
+              <button class="bg-swatch color-picker-swatch">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z">
+                  </path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="export-share-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="flex-shrink:0">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span><a href="#">Share your diagram</a> directly instead. No account required for viewers.</span>
+          </div>
+        </div>
+
+        <div class="export-modal-right">
+          <h3>Preview</h3>
+          <div class="export-preview-box" id="exportPreviewBox">
+            <!-- SVG clone goes here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="export-modal-footer">
+        <button class="export-btn-cancel" id="exportCancelBtn">Cancel</button>
+        <button class="export-btn-confirm" id="exportConfirmBtn">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .export-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .export-modal {
+      background: var(--bg-body);
+      border-radius: 12px;
+      width: 650px;
+      max-width: 95vw;
+      height: 90vh;
+      max-height: 900px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
+
+    .export-modal-header {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .export-modal-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .export-modal-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
+      padding: 0 1.5rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .export-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .export-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0 0 1rem 0;
+    }
+
+    .format-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .format-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      background: var(--bg-element);
+      transition: all 0.2s;
+      margin: 0;
+    }
+
+    .format-option:hover {
+      background: var(--bg-element-hover);
+    }
+
+    .format-option.active {
+      border-color: var(--accent);
+      background: rgba(14, 143, 125, 0.05);
+    }
+
+    .format-option input[type="radio"] {
+      accent-color: var(--accent);
+      transform: scale(1.2);
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .format-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .format-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .bg-color-options {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .bg-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 2px solid var(--border-color);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bg-swatch.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--bg-body), 0 0 0 4px var(--accent);
+    }
+
+    .transparent-swatch {
+      background: repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 50% / 10px 10px;
+    }
+
+    .color-picker-swatch {
+      background: var(--bg-element);
+      color: var(--text-main);
+      border: 2px dashed var(--border-color);
+    }
+
+    .export-share-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      background: rgba(14, 143, 125, 0.05);
+      border: 1px solid rgba(14, 143, 125, 0.2);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .export-share-box a {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .export-modal-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .export-modal-right h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0 0 1rem 0;
+    }
+
+    .export-preview-box {
+      flex: 1;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: #ffffff;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 150px;
+      padding: 3rem;
+      position: relative;
+    }
+
+    .export-preview-box svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .export-modal-footer {
+      padding: 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      border-top: 1px solid var(--border-color);
+      margin-top: 1.5rem;
+    }
+
+    .export-btn-cancel {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--bg-element);
+      color: var(--text-main);
+      font-size: 0.9rem;
+    }
+
+    .export-btn-confirm {
+      padding: 8px 24px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2b2b36;
+      color: #fff;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+
+    .export-btn-confirm:hover {
+      background: var(--accent);
+    }
+
+    .theme-light .export-btn-confirm {
+      background: #1e1e2e;
+    }
+  </style>
+
+</body>
+
+</html>

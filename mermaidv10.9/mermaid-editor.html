@@ -1,0 +1,3444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mermaid Editor</title>
+<script src="mermaid.min.js"></script>
+<style>
+  :root{
+    --ink-950:#12131c;
+    --ink-900:#181a26;
+    --ink-800:#20222f;
+    --ink-700:#2a2d3d;
+    --ink-600:#3a3d52;
+    --ink-400:#6c6f8a;
+    --ink-200:#9a9cb5;
+    --paper:#f5f3ee;
+    --paper-dim:#eae7de;
+    --line:#1e2130;
+    --violet:#8b7ff0;
+    --violet-dim:#5e56a8;
+    --amber:#e2a23b;
+    --coral:#e2795b;
+    --ok:#5cb896;
+    --err:#e2695b;
+    --font-ui:'Söhne', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--font-ui);
+    background:var(--ink-950);
+    color:var(--paper);
+    overflow:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+  /* Fullscreen targets #preview-pane only — a true "diagram only" mode with
+     no toolbars, editor, or buttons in view. Belt-and-suspenders sizing for
+     browsers that don't perfectly auto-size the fullscreened element. */
+  #preview-pane:fullscreen, #preview-pane:-webkit-full-screen,
+  #preview-pane.is-fullscreen{
+    position:fixed !important;
+    inset:0 !important;
+    width:100vw;
+    height:100vh;
+  }
+  /* Chrome (the zoom hint bar + floating toolbar) is hidden by default in
+     fullscreen and only fades in while the mouse is moving — a "reveal on
+     activity" pattern like a video player's controls, so there's still a
+     way to zoom or exit without needing to know the Esc shortcut. */
+  #preview-pane.is-fullscreen #top-left-pill,
+  #preview-pane.is-fullscreen #top-right-pill,
+  #preview-pane.is-fullscreen #canvas-toolbar-bottom,
+  #preview-pane.is-fullscreen #showSourceBtn,
+  #preview-pane.is-fullscreen #zoom-label{
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease;
+  }
+  #preview-pane.is-fullscreen.chrome-visible #top-left-pill,
+  #preview-pane.is-fullscreen.chrome-visible #top-right-pill,
+  #preview-pane.is-fullscreen.chrome-visible #canvas-toolbar-bottom,
+  #preview-pane.is-fullscreen.chrome-visible #showSourceBtn,
+  #preview-pane.is-fullscreen.chrome-visible #zoom-label{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  /* ===== Top bar ===== */
+  #topbar{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:8px 16px;
+    min-height:52px;
+    background:var(--ink-900);
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+    row-gap:8px;
+  }
+  #toolbar-row2{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    width:100%;
+    padding-top:8px;
+    border-top:1px solid var(--line);
+  }
+  #toolbar-row2 .group{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding-right:8px;
+    border-right:1px solid var(--line);
+  }
+  #toolbar-row2 .group:last-child{border-right:none;}
+  #toolbar-row2 label{
+    font-size:11px;
+    color:var(--ink-400);
+    display:flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+  }
+  #toolbar-row2 input[type="checkbox"]{accent-color:var(--violet); cursor:pointer;}
+  .mini-select{
+    font-family:var(--font-ui);
+    font-size:11.5px;
+    color:var(--paper);
+    background:var(--ink-800);
+    border:1px solid var(--ink-600);
+    border-radius:5px;
+    padding:5px 7px;
+    cursor:pointer;
+    outline:none;
+  }
+  #recentBtn{position:relative;}
+  #recentPanel{
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    background:var(--ink-800);
+    border:1px solid var(--ink-600);
+    border-radius:8px;
+    min-width:180px;
+    max-width:320px;
+    max-height:280px;
+    overflow-y:auto;
+    z-index:30;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  }
+  #recentPanel.open{display:block;}
+  #recentPanel .recent-item{
+    padding:9px 12px;
+    font-size:12px;
+    color:var(--paper);
+    cursor:pointer;
+    border-bottom:1px solid var(--ink-700);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #recentPanel .recent-item:last-child{border-bottom:none;}
+  #recentPanel .recent-item:hover{background:var(--ink-700);}
+  #recentPanel .recent-empty{
+    padding:14px 12px;
+    font-size:12px;
+    color:var(--ink-400);
+    text-align:center;
+  }
+  #recentPanel{min-width:240px;}
+  #brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.2px;
+    color:var(--paper);
+    margin-right:6px;
+  }
+  #brand svg{flex-shrink:0;}
+  #brand .tag{
+    font-size:10px;
+    font-weight:500;
+    color:var(--violet);
+    background:rgba(139,127,240,0.14);
+    border:1px solid rgba(139,127,240,0.3);
+    padding:2px 6px;
+    border-radius:3px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+  }
+  .divider{width:1px;height:24px;background:var(--line);}
+  select, .tbtn{
+    font-family:var(--font-ui);
+    font-size:12.5px;
+    color:var(--paper);
+    background:var(--ink-800);
+    border:1px solid var(--ink-600);
+    border-radius:6px;
+    padding:7px 10px;
+    cursor:pointer;
+    outline:none;
+    transition:border-color .12s, background .12s;
+  }
+  select:hover, .tbtn:hover{border-color:var(--violet-dim); background:var(--ink-700);}
+  .tbtn{display:flex; align-items:center; gap:6px; white-space:nowrap;}
+  .tbtn.primary{
+    background:var(--violet);
+    border-color:var(--violet);
+    color:#100e1c;
+    font-weight:600;
+  }
+  .tbtn.primary:hover{background:#9d92f5;}
+  #topbar .spacer{flex:1;}
+  #topbar .icon{width:14px;height:14px;flex-shrink:0;}
+  #status{
+    font-size:11.5px;
+    color:#4c7a72;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  #status .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+  #status.error .dot{background:var(--err);}
+  #status.error{color:var(--err);}
+
+  /* ===== Main split ===== */
+  #main{flex:1; position:relative; min-height:0; overflow:hidden;}
+  #editor-pane{
+    position:absolute;
+    top:10px; left:10px; bottom:10px;
+    width:420px;
+    min-width:35%;
+    max-width:90%;
+    display:flex;
+    flex-direction:column;
+    background:#ffffff;
+    border:1px solid #d9e7e4;
+    border-radius:12px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12);
+    z-index:25;
+    overflow:hidden;
+  }
+  #editor-head{
+    display:flex;
+    flex-direction:column;
+    font-size:13px;
+    color:#1d4a43;
+    background:#eef6f4;
+    border-bottom:1px solid #d9e7e4;
+    flex-shrink:0;
+  }
+  .eh-row1{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 14px 6px;
+  }
+  .eh-row2{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:0 10px 8px;
+    justify-content:space-between;
+  }
+  .eh-left{display:flex; align-items:center; gap:7px; color:#1d4a43;}
+  .eh-row2-right{display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .eh-title{font-weight:600; font-size:13px;}
+  .eh-label{font-size:12px; color:#4c7a72; white-space:nowrap;}
+  .eh-btn{
+    display:flex; align-items:center; gap:5px;
+    background:none; border:none; color:#4c7a72;
+    cursor:pointer; font-size:12px; padding:5px 7px; border-radius:6px;
+    text-decoration:none;
+  }
+  .eh-btn:hover{color:#1d4a43; background:#d9e7e4;}
+  .eh-close{padding:5px; color:#4c7a72;}
+  #fontSizePopup{
+    display:none;
+    position:absolute;
+    bottom:calc(100% + 8px);
+    left:0;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1px solid #d9e7e4;
+    border-radius:10px;
+    padding:10px 12px;
+    min-width:160px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+    z-index:30;
+  }
+  #fontSizePopup.open{display:flex;}
+  #fontSizePopup .fsp-label{font-size:11px; color:#4c7a72; flex-shrink:0;}
+  #fontSizePopup .fsp-label-lg{font-size:16px; font-weight:700;}
+  #fontSizeSlider{flex:1; accent-color:#0e8f7d; cursor:pointer;}
+  /* iOS-style toggle switch */
+  .switch{position:relative; display:inline-block; cursor:pointer;}
+  .switch input{position:absolute; opacity:0; width:0; height:0;}
+  .switch-track{
+    display:block; width:34px; height:19px;
+    background:#c8ded8; border-radius:10px;
+    transition:background 0.15s;
+    position:relative;
+  }
+  .switch-thumb{
+    position:absolute; top:2px; left:2px;
+    width:15px; height:15px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.25);
+    transition:transform 0.15s;
+  }
+  .switch input:checked + .switch-track{background:#0e8f7d;}
+  .switch input:checked + .switch-track .switch-thumb{transform:translateX(15px);}
+  #code-wrap{
+    flex:1;
+    display:flex;
+    min-height:0;
+    position:relative;
+  }
+  #code-area{
+    flex:1;
+    position:relative;
+    min-width:0;
+  }
+  #highlight-layer{
+    position:absolute;
+    top:0; left:0; right:0; bottom:0;
+    pointer-events:none;
+    overflow:hidden;
+    background:#ffffff;
+    z-index:1;
+  }
+  #highlight-code{
+    position:absolute;
+    top:0; left:0;
+    padding:14px 14px 14px 8px;
+    margin-left:0;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    white-space:pre;
+    color:#1d4a43;
+  }
+  /* Full-width wash behind the erroring source line. Sits inside
+     #highlight-layer (ahead of #highlight-code in the DOM) so the
+     syntax-colored text still paints on top of it; a low-alpha fill
+     rather than a solid color keeps it legible across every editor
+     theme without needing per-theme overrides. */
+  #error-line-bar{
+    position:absolute;
+    left:0; right:0;
+    background:rgba(226,105,91,0.14);
+    pointer-events:none;
+    display:none;
+  }
+  /* Syntax colors matched to the reference tool's actual --sx-* design
+     tokens rather than an independently-chosen palette. */
+  .tok-kw{color:#a33f9b; font-weight:600;}       /* --sx-kw */
+  .tok-control{color:#b4560f; font-weight:700;}  /* --sx-dir */
+  .tok-arrow{color:#123c36; font-weight:600;}    /* --sx-arr */
+  .tok-string{color:#147a52;}                    /* --sx-lbl */
+  .tok-comment{color:#8fa9a5; font-style:italic;}/* --sx-com */
+  .tok-alias{color:#0d7ea3; font-weight:600;}    /* --sx-node */
+  .tok-number{color:#0d7ea3;}                    /* --sx-node */
+  .tok-func{color:#0d7ea3;}                      /* --sx-node */
+  .line-numbers-item.err-line{color:#b9445a; font-weight:700; background:rgba(226,105,91,0.14);}
+  #line-numbers{
+    padding:14px 10px 14px 14px;
+    text-align:right;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    color:#9db5b1;
+    user-select:none;
+    overflow:hidden;
+    white-space:pre;
+    background:#ffffff;
+    border-right:1px solid #d9e7e4;
+    flex-shrink:0;
+  }
+  #code{
+    width:100%;
+    height:100%;
+    resize:none;
+    border:none;
+    outline:none;
+    background:transparent;
+    color:transparent;
+    caret-color:#1d4a43;
+    font-family:var(--font-mono);
+    font-size:13px;
+    line-height:1.6;
+    padding:14px 14px 14px 8px;
+    tab-size:2;
+    white-space:pre;
+    overflow:auto;
+    position:relative;
+    z-index:2;
+    box-sizing:border-box;
+  }
+  #error-bar{
+    display:none;
+    padding:10px 14px;
+    background:#fbeef0;
+    border-top:1px solid #f0c7d1;
+    color:#b9445a;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    line-height:1.5;
+    max-height:110px;
+    overflow:auto;
+    flex-shrink:0;
+  }
+
+  #resizer{
+    position:absolute;
+    top:0; right:0; bottom:0;
+    width:6px;
+    cursor:col-resize;
+    background:transparent;
+    z-index:26;
+  }
+  #resizer:hover, #resizer.active{background:var(--violet-dim);}
+
+  /* ===== Preview pane ===== */
+  #preview-pane{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    background:#eef6f4;
+    min-height:0;
+  }
+  #zoom-label{
+    font-size:11.5px;
+    color:#4c7a72;
+    min-width:42px;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  #canvas-scroll{
+    flex:1;
+    overflow:auto;
+    position:relative;
+    cursor:grab;
+    background-image:radial-gradient(#d3e5e1 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  #canvas-scroll.grabbing{cursor:grabbing;}
+  #canvas-inner{
+    position:absolute;
+    top:50%; left:50%;
+    transform-origin:center center;
+    padding:40px;
+  }
+  #diagram-host{
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.06);
+    border-radius:10px;
+    padding:36px;
+    display:inline-block;
+  }
+  #diagram-host svg{display:block; max-width:none !important;}
+  /* Bi-directional sync highlight box. Lives inside #canvas-inner as a
+     sibling of #diagram-host (never a child of it — diagram-host's
+     innerHTML is replaced wholesale on every render, which would wipe
+     a child element) so it inherits the exact same pan/zoom transform
+     as the diagram, and pointer-events:none lets clicks fall through
+     to the SVG underneath it. #0e8f7d matches the app's existing
+     brand teal (see the switch-track and export color-picker default)
+     rather than introducing a new accent color. */
+  #diagram-selection-box{
+    position:absolute;
+    border:2px solid #0e8f7d;
+    background:rgba(14,143,125,0.12);
+    pointer-events:none;
+    display:none;
+    z-index:5;
+    border-radius:4px;
+    transition:top 0.12s ease, left 0.12s ease, width 0.12s ease, height 0.12s ease;
+  }
+
+  #top-left-pill, #top-right-pill, #canvas-toolbar-bottom{
+    position:absolute;
+    z-index:15;
+    display:flex;
+    align-items:center;
+    gap:2px;
+    background:#fff;
+    border:1px solid #d9e7e4;
+    border-radius:11px;
+    padding:4px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+  }
+  #top-left-pill{ top:14px; left:50%; transform:translateX(-50%); }
+  #top-right-pill{ top:24px; right:18px; }
+  #canvas-toolbar-bottom{ bottom:18px; right:18px; }
+  .cbtn{
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    background:transparent;
+    border:none;
+    border-radius:7px;
+    cursor:pointer;
+    color:#1d4a43;
+    flex-shrink:0;
+  }
+  .cbtn svg{width:16px; height:16px;}
+  .cbtn:hover{background:#e2eeeb;}
+  .cbtn[aria-pressed="true"]{background:#0e8f7d; color:#fff;}
+  .cbtn[aria-pressed="true"]:hover{background:#0c7a6a;}
+  .cbtn:disabled{opacity:0.35; cursor:default;}
+  .cbtn:disabled:hover{background:transparent;}
+  .cdiv{width:1px; height:20px; background:#d9e7e4; margin:0 2px; flex-shrink:0;}
+
+  #brand-mark{display:flex; align-items:center; justify-content:center; padding:0 4px;}
+  .tl-sep{width:1px; height:18px; background:#d9e7e4; margin:0 3px; flex-shrink:0;}
+  .tl-btn{
+    display:flex; align-items:center; gap:5px;
+    height:32px; padding:0 9px;
+    background:transparent;
+    border:none;
+    border-radius:7px;
+    cursor:pointer;
+    color:#1d4a43;
+    font-size:12.5px;
+    font-family:var(--font-ui);
+    text-decoration:none;
+    flex-shrink:0;
+  }
+  .tl-btn svg{flex-shrink:0;}
+  .tl-btn:hover{background:#e2eeeb;}
+  #top-right-pill #exportToggle{font-weight:600;}
+  #settingsTrigger[aria-pressed="true"]{background:#0e8f7d; color:#fff;}
+
+  #settingsPopup{
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    left:0;
+    background:#fff;
+    border:1px solid #d9e7e4;
+    border-radius:11px;
+    padding:12px;
+    min-width:240px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.1);
+    z-index:30;
+  }
+  #settingsPopup.open{display:block;}
+  #settingsPopup .sp-row{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:5px 0;
+    font-size:12.5px; color:#1d4a43;
+  }
+  #settingsPopup .sp-row label{white-space:nowrap;}
+  #settingsPopup .sp-row select{
+    font-family:var(--font-ui); font-size:12px;
+    background:#eef6f4; border:1px solid #d9e7e4; border-radius:6px;
+    padding:5px 7px; color:#1d4a43; cursor:pointer; outline:none;
+  }
+  #settingsPopup .sp-divider{height:1px; background:#e4eeec; margin:8px 0;}
+  #settingsPopup .sp-buttons{display:flex; gap:8px; justify-content:flex-start;}
+  #settingsPopup .sp-buttons .tbtn{
+    background:#eef6f4; color:#1d4a43; border:1px solid #d9e7e4;
+  }
+  #settingsPopup .sp-buttons .tbtn:hover{background:#e2eeeb;}
+  #settingsPopup #recentPanel{
+    background:#fff; border:1px solid #d9e7e4;
+  }
+  #settingsPopup #recentPanel .recent-item{
+    color:#1d4a43; border-bottom:1px solid #eef6f4;
+  }
+  #settingsPopup #recentPanel .recent-item:hover{background:#eef6f4;}
+
+  /* Dark canvas theme — swaps the diagram's own background (not the app
+     chrome around it) to dark, and re-themes everything sitting directly
+     on that canvas (hint bar, dot-grid, diagram card, floating toolbar) to
+     match. Palette badge colors adapt separately via badgeTint(). */
+  #preview-pane.canvas-dark{ background:#0a1822; }
+  #preview-pane.canvas-dark #zoom-label{ color:#9fc4c0; }
+  #preview-pane.canvas-dark #canvas-scroll{
+    background-color:#0a1822;
+    background-image:radial-gradient(#123041 1px, transparent 1px);
+  }
+  #preview-pane.canvas-dark #diagram-host{
+    background:#0c1c28;
+    box-shadow:0 1px 3px rgba(0,0,0,0.4), 0 8px 28px rgba(0,0,0,0.35);
+  }
+  #preview-pane.canvas-dark #top-left-pill, #preview-pane.canvas-dark #top-right-pill, #preview-pane.canvas-dark #canvas-toolbar-bottom{
+    background:#0c1c28;
+    border-color:#12293a;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
+  }
+  #preview-pane.canvas-dark .cbtn{ color:#d7ece8; }
+  #preview-pane.canvas-dark .cbtn:hover{ background:#12293a; }
+  #preview-pane.canvas-dark .cbtn[aria-pressed="true"]{ background:#35d0c0; color:#06231f; }
+  #preview-pane.canvas-dark .cbtn[aria-pressed="true"]:hover{ background:#4fe0d1; }
+  #preview-pane.canvas-dark .cdiv{ background:#12293a; }
+  #preview-pane.canvas-dark .tl-btn{ color:#d7ece8; }
+  #preview-pane.canvas-dark .tl-btn:hover{ background:#12293a; }
+  #preview-pane.canvas-dark .tl-sep{ background:#12293a; }
+  #preview-pane.canvas-dark #settingsTrigger[aria-pressed="true"]{ background:#35d0c0; color:#06231f; }
+  #preview-pane.canvas-dark #status{ color:#9fc4c0; }
+  #preview-pane.canvas-dark #settingsPopup{
+    background:#0c1c28;
+    border-color:#12293a;
+    box-shadow:0 12px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25);
+  }
+  #preview-pane.canvas-dark #settingsPopup .sp-row{ color:#d7ece8; }
+  #preview-pane.canvas-dark #settingsPopup .sp-row select{
+    background:#0a1822; border-color:#12293a; color:#d7ece8;
+  }
+  #preview-pane.canvas-dark #settingsPopup .sp-divider{ background:#12293a; }
+  #preview-pane.canvas-dark #settingsPopup .sp-buttons .tbtn{
+    background:#0a1822; color:#d7ece8; border-color:#12293a;
+  }
+  #preview-pane.canvas-dark #settingsPopup .sp-buttons .tbtn:hover{ background:#12293a; }
+
+  /* Console theme — layers on top of canvas-dark (applied alongside it),
+     overriding ONLY background-related properties with the near-black
+     GitHub-dark-style palette from the reference, while text/icon colors
+     are inherited from canvas-dark unchanged, per "only for the
+     background". Source order after canvas-dark is what makes these win. */
+  #preview-pane.canvas-console{ background:#0d1117; }
+  #preview-pane.canvas-console #canvas-scroll{
+    background-color:#0d1117;
+    background-image:radial-gradient(#1c232c 1px, transparent 1px);
+  }
+  #preview-pane.canvas-console #diagram-host{ background:#161b22; }
+  #preview-pane.canvas-console #top-left-pill, #preview-pane.canvas-console #top-right-pill, #preview-pane.canvas-console #canvas-toolbar-bottom{
+    background:#161b22;
+    border-color:#21262d;
+  }
+  #preview-pane.canvas-console .cbtn:hover{ background:#21262d; }
+  #preview-pane.canvas-console .cbtn[aria-pressed="true"]{ background:#35d0c0; color:#0d1117; }
+  #preview-pane.canvas-console .cbtn[aria-pressed="true"]:hover{ background:#4fe0d1; }
+  #preview-pane.canvas-console .cdiv{ background:#21262d; }
+
+  /* Classic theme — the original violet/pink/amber palette this editor
+     shipped with, before the canvas/editor colors were matched to the
+     mermaid.ai reference tokens. Kept as its own selectable theme rather
+     than lost, since it doesn't share backgrounds OR text/token colors
+     with any other theme — fully independent, not layered like Console. */
+  #preview-pane.canvas-classic{ background:#14151f; }
+  #preview-pane.canvas-classic #zoom-label{ color:#9a9cb5; }
+  #preview-pane.canvas-classic #canvas-scroll{
+    background-color:#14151f;
+    background-image:radial-gradient(#262a3d 1px, transparent 1px);
+  }
+  #preview-pane.canvas-classic #diagram-host{
+    background:#1c1e2b;
+    box-shadow:0 1px 3px rgba(0,0,0,0.4), 0 8px 28px rgba(0,0,0,0.35);
+  }
+  #preview-pane.canvas-classic #top-left-pill, #preview-pane.canvas-classic #top-right-pill, #preview-pane.canvas-classic #canvas-toolbar-bottom{
+    background:#1c1e2b;
+    border-color:#2a2d3d;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.25);
+  }
+  #preview-pane.canvas-classic .cbtn{ color:#c7c5d6; }
+  #preview-pane.canvas-classic .cbtn:hover{ background:#262a3d; }
+  #preview-pane.canvas-classic .cbtn[aria-pressed="true"]{ background:#8b7ff0; color:#14151f; }
+  #preview-pane.canvas-classic .cbtn[aria-pressed="true"]:hover{ background:#9d92f5; }
+  #preview-pane.canvas-classic .cdiv{ background:#2a2d3d; }
+  #preview-pane.canvas-classic .tl-btn{ color:#c7c5d6; }
+  #preview-pane.canvas-classic .tl-btn:hover{ background:#262a3d; }
+  #preview-pane.canvas-classic .tl-sep{ background:#2a2d3d; }
+  #preview-pane.canvas-classic #settingsTrigger[aria-pressed="true"]{ background:#8b7ff0; color:#14151f; }
+  #preview-pane.canvas-classic #status{ color:#9a9cb5; }
+  #preview-pane.canvas-classic #settingsPopup{
+    background:#1c1e2b;
+    border-color:#2a2d3d;
+    box-shadow:0 12px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.25);
+  }
+  #preview-pane.canvas-classic #settingsPopup .sp-row{ color:#c7c5d6; }
+  #preview-pane.canvas-classic #settingsPopup .sp-row select{
+    background:#14151f; border-color:#2a2d3d; color:#c7c5d6;
+  }
+  #preview-pane.canvas-classic #settingsPopup .sp-divider{ background:#2a2d3d; }
+  #preview-pane.canvas-classic #settingsPopup .sp-buttons .tbtn{
+    background:#14151f; color:#c7c5d6; border-color:#2a2d3d;
+  }
+  #preview-pane.canvas-classic #settingsPopup .sp-buttons .tbtn:hover{ background:#262a3d; }
+
+  /* Dark editor theme — same trigger as the canvas, but covers the code
+     pane so "Dark" actually darkens the whole workspace, not just the
+     diagram. Colors matched to the reference tool's actual dark tokens. */
+  #main.theme-dark #editor-pane{ background:#0a1822; border:1px solid #12293a; }
+  #main.theme-dark #editor-head{ background:#0c1c28; border-bottom:1px solid #12293a; color:#d7ece8; }
+  #main.theme-dark .eh-left{ color:#d7ece8; }
+  #main.theme-dark .eh-label{ color:#9fc4c0; }
+  #main.theme-dark .eh-btn{ color:#9fc4c0; }
+  #main.theme-dark .eh-btn:hover{ color:#d7ece8; background:#12293a; }
+  #main.theme-dark .font-size-ctrl{ background:#123041; }
+  #main.theme-dark #fontSizePopup{ background:#0c1c28; border-color:#12293a; }
+  #main.theme-dark #fontSizePopup .fsp-label{ color:#9fc4c0; }
+  #main.theme-dark .switch-track{ background:#12293a; }
+  #main.theme-dark .switch input:checked + .switch-track{ background:#35d0c0; }
+  #main.theme-dark #line-numbers{ background:#0a1822; color:#46656f; border-right:1px solid #12293a; }
+  #main.theme-dark #highlight-layer{ background:#0a1822; }
+  #main.theme-dark #highlight-code{ color:#d7ece8; }
+  #main.theme-dark #code{ caret-color:#d7ece8; }
+  #main.theme-dark .tok-kw{ color:#c792ea; }      /* --sx-kw (dark) */
+  #main.theme-dark .tok-control{ color:#f0a45d; } /* --sx-dir (dark) */
+  #main.theme-dark .tok-arrow{ color:#35d0c0; }   /* --sx-arr (dark) */
+  #main.theme-dark .tok-string{ color:#b5e8a0; }  /* --sx-lbl (dark) */
+  #main.theme-dark .tok-comment{ color:#46656f; } /* --sx-com (dark) */
+  #main.theme-dark .tok-alias{ color:#82d4f5; }   /* --sx-node (dark) */
+  #main.theme-dark .tok-number{ color:#82d4f5; }
+  #main.theme-dark .tok-func{ color:#82d4f5; }
+  #main.theme-dark .line-numbers-item.err-line{ color:#e07a9a; }
+  #main.theme-dark #error-bar{
+    background:rgba(224,122,154,0.14);
+    border-top:1px solid rgba(224,122,154,0.35);
+    color:#e07a9a;
+  }
+
+  /* Console editor theme — same "background only" layering as the canvas
+     version above: applied alongside theme-dark, only overriding
+     background/border properties with the near-black palette. */
+  #main.theme-console-bg #editor-pane{ background:#0d1117; border:1px solid #21262d; }
+  #main.theme-console-bg #editor-head{ background:#161b22; border-bottom:1px solid #21262d; }
+  #main.theme-console-bg .eh-btn:hover{ background:#21262d; }
+  #main.theme-console-bg #fontSizePopup{ background:#161b22; border-color:#21262d; }
+  #main.theme-console-bg .switch-track{ background:#21262d; }
+  #main.theme-console-bg #line-numbers{ background:#0d1117; border-right:1px solid #21262d; }
+  #main.theme-console-bg #highlight-layer{ background:#0d1117; }
+  #main.theme-console-bg #error-bar{
+    background:rgba(224,122,154,0.12);
+    border-top:1px solid rgba(224,122,154,0.3);
+  }
+
+  /* Classic editor theme — fully independent (see canvas block above for
+     why), restoring the original pastel violet/pink/amber/green/orange/
+     blue/teal token set this editor used before the token-matching pass. */
+  #main.theme-classic #editor-pane{ background:#181a26; border:1px solid #2a2d3d; }
+  #main.theme-classic #editor-head{ background:#1c1e2b; border-bottom:1px solid #2a2d3d; color:#c7c5d6; }
+  #main.theme-classic .eh-left{ color:#c7c5d6; }
+  #main.theme-classic .eh-label{ color:#8a87a0; }
+  #main.theme-classic .eh-btn{ color:#8a87a0; }
+  #main.theme-classic .eh-btn:hover{ color:#f0eff8; background:#2a2d3d; }
+  #main.theme-classic #fontSizePopup{ background:#1c1e2b; border-color:#2a2d3d; }
+  #main.theme-classic #fontSizePopup .fsp-label{ color:#8a87a0; }
+  #main.theme-classic .switch-track{ background:#2a2d3d; }
+  #main.theme-classic .switch input:checked + .switch-track{ background:#8b7ff0; }
+  #main.theme-classic #line-numbers{ background:#181a26; color:#4d4f66; border-right:1px solid #2a2d3d; }
+  #main.theme-classic #highlight-layer{ background:#181a26; }
+  #main.theme-classic #highlight-code{ color:#dcdbe8; }
+  #main.theme-classic #code{ caret-color:#f0eff8; }
+  #main.theme-classic .tok-kw{ color:#c4b5fd; }
+  #main.theme-classic .tok-control{ color:#f472b6; }
+  #main.theme-classic .tok-arrow{ color:#fbbf24; }
+  #main.theme-classic .tok-string{ color:#86efac; }
+  #main.theme-classic .tok-comment{ color:#6c6f8a; }
+  #main.theme-classic .tok-alias{ color:#fb923c; }
+  #main.theme-classic .tok-number{ color:#7dd3fc; }
+  #main.theme-classic .tok-func{ color:#5eead4; }
+  #main.theme-classic .line-numbers-item.err-line{ color:#e2695b; }
+  #main.theme-classic #error-bar{
+    background:rgba(226,105,91,0.14);
+    border-top:1px solid rgba(226,105,91,0.35);
+    color:#f0a99c;
+  }
+
+  /* toast */
+  #toast{
+    position:absolute;
+    bottom:18px; left:50%;
+    transform:translateX(-50%) translateY(8px);
+    background:var(--ink-950);
+    color:var(--paper);
+    padding:8px 16px;
+    border-radius:7px;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s, transform .18s;
+    z-index:20;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  #boot-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(18,19,28,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+  }
+  #boot-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    text-align:center;
+    max-width:320px;
+  }
+  #boot-spinner{
+    width:26px; height:26px;
+    border-radius:50%;
+    border:3px solid var(--ink-700);
+    border-top-color:var(--violet);
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  #boot-text{font-size:14px; font-weight:600; color:var(--paper);}
+  #boot-detail{font-size:12px; color:var(--ink-200); line-height:1.5;}
+
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--ink-600); border-radius:6px;}
+  #canvas-scroll::-webkit-scrollbar-thumb{background:#cfcabb;}
+
+  /* ===== Export modal =====
+     Two-column dialog: format + background swatches on the left, live SVG
+     preview on the right, footer Cancel/Export buttons. Adapted from the
+     reference export-modal component, re-skinned to this project's light
+     teal palette with dark/console/classic theme variants below. */
+  #exportModal{
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    background:rgba(0,0,0,0.5);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity 0.25s ease, visibility 0.25s ease;
+  }
+  #exportModal.open{opacity:1; visibility:visible;}
+  #exportModalCard{
+    background:#fff;
+    border-radius:14px;
+    width:680px;
+    max-width:92vw;
+    height:85vh;
+    max-height:720px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.25);
+    border:1px solid #d9e7e4;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    color:#1d4a43;
+    transform:scale(0.95) translateY(10px);
+    transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #exportModal.open #exportModalCard{transform:scale(1) translateY(0);}
+
+  /* Header */
+  .em-header{
+    padding:18px 22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid #d9e7e4;
+  }
+  .em-header h2{
+    margin:0;
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    color:#1d4a43;
+  }
+  .em-close{
+    background:transparent;
+    border:none;
+    color:#4c7a72;
+    cursor:pointer;
+    padding:6px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background 0.2s, color 0.2s;
+  }
+  .em-close:hover{background:#eef6f4; color:#1d4a43;}
+
+  /* Body — two columns */
+  .em-body{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:22px;
+    padding:18px 22px;
+    flex:1;
+    overflow-y:auto;
+    min-height:0;
+  }
+  .em-section{margin-bottom:18px;}
+  .em-section:last-child{margin-bottom:0;}
+  .em-section h3{
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:#4c7a72;
+    margin:0 0 11px 0;
+  }
+
+  /* Format radio cards */
+  .em-format-list{display:flex; flex-direction:column; gap:8px;}
+  .em-format{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 14px;
+    border-radius:8px;
+    border:1px solid #d9e7e4;
+    cursor:pointer;
+    background:#f6faf9;
+    transition:background 0.2s, border-color 0.2s;
+    margin:0;
+    user-select:none;
+  }
+  .em-format:hover:not(.disabled){background:#eef6f4; border-color:#0e8f7d;}
+  .em-format.active{border-color:#0e8f7d; background:rgba(14,143,125,0.12);}
+  .em-format.disabled{opacity:0.5; cursor:not-allowed;}
+  .em-format input[type="radio"]{
+    accent-color:#0e8f7d;
+    transform:scale(1.15);
+    margin:0;
+    cursor:pointer;
+  }
+  .em-format.disabled input[type="radio"]{cursor:not-allowed;}
+  .em-format-title{font-weight:600; font-size:13px; color:#1d4a43; line-height:1.2;}
+  .em-format-desc{font-size:11px; color:#4c7a72; margin-top:2px;}
+
+  /* Background color swatches */
+  .em-bg-options{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .em-swatch{
+    width:34px;
+    height:34px;
+    border-radius:8px;
+    border:2px solid #d9e7e4;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+    padding:0;
+    position:relative;
+    overflow:hidden;
+  }
+  .em-swatch:hover{transform:translateY(-2px);}
+  .em-swatch.active{
+    border-color:#0e8f7d;
+    box-shadow:0 0 0 2px #fff, 0 0 0 4px #0e8f7d;
+  }
+  .em-swatch.transparent-swatch{background:repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 50% / 10px 10px !important;}
+  .em-swatch.color-picker-swatch{
+    background:#f6faf9;
+    color:#4c7a72;
+    border:2px dashed #d9e7e4;
+  }
+  .em-swatch.color-picker-swatch:hover{border-color:#0e8f7d;}
+
+  /* PNG scale select inside the format section */
+  .em-scale-row{
+    display:flex; align-items:center; gap:8px;
+    margin-top:10px;
+    font-size:11.5px; color:#4c7a72;
+  }
+  .em-scale-row select{
+    font-family:var(--font-ui); font-size:12px;
+    background:#f6faf9; border:1px solid #d9e7e4; border-radius:6px;
+    padding:5px 7px; color:#1d4a43; cursor:pointer; outline:none;
+  }
+
+  /* Info box */
+  .em-share-box{
+    margin-top:18px;
+    padding:12px 14px;
+    border-radius:8px;
+    background:rgba(14,143,125,0.08);
+    border:1px solid rgba(14,143,125,0.25);
+    font-size:11px;
+    color:#4c7a72;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    line-height:1.4;
+  }
+  .em-share-box svg{color:#0e8f7d; margin-top:2px; flex-shrink:0;}
+
+  /* Right column preview */
+  .em-right{display:flex; flex-direction:column;}
+  .em-preview-box{
+    flex:1;
+    border:1px solid #d9e7e4;
+    border-radius:10px;
+    background:#ffffff;
+    overflow:auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:220px;
+    padding:2rem;
+    position:relative;
+    box-sizing:border-box;
+  }
+  .em-preview-box svg{max-width:100%; max-height:100%; height:auto; width:auto; object-fit:contain;}
+  .em-preview-placeholder{color:#4c7a72; font-size:12px;}
+
+  /* Footer */
+  .em-footer{
+    padding:14px 22px;
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    border-top:1px solid #d9e7e4;
+  }
+  .em-btn{
+    padding:8px 18px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-size:13px;
+    font-family:inherit;
+    transition:background 0.2s, filter 0.2s, transform 0.2s;
+  }
+  .em-btn-cancel{
+    border:1px solid #d9e7e4;
+    background:#f6faf9;
+    color:#1d4a43;
+  }
+  .em-btn-cancel:hover{background:#eef6f4;}
+  .em-btn-confirm{
+    border:none;
+    background:#0e8f7d;
+    color:#fff;
+    box-shadow:0 4px 12px rgba(14,143,125,0.4);
+  }
+  .em-btn-confirm:hover{filter:brightness(1.1); transform:translateY(-1px);}
+  .em-btn-confirm:disabled{opacity:0.6; cursor:default; transform:none;}
+
+  /* Export modal — dark canvas theme */
+  #preview-pane.canvas-dark #exportModalCard{background:#0c1c28; border-color:#12293a; color:#d7ece8;}
+  #preview-pane.canvas-dark .em-header{border-bottom-color:#12293a;}
+  #preview-pane.canvas-dark .em-header h2{color:#d7ece8;}
+  #preview-pane.canvas-dark .em-close{color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-close:hover{background:#12293a; color:#d7ece8;}
+  #preview-pane.canvas-dark .em-body{border-color:#12293a;}
+  #preview-pane.canvas-dark .em-section h3{color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-format{background:#0a1822; border-color:#12293a;}
+  #preview-pane.canvas-dark .em-format:hover:not(.disabled){background:#12293a; border-color:#35d0c0;}
+  #preview-pane.canvas-dark .em-format.active{border-color:#35d0c0; background:rgba(53,208,192,0.12);}
+  #preview-pane.canvas-dark .em-format input[type="radio"]{accent-color:#35d0c0;}
+  #preview-pane.canvas-dark .em-format-title{color:#d7ece8;}
+  #preview-pane.canvas-dark .em-format-desc{color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-swatch{border-color:#12293a;}
+  #preview-pane.canvas-dark .em-swatch.active{border-color:#35d0c0; box-shadow:0 0 0 2px #0c1c28, 0 0 0 4px #35d0c0;}
+  #preview-pane.canvas-dark .em-swatch.color-picker-swatch{background:#0a1822; color:#9fc4c0; border-color:#12293a;}
+  #preview-pane.canvas-dark .em-scale-row{color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-scale-row select{background:#0a1822; border-color:#12293a; color:#d7ece8;}
+  #preview-pane.canvas-dark .em-share-box{background:rgba(53,208,192,0.1); border-color:rgba(53,208,192,0.3); color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-share-box svg{color:#35d0c0;}
+  #preview-pane.canvas-dark .em-preview-box{background:#0a1822; border-color:#12293a;}
+  #preview-pane.canvas-dark .em-preview-placeholder{color:#9fc4c0;}
+  #preview-pane.canvas-dark .em-footer{border-top-color:#12293a;}
+  #preview-pane.canvas-dark .em-btn-cancel{background:#0a1822; color:#d7ece8; border-color:#12293a;}
+  #preview-pane.canvas-dark .em-btn-cancel:hover{background:#12293a;}
+  #preview-pane.canvas-dark .em-btn-confirm{background:#35d0c0; color:#06231f; box-shadow:0 4px 12px rgba(53,208,192,0.4);}
+
+  /* Export modal — console canvas theme (background overrides on dark) */
+  #preview-pane.canvas-console #exportModalCard{background:#161b22; border-color:#21262d; color:#c9d1d9;}
+  #preview-pane.canvas-console .em-header{border-bottom-color:#21262d;}
+  #preview-pane.canvas-console .em-header h2{color:#c9d1d9;}
+  #preview-pane.canvas-console .em-format{background:#0d1117; border-color:#21262d;}
+  #preview-pane.canvas-console .em-format:hover:not(.disabled){background:#21262d; border-color:#35d0c0;}
+  #preview-pane.canvas-console .em-format.active{border-color:#35d0c0; background:rgba(53,208,192,0.12);}
+  #preview-pane.canvas-console .em-swatch{border-color:#21262d;}
+  #preview-pane.canvas-console .em-swatch.active{border-color:#35d0c0; box-shadow:0 0 0 2px #161b22, 0 0 0 4px #35d0c0;}
+  #preview-pane.canvas-console .em-swatch.color-picker-swatch{background:#0d1117; border-color:#21262d;}
+  #preview-pane.canvas-console .em-scale-row select{background:#0d1117; border-color:#21262d; color:#c9d1d9;}
+  #preview-pane.canvas-console .em-preview-box{background:#0d1117; border-color:#21262d;}
+  #preview-pane.canvas-console .em-footer{border-top-color:#21262d;}
+  #preview-pane.canvas-console .em-btn-cancel{background:#0d1117; color:#c9d1d9; border-color:#21262d;}
+  #preview-pane.canvas-console .em-btn-cancel:hover{background:#21262d;}
+  #preview-pane.canvas-console .em-btn-confirm{background:#35d0c0; color:#0d1117;}
+
+  /* Export modal — classic canvas theme */
+  #preview-pane.canvas-classic #exportModalCard{background:#1c1e2b; border-color:#2a2d3d; color:#c7c5d6;}
+  #preview-pane.canvas-classic .em-header{border-bottom-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-header h2{color:#c7c5d6;}
+  #preview-pane.canvas-classic .em-close{color:#6c6f8a;}
+  #preview-pane.canvas-classic .em-close:hover{background:#262a3d; color:#c7c5d6;}
+  #preview-pane.canvas-classic .em-section h3{color:#8a87a0;}
+  #preview-pane.canvas-classic .em-format{background:#181a26; border-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-format:hover:not(.disabled){background:#262a3d; border-color:#8b7ff0;}
+  #preview-pane.canvas-classic .em-format.active{border-color:#8b7ff0; background:rgba(139,127,240,0.12);}
+  #preview-pane.canvas-classic .em-format input[type="radio"]{accent-color:#8b7ff0;}
+  #preview-pane.canvas-classic .em-format-title{color:#c7c5d6;}
+  #preview-pane.canvas-classic .em-format-desc{color:#8a87a0;}
+  #preview-pane.canvas-classic .em-swatch{border-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-swatch.active{border-color:#8b7ff0; box-shadow:0 0 0 2px #1c1e2b, 0 0 0 4px #8b7ff0;}
+  #preview-pane.canvas-classic .em-swatch.color-picker-swatch{background:#181a26; color:#8a87a0; border-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-scale-row{color:#8a87a0;}
+  #preview-pane.canvas-classic .em-scale-row select{background:#181a26; border-color:#2a2d3d; color:#c7c5d6;}
+  #preview-pane.canvas-classic .em-share-box{background:rgba(139,127,240,0.1); border-color:rgba(139,127,240,0.3); color:#8a87a0;}
+  #preview-pane.canvas-classic .em-share-box svg{color:#8b7ff0;}
+  #preview-pane.canvas-classic .em-preview-box{background:#181a26; border-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-preview-placeholder{color:#8a87a0;}
+  #preview-pane.canvas-classic .em-footer{border-top-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-btn-cancel{background:#181a26; color:#c7c5d6; border-color:#2a2d3d;}
+  #preview-pane.canvas-classic .em-btn-cancel:hover{background:#262a3d;}
+  #preview-pane.canvas-classic .em-btn-confirm{background:#8b7ff0; color:#14151f; box-shadow:0 4px 12px rgba(139,127,240,0.4);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="main">
+    <div id="editor-pane">
+      <div id="editor-head">
+        <div class="eh-row1">
+          <div class="eh-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>
+            <span class="eh-title">Code</span>
+          </div>
+          <button class="eh-btn eh-close" id="hideSourceBtn" title="Hide source">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="eh-row2">
+          <button class="eh-btn" id="validateBtn" title="Validate diagram now">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+            <span>Validate</span>
+          </button>
+          <div class="eh-row2-right">
+            <label class="switch" title="Auto-render as you type">
+              <input type="checkbox" id="autoUpdateToggle" checked>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+            <span class="eh-label">Auto-Update</span>
+            <button class="eh-btn" id="copyCodeBtn2" title="Copy code">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>Copy</span>
+            </button>
+            <div style="position:relative;">
+              <button class="eh-btn" id="fontSizeTrigger" title="Font size">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                <span>Text</span>
+              </button>
+              <div id="fontSizePopup">
+                <span class="fsp-label">A</span>
+                <input type="range" id="fontSizeSlider" min="9" max="24" step="1" value="13">
+                <span class="fsp-label fsp-label-lg">A</span>
+                <span class="fsp-label" id="fontSizeLabel">13px</span>
+              </div>
+            </div>
+            <button class="eh-btn" id="clearBtn" title="Clear">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              <span>Clear</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="code-wrap">
+        <div id="line-numbers">1</div>
+        <div id="code-area">
+          <div id="highlight-layer"><div id="error-line-bar"></div><div id="highlight-code"></div></div>
+          <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+      </div>
+      <div id="error-bar"></div>
+      <div id="resizer" title="Drag to resize width"></div>
+    </div>
+
+    <div id="preview-pane">
+      <div id="top-left-pill">
+        <div id="brand-mark" title="TholsStudio">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="5" cy="12" r="3" stroke="#8b7ff0" stroke-width="2"/>
+            <circle cx="19" cy="6" r="3" stroke="#e2a23b" stroke-width="2"/>
+            <circle cx="19" cy="18" r="3" stroke="#e2795b" stroke-width="2"/>
+            <path d="M7.8 10.8L16.2 7.2M7.8 13.2L16.2 16.8" stroke="#6c6f8a" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <span class="tl-sep"></span>
+        <button class="tl-btn cbtn" id="handBtn" title="Hand tool (drag to pan)" aria-pressed="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        </button>
+        <span class="tl-sep"></span>
+        <button class="tl-btn" id="settingsTrigger" title="Settings">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div id="settingsPopup">
+          <div class="sp-row">
+            <label for="examplePicker">Example</label>
+            <select id="examplePicker" title="Load an example"></select>
+          </div>
+          <div class="sp-row">
+            <label for="themePicker">Theme</label>
+            <select id="themePicker" title="Diagram background theme">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="console">Console</option>
+              <option value="classic">Classic</option>
+            </select>
+          </div>
+          <div class="sp-row">
+            <label for="palettePicker">Palette</label>
+            <select id="palettePicker" class="mini-select">
+              <option value="default">Default</option>
+              <option value="sunset">Sunset</option>
+              <option value="ocean">Ocean</option>
+              <option value="forest">Forest</option>
+              <option value="mono">Mono</option>
+            </select>
+          </div>
+          <div class="sp-row">
+            <label><input type="checkbox" id="paletteReverse"> Reverse palette</label>
+          </div>
+          <div class="sp-divider"></div>
+          <div class="sp-row sp-buttons">
+            <button class="tbtn" id="shareBtn" title="Copy a shareable link">Share link</button>
+            <div id="recentBtn">
+              <button class="tbtn" id="recentToggle">Recent ▾</button>
+              <div id="recentPanel"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="status" style="display:none;"><span class="dot"></span><span id="status-text">Rendered</span></div>
+      <div id="top-right-pill">
+        <button class="tl-btn" id="copyCodeBtn" title="Copy code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy code</span>
+        </button>
+        <button class="tl-btn" id="exportToggle" title="Export">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export</span>
+        </button>
+        <a class="tl-btn" id="topDocsBtn" href="https://mermaid.js.org/intro/" target="_blank" rel="noopener" title="Documentation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </a>
+      </div>
+
+      <!-- Export modal -->
+      <div id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+        <div id="exportModalCard">
+          <!-- Header -->
+          <div class="em-header">
+            <h2 id="exportModalTitle">Export Diagram</h2>
+            <button class="em-close" id="exportModalClose" aria-label="Close export dialog" title="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="em-body">
+            <!-- Left column -->
+            <div class="em-left">
+              <div class="em-section">
+                <h3>Export Format</h3>
+                <div class="em-format-list">
+                  <label class="em-format active">
+                    <input type="radio" name="exportFormat" value="png" checked>
+                    <span class="em-format-text">
+                      <span class="em-format-title">PNG</span>
+                      <span class="em-format-desc">High quality raster image</span>
+                    </span>
+                  </label>
+                  <label class="em-format">
+                    <input type="radio" name="exportFormat" value="svg">
+                    <span class="em-format-text">
+                      <span class="em-format-title">SVG</span>
+                      <span class="em-format-desc">Scalable vector graphics</span>
+                    </span>
+                  </label>
+                  <label class="em-format">
+                    <input type="radio" name="exportFormat" value="pdf">
+                    <span class="em-format-text">
+                      <span class="em-format-title">PDF</span>
+                      <span class="em-format-desc">Print-ready document</span>
+                    </span>
+                  </label>
+                  <label class="em-format">
+                    <input type="radio" name="exportFormat" value="mmd">
+                    <span class="em-format-text">
+                      <span class="em-format-title">MMD</span>
+                      <span class="em-format-desc">Mermaid source code</span>
+                    </span>
+                  </label>
+                </div>
+                <div class="em-scale-row">
+                  <span>PNG scale</span>
+                  <select id="exportScale">
+                    <option value="1">1x</option>
+                    <option value="2" selected>2x</option>
+                    <option value="3">3x</option>
+                    <option value="4">4x</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="em-section">
+                <h3>Background Color</h3>
+                <div class="em-bg-options">
+                  <button type="button" class="em-swatch active" style="background:#ffffff;" data-bg="white" title="White background"></button>
+                  <button type="button" class="em-swatch" style="background:#000000;" data-bg="black" title="Black background"></button>
+                  <button type="button" class="em-swatch transparent-swatch" data-bg="transparent" title="Transparent background"></button>
+                  <label class="em-swatch color-picker-swatch" title="Custom background color">
+                    <input type="color" id="exportCustomColor" value="#0e8f7d" style="opacity:0; width:0; height:0; position:absolute;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  </label>
+                </div>
+              </div>
+
+              <div class="em-share-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>Diagrams are exported directly from your browser. No server upload required.</span>
+              </div>
+            </div>
+
+            <!-- Right column: live preview -->
+            <div class="em-right">
+              <div class="em-section" style="margin-bottom:11px;">
+                <h3>Preview</h3>
+              </div>
+              <div class="em-preview-box" id="exportPreviewBox">
+                <div class="em-preview-placeholder">No preview available</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="em-footer">
+            <button type="button" class="em-btn em-btn-cancel" id="exportCancelBtn">Cancel</button>
+            <button type="button" class="em-btn em-btn-confirm" id="exportConfirmBtn">Export</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Show code button (floating, visible when editor is hidden) -->
+      <button class="tl-btn" id="showSourceBtn" style="display:none; position:absolute; top:60px; left:18px; z-index:15;" title="Show source">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 18l-6-6 6-6"/><path d="M15 6l6 6-6 6"/></svg>
+        <span>Show code</span>
+      </button>
+      <span id="zoom-label" style="position:absolute; bottom:58px; right:18px; z-index:15; font-size:11.5px; color:#4c7a72; min-width:42px; text-align:center; font-variant-numeric:tabular-nums;">100%</span>
+      <div id="canvas-scroll">
+        <div id="canvas-inner">
+          <div id="diagram-host"></div>
+          <div id="diagram-selection-box"></div>
+        </div>
+        <div id="canvas-toolbar-bottom">
+          <button class="cbtn" id="undoBtn" title="Undo" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+          </button>
+          <button class="cbtn" id="redoBtn" title="Redo" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 8"/></svg>
+          </button>
+          <span class="cdiv"></span>
+          <button class="cbtn" id="zoomOut" title="Zoom out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button class="cbtn" id="zoomIn" title="Zoom in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <span class="cdiv"></span>
+          <button class="cbtn" id="fitBtn" title="Fit diagram to view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg>
+          </button>
+          <span class="cdiv"></span>
+          <button class="cbtn" id="fullscreenBtn" title="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="boot-overlay">
+    <div id="boot-card">
+      <div id="boot-spinner"></div>
+      <div id="boot-text">Loading Mermaid…</div>
+      <div id="boot-detail">Reading mermaid.min.js</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showLoadFailure(){
+  const overlay = document.getElementById('boot-overlay');
+  const bootText = document.getElementById('boot-text');
+  const bootDetail = document.getElementById('boot-detail');
+  bootText.textContent = 'Could not load Mermaid';
+  bootText.style.color = 'var(--err)';
+  document.getElementById('boot-spinner').style.display = 'none';
+  bootDetail.innerHTML = '<code>mermaid.min.js</code> was not found next to this HTML file.<br>Keep both files in the same folder, then <a href="#" id="bootRetry" style="color:var(--violet);">retry</a>.';
+  document.getElementById('bootRetry').addEventListener('click', (e) => {
+    e.preventDefault();
+    window.location.reload();
+  });
+}
+
+const EXAMPLES = {
+  "Flowchart": `flowchart TD
+    A[Start] --> B{Has account?}
+    B -- Yes --> C[Log in]
+    B -- No --> D[Sign up]
+    C --> E[Dashboard]
+    D --> F[Verify email]
+    F --> E
+    E --> G[Done]`,
+  "Sequence": `sequenceDiagram
+    participant U as User
+    participant A as App
+    participant S as Server
+    participant D as Database
+    participant C as Cache
+    U->>A: Click "Save"
+    A->>S: POST /save
+    S->>D: INSERT row
+    D-->>S: row id
+    S->>C: invalidate(key)
+    S-->>A: 200 OK
+    A-->>U: Show confirmation
+    Note over S,C: Cache invalidated`,
+  "Class": `classDiagram
+    class Diagram {
+      +String title
+      +render()
+    }
+    class Flowchart
+    class Sequence
+    Diagram <|-- Flowchart
+    Diagram <|-- Sequence`,
+  "State": `stateDiagram-v2
+    [*] --> Draft
+    Draft --> Review: submit
+    Review --> Draft: request changes
+    Review --> Published: approve
+    Published --> [*]`,
+  "ER": `erDiagram
+    USER ||--o{ DIAGRAM : creates
+    DIAGRAM ||--|{ NODE : contains
+    USER {
+      string name
+      string email
+    }
+    DIAGRAM {
+      string title
+      string theme
+    }`,
+  "Gantt": `gantt
+    title Editor build plan
+    dateFormat YYYY-MM-DD
+    section Core
+    Layout        :a1, 2026-08-01, 3d
+    Live preview  :a2, after a1, 4d
+    section Polish
+    Export        :a3, after a2, 2d
+    Themes        :a4, after a2, 3d`,
+  "Pie": `pie title Diagram types used
+    "Flowchart" : 42
+    "Sequence" : 27
+    "State" : 14
+    "ER" : 10
+    "Other" : 7`,
+  "Journey": `journey
+    title Publishing a diagram
+    section Draft
+      Write syntax: 3: Author
+      Preview live: 5: Author
+    section Share
+      Export SVG: 4: Author
+      Send to team: 5: Author, Team`,
+  "Mindmap": `mindmap
+    root((Diagram))
+      Syntax
+        Nodes
+        Edges
+      Rendering
+        SVG
+        Themes
+      Export
+        PNG
+        SVG`
+};
+
+const codeEl = document.getElementById('code');
+const lineNumbersEl = document.getElementById('line-numbers');
+const hostEl = document.getElementById('diagram-host');
+const innerEl = document.getElementById('canvas-inner');
+const scrollEl = document.getElementById('canvas-scroll');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+const errorBar = document.getElementById('error-bar');
+const examplePicker = document.getElementById('examplePicker');
+const themePicker = document.getElementById('themePicker');
+const zoomLabel = document.getElementById('zoom-label');
+
+let zoom = 1;
+let panX = 0, panY = 0;
+let renderSeq = 0;
+let lastGoodSvg = null;
+
+Object.keys(EXAMPLES).forEach(name => {
+  const opt = document.createElement('option');
+  opt.value = name;
+  opt.textContent = name;
+  examplePicker.appendChild(opt);
+});
+
+function updateLineNumbers(){
+  const lines = codeEl.value.split('\n').length;
+  lineNumbersEl.innerHTML = '';
+  for(let i=1;i<=lines;i++){
+    const span = document.createElement('div');
+    span.className = 'line-numbers-item' + (typeof errorLine !== 'undefined' && errorLine === i ? ' err-line' : '');
+    span.textContent = String(i);
+    lineNumbersEl.appendChild(span);
+  }
+  updateErrorLineBar();
+}
+const highlightLayer = document.getElementById('highlight-layer');
+const highlightCode = document.getElementById('highlight-code');
+const errorLineBar = document.getElementById('error-line-bar');
+
+// Positions the transparent red bar over the erroring source line, in
+// sync with #code's own scroll. Reads line-height/padding off #code
+// itself (rather than hardcoding the 13px/1.6 from CSS) so it can't
+// silently drift out of alignment if those values ever change, and
+// validates everything before touching the DOM — same NaN-guarding
+// approach used throughout this feature set.
+function updateErrorLineBar(){
+  if(typeof errorLine === 'undefined' || errorLine === null){
+    errorLineBar.style.display = 'none';
+    return;
+  }
+  const cs = getComputedStyle(codeEl);
+  const fontSize = parseFloat(cs.fontSize);
+  let lineHeight = parseFloat(cs.lineHeight);
+  if(isNaN(lineHeight)) lineHeight = fontSize * 1.6; // unitless line-height fallback
+  const paddingTop = parseFloat(cs.paddingTop) || 0;
+  if(isNaN(lineHeight) || !isFinite(lineHeight) || lineHeight <= 0){
+    errorLineBar.style.display = 'none';
+    return;
+  }
+  const top = paddingTop + (errorLine - 1) * lineHeight - codeEl.scrollTop;
+  if(isNaN(top)){
+    errorLineBar.style.display = 'none';
+    return;
+  }
+  errorLineBar.style.top = top + 'px';
+  errorLineBar.style.height = lineHeight + 'px';
+  errorLineBar.style.display = 'block';
+}
+
+codeEl.addEventListener('scroll', () => {
+  lineNumbersEl.scrollTop = codeEl.scrollTop;
+  highlightCode.style.transform = `translate(${-codeEl.scrollLeft}px, ${-codeEl.scrollTop}px)`;
+  updateErrorLineBar();
+});
+
+// Lightweight regex-based syntax highlighter — tokenizes without a full
+// Single-pass tokenizer: one combined regex with named capture groups scans
+// left to right, and whatever matches (or doesn't — plain text falls
+// through untouched) determines the highlight class. This is more robust
+// than chaining separate find/replace passes since there's no risk of one
+// pass reaching inside a span another pass already wrapped.
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+const TOKEN_RE = new RegExp(
+  '(?<comment>%%.*)' + '|' +
+  '(?<string>"[^"]*")' + '|' +
+  '(?<arrow>-->>|--x|--o|-\\.->|==>|->>|-->|->|--)' + '|' +
+  '(?<control>\\b(?:alt|else|opt|loop|par|and|end|rect|critical|option|break)\\b)' + '|' +
+  '(?<kw>\\b(?:sequenceDiagram|autonumber|participant|actor|as|Note|activate|deactivate|note|over|title|section|dateFormat|flowchart|graph|classDiagram|class|stateDiagram-v2|stateDiagram|state|erDiagram|gantt|pie|journey|mindmap|TD|TB|LR|RL|BT)\\b)' + '|' +
+  '(?<alias>(?<=participant\\s)[A-Za-z_]\\w*|(?<=actor\\s)[A-Za-z_]\\w*)' + '|' +
+  '(?<number>\\b\\d+(?:\\.\\d+)?\\b)' + '|' +
+  '(?<func>[A-Za-z_][\\w.]*(?=\\())'
+, 'g');
+function highlightLine(line){
+  let out = '';
+  let lastIndex = 0;
+  let m;
+  TOKEN_RE.lastIndex = 0;
+  while((m = TOKEN_RE.exec(line))){
+    if(m.index > lastIndex) out += escapeHtml(line.slice(lastIndex, m.index));
+    const g = m.groups;
+    const text = m[0];
+    let cls = null;
+    if(g.comment) cls = 'tok-comment';
+    else if(g.string) cls = 'tok-string';
+    else if(g.arrow) cls = 'tok-arrow';
+    else if(g.control) cls = 'tok-control';
+    else if(g.kw) cls = 'tok-kw';
+    else if(g.alias) cls = 'tok-alias';
+    else if(g.number) cls = 'tok-number';
+    else if(g.func) cls = 'tok-func';
+    out += cls ? `<span class="${cls}">${escapeHtml(text)}</span>` : escapeHtml(text);
+    lastIndex = m.index + text.length;
+    if(text.length === 0) TOKEN_RE.lastIndex++; // guard against zero-width matches
+  }
+  if(lastIndex < line.length) out += escapeHtml(line.slice(lastIndex));
+  return out;
+}
+function renderHighlight(){
+  const src = codeEl.value;
+  // Only sequence diagrams get alias-color-matched highlighting — the
+  // mapping only makes sense where "who's the source of this line" is a
+  // well-defined single actor, which is specifically the sequence-diagram
+  // model. Empty map elsewhere means every match below falls through.
+  const isSeq = /\bsequenceDiagram\b/.test(src);
+  const aliasColors = isSeq ? buildAliasColorMap(src, getSeqPalette()) : EMPTY_ALIAS_MAP;
+  highlightCode.innerHTML = src.split('\n').map(line => {
+    if(aliasColors.size){
+      const special = highlightParticipantLine(line, aliasColors) ?? highlightMessageLine(line, aliasColors);
+      if(special !== null) return special;
+    }
+    return highlightLine(line);
+  }).join('\n');
+}
+
+const EMPTY_ALIAS_MAP = new Map();
+
+// Walks the source top-to-bottom assigning each actor the next palette
+// color the first time it's seen — via an explicit participant/actor
+// declaration, or (since Mermaid auto-creates undeclared actors on first
+// use) as the source/target of a message line. This mirrors the same
+// declaration-order lane assignment colorizeSequence() uses on the
+// rendered SVG, so the input text and the diagram always agree on color.
+function buildAliasColorMap(sourceText, seqPalette){
+  const map = new Map();
+  let idx = 0;
+  const declRe = /^\s*(?:participant|actor)\s+([A-Za-z_]\w*)/;
+  const msgRe = /^\s*([A-Za-z_]\w*)\s*(?:-->>|--x|--o|-\.->|==>|->>|-->|->|--)\s*[+-]?([A-Za-z_]\w*)\s*:/;
+  const addAlias = (a) => { if(a && !map.has(a)){ map.set(a, seqPalette[idx % seqPalette.length].fill); idx++; } };
+  sourceText.split('\n').forEach(line => {
+    const d = line.match(declRe);
+    if(d){ addAlias(d[1]); return; }
+    const m = line.match(msgRe);
+    if(m){ addAlias(m[1]); addAlias(m[2]); }
+  });
+  return map;
+}
+
+function colorSpan(text, color, bold){
+  return `<span style="color:${color};${bold ? 'font-weight:700;' : ''}">${escapeHtml(text)}</span>`;
+}
+
+// "participant U as User" / "actor U" — colors both the alias and its
+// display name with the actor's assigned color, falling back to the
+// generic keyword/alias token classes when this actor has no mapped color
+// (shouldn't happen once aliasColors is non-empty, but stays safe either way).
+function highlightParticipantLine(line, aliasColors){
+  let m = line.match(/^(\s*)(participant|actor)(\s+)([A-Za-z_]\w*)(\s+as\s+)(.*)$/);
+  if(m){
+    const [, indent, kw, sp1, alias, asPart, displayName] = m;
+    const color = aliasColors.get(alias);
+    const aliasHtml = color ? colorSpan(alias, color, true) : `<span class="tok-alias">${escapeHtml(alias)}</span>`;
+    const nameHtml = color ? colorSpan(displayName, color, false) : escapeHtml(displayName);
+    return escapeHtml(indent) + `<span class="tok-kw">${escapeHtml(kw)}</span>` + escapeHtml(sp1) + aliasHtml + `<span class="tok-kw">${escapeHtml(asPart)}</span>` + nameHtml;
+  }
+  m = line.match(/^(\s*)(participant|actor)(\s+)([A-Za-z_]\w*)\s*$/);
+  if(m){
+    const [, indent, kw, sp1, alias] = m;
+    const color = aliasColors.get(alias);
+    const aliasHtml = color ? colorSpan(alias, color, true) : `<span class="tok-alias">${escapeHtml(alias)}</span>`;
+    return escapeHtml(indent) + `<span class="tok-kw">${escapeHtml(kw)}</span>` + escapeHtml(sp1) + aliasHtml;
+  }
+  return null;
+}
+
+// "U->>A: Click Save" — colors the source & target aliases with their own
+// colors, and the message text with the SOURCE's color, matching exactly
+// how colorizeSequence() colors the rendered arrow + message label.
+function highlightMessageLine(line, aliasColors){
+  const m = line.match(/^(\s*)([A-Za-z_]\w*)(\s*)(-->>|--x|--o|-\.->|==>|->>|-->|->|--)(\s*)([+-]?)([A-Za-z_]\w*)(\s*:\s*)(.*)$/);
+  if(!m) return null;
+  const [, indent, src, sp1, arrow, sp2, actMark, tgt, sp3, msg] = m;
+  const srcColor = aliasColors.get(src);
+  const tgtColor = aliasColors.get(tgt);
+  const srcHtml = srcColor ? colorSpan(src, srcColor, true) : escapeHtml(src);
+  const tgtHtml = tgtColor ? colorSpan(tgt, tgtColor, true) : escapeHtml(tgt);
+  const msgHtml = srcColor ? colorSpan(msg, srcColor, false) : escapeHtml(msg);
+  return escapeHtml(indent) + srcHtml + escapeHtml(sp1) + `<span class="tok-arrow">${escapeHtml(arrow)}</span>` + escapeHtml(sp2) + escapeHtml(actMark) + tgtHtml + escapeHtml(sp3) + msgHtml;
+}
+
+function applyTransform(){
+  innerEl.style.transform = `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${zoom})`;
+  zoomLabel.textContent = Math.round(zoom*100) + '%';
+}
+
+// Fits the rendered diagram to the visible preview area — called after
+// loading a new example/shared link/saved diagram, not on every keystroke
+// re-render (which would make the view jump while typing).
+function fitToView(){
+  const svgEl = hostEl.querySelector('svg');
+  if(!svgEl) return;
+  const svgRect = svgEl.getBoundingClientRect();
+  const containerRect = scrollEl.getBoundingClientRect();
+  if(!svgRect.width || !svgRect.height) return;
+  const padding = 80;
+  const scaleX = (containerRect.width - padding) / svgRect.width;
+  const scaleY = (containerRect.height - padding) / svgRect.height;
+  zoom = Math.min(2, Math.max(0.15, Math.min(scaleX, scaleY)));
+  panX = 0; panY = 0;
+  applyTransform();
+}
+
+// Named palette families. Each has a 10-entry "seq" set (used for
+// index-based coloring — sequence diagrams, classes, entities) and an
+// 8-entry "flow" set (used for depth coloring — flowcharts, states).
+// Default and the themed palettes all use DISTINCT hues per slot (like a
+// categorical chart), NOT smooth light-to-dark gradients — so each node
+// reads as its own color rather than a step in a ramp. Themed palettes
+// pull their hues from real things in that theme (sunset sky colors, ocean
+// life, forest objects) so the colors feel on-topic.
+const PALETTES = {
+  default: {
+    seq: [
+      { fill:'#e2795b', text:'#ffffff' }, // coral
+      { fill:'#3fb8af', text:'#ffffff' }, // teal
+      { fill:'#8b7ff0', text:'#ffffff' }, // violet
+      { fill:'#e2a23b', text:'#1a1a1a' }, // gold
+      { fill:'#5b9fe2', text:'#ffffff' }, // sky blue
+      { fill:'#5cb896', text:'#ffffff' }, // sage green
+      { fill:'#d36ba1', text:'#ffffff' }, // rose
+      { fill:'#7d8cf0', text:'#ffffff' }, // periwinkle
+      { fill:'#8bc34a', text:'#1a1a1a' }, // lime green
+      { fill:'#e06050', text:'#ffffff' }, // brick red
+    ],
+    flow: [
+      { fill:'#8b7ff0', text:'#ffffff' }, // violet
+      { fill:'#3fb8af', text:'#ffffff' }, // teal
+      { fill:'#e2a23b', text:'#1a1a1a' }, // gold
+      { fill:'#5b9fe2', text:'#ffffff' }, // sky blue
+      { fill:'#d36ba1', text:'#ffffff' }, // rose
+      { fill:'#5cb896', text:'#ffffff' }, // sage green
+      { fill:'#e2795b', text:'#ffffff' }, // coral
+      { fill:'#7d8cf0', text:'#ffffff' }, // periwinkle
+    ],
+  },
+  // Sunset — distinct colors inspired by a sunset sky, alternating warm and
+  // cool so no two adjacent hues look similar: coral, golden yellow, royal
+  // purple, burnt orange, dusk lavender, crimson, amber, twilight indigo,
+  // hot pink, peach.
+  sunset: {
+    seq: [
+      { fill:'#ff6b6b', text:'#ffffff' }, // coral
+      { fill:'#ffd93d', text:'#1a1a1a' }, // golden yellow
+      { fill:'#7c3aed', text:'#ffffff' }, // royal purple
+      { fill:'#e8773a', text:'#ffffff' }, // burnt orange
+      { fill:'#b084cc', text:'#1a1a1a' }, // dusk lavender
+      { fill:'#c1121f', text:'#ffffff' }, // crimson
+      { fill:'#f4a261', text:'#1a1a1a' }, // amber
+      { fill:'#3a0ca3', text:'#ffffff' }, // twilight indigo
+      { fill:'#ff6b9d', text:'#ffffff' }, // hot pink
+      { fill:'#ffb085', text:'#1a1a1a' }, // peach
+    ],
+    flow: [
+      { fill:'#7c3aed', text:'#ffffff' }, // royal purple
+      { fill:'#ffd93d', text:'#1a1a1a' }, // golden yellow
+      { fill:'#e8773a', text:'#ffffff' }, // burnt orange
+      { fill:'#b084cc', text:'#1a1a1a' }, // dusk lavender
+      { fill:'#ff6b6b', text:'#ffffff' }, // coral
+      { fill:'#3a0ca3', text:'#ffffff' }, // twilight indigo
+      { fill:'#f4a261', text:'#1a1a1a' }, // amber
+      { fill:'#ff6b9d', text:'#ffffff' }, // hot pink
+    ],
+  },
+  // Ocean — distinct colors of ocean life, ordered so no two adjacent slots
+  // share a color family: blue whale, coral fish, sandy shore, sea urchin
+  // purple, krill pink, seaweed, turquoise, deep sea, seafoam, jellyfish.
+  ocean: {
+    seq: [
+      { fill:'#0077b6', text:'#ffffff' }, // blue whale
+      { fill:'#e63946', text:'#ffffff' }, // coral / red fish
+      { fill:'#e9c46a', text:'#1a1a1a' }, // sand
+      { fill:'#9d4edd', text:'#ffffff' }, // sea urchin
+      { fill:'#ff6b9d', text:'#ffffff' }, // krill
+      { fill:'#2a9d8f', text:'#ffffff' }, // seaweed
+      { fill:'#00b4d8', text:'#ffffff' }, // turquoise
+      { fill:'#03045e', text:'#ffffff' }, // deep sea
+      { fill:'#95d5b2', text:'#1a1a1a' }, // seafoam
+      { fill:'#c77dff', text:'#1a1a1a' }, // jellyfish
+    ],
+    flow: [
+      { fill:'#0077b6', text:'#ffffff' }, // blue whale
+      { fill:'#e63946', text:'#ffffff' }, // coral / red fish
+      { fill:'#e9c46a', text:'#1a1a1a' }, // sand
+      { fill:'#9d4edd', text:'#ffffff' }, // sea urchin
+      { fill:'#ff6b9d', text:'#ffffff' }, // krill
+      { fill:'#2a9d8f', text:'#ffffff' }, // seaweed
+      { fill:'#03045e', text:'#ffffff' }, // deep sea
+      { fill:'#95d5b2', text:'#1a1a1a' }, // seafoam
+    ],
+  },
+  // Forest — distinct colors found in a forest, ordered so no two adjacent
+  // slots share a color family: pine, fox fur, autumn gold, evening sky,
+  // maple red, moss, wild berry, bark, blue jay, mushroom.
+  forest: {
+    seq: [
+      { fill:'#2d6a4f', text:'#ffffff' }, // pine
+      { fill:'#d4654a', text:'#ffffff' }, // fox fur
+      { fill:'#d4a017', text:'#1a1a1a' }, // autumn gold
+      { fill:'#6a8caf', text:'#ffffff' }, // evening sky
+      { fill:'#bc4749', text:'#ffffff' }, // maple red
+      { fill:'#606c38', text:'#ffffff' }, // moss
+      { fill:'#6a4c93', text:'#ffffff' }, // wild berry
+      { fill:'#8b5e3c', text:'#ffffff' }, // bark
+      { fill:'#2978b5', text:'#ffffff' }, // blue jay
+      { fill:'#cb997e', text:'#1a1a1a' }, // mushroom
+    ],
+    flow: [
+      { fill:'#2d6a4f', text:'#ffffff' }, // pine
+      { fill:'#d4654a', text:'#ffffff' }, // fox fur
+      { fill:'#d4a017', text:'#1a1a1a' }, // autumn gold
+      { fill:'#bc4749', text:'#ffffff' }, // maple red
+      { fill:'#6a8caf', text:'#ffffff' }, // evening sky
+      { fill:'#606c38', text:'#ffffff' }, // moss
+      { fill:'#6a4c93', text:'#ffffff' }, // wild berry
+      { fill:'#2978b5', text:'#ffffff' }, // blue jay
+    ],
+  },
+  // Mono — distinct hues within the purple/violet/magenta family, ordered
+  // so adjacent slots are maximally far apart on the hue wheel: deep indigo
+  // (blue end) alternates with hot magenta (red end), with cool violet and
+  // warm orchid as bridges — keeping the "one color family" feel while
+  // ensuring every neighbour looks clearly different.
+  mono: {
+    seq: [
+      { fill:'#3a0ca3', text:'#ffffff' }, // deep indigo
+      { fill:'#f472b6', text:'#1a1a1a' }, // pink blossom
+      { fill:'#4361ee', text:'#ffffff' }, // electric blue-indigo
+      { fill:'#e040a0', text:'#ffffff' }, // hot magenta
+      { fill:'#5e60ce', text:'#ffffff' }, // muted iris
+      { fill:'#c724b1', text:'#ffffff' }, // vivid magenta
+      { fill:'#6a4c93', text:'#ffffff' }, // plum
+      { fill:'#b5179e', text:'#ffffff' }, // deep fuchsia
+      { fill:'#8b5cf6', text:'#ffffff' }, // violet
+      { fill:'#d4549a', text:'#ffffff' }, // rose pink
+    ],
+    flow: [
+      { fill:'#3a0ca3', text:'#ffffff' }, // deep indigo
+      { fill:'#f472b6', text:'#1a1a1a' }, // pink blossom
+      { fill:'#4361ee', text:'#ffffff' }, // electric blue-indigo
+      { fill:'#c724b1', text:'#ffffff' }, // vivid magenta
+      { fill:'#5e60ce', text:'#ffffff' }, // muted iris
+      { fill:'#e040a0', text:'#ffffff' }, // hot magenta
+      { fill:'#6a4c93', text:'#ffffff' }, // plum
+      { fill:'#b5179e', text:'#ffffff' }, // deep fuchsia
+    ],
+  },
+};
+const palettePicker = document.getElementById('palettePicker');
+const paletteReverse = document.getElementById('paletteReverse');
+function getSeqPalette(){
+  const name = palettePicker && PALETTES[palettePicker.value] ? palettePicker.value : 'default';
+  const arr = PALETTES[name].seq.slice();
+  return (paletteReverse && paletteReverse.checked) ? arr.reverse() : arr;
+}
+function getFlowPalette(){
+  const name = palettePicker && PALETTES[palettePicker.value] ? palettePicker.value : 'default';
+  const arr = PALETTES[name].flow.slice();
+  return (paletteReverse && paletteReverse.checked) ? arr.reverse() : arr;
+}
+
+// Converts a palette hex color to a low-alpha rgba() string for the
+// "outlined badge" box style: tinted fill, full-strength colored border,
+// full-strength colored text — rather than a solid-filled box.
+function withAlpha(hex, alpha){
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+// A light 14% tint reads as a soft pastel against a white canvas, but the
+// same 14% against a dark canvas is nearly invisible — a color needs much
+// more of itself mixed in before it registers as a "tinted box" rather than
+// just noise on a dark background. Badges use this instead of a flat alpha
+// so both themes get an equally legible tint, just calibrated differently.
+function badgeTint(hex){
+  const dark = themePicker && ['dark', 'console', 'classic'].includes(themePicker.value);
+  return withAlpha(hex, dark ? 0.30 : 0.14);
+}
+
+function colorizeSequence(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+  const SEQ_PALETTE = getSeqPalette();
+
+  // In Mermaid 0.16.x the `.actor` class sits directly on the box <rect> and
+  // on the label <text> — they are siblings, not nested in a wrapper <g>.
+  const actorRects = svg.querySelectorAll('rect.actor');
+  const actorTexts = svg.querySelectorAll('text.actor');
+  // Not a sequence diagram (or no actors): bail out.
+  if(!actorRects.length) return;
+
+  // Mermaid embeds a <style> block with rules like
+  //   #g2 .actor{ fill:#ECECFF; }
+  //   #g2 text.actor>tspan{ fill:black; }
+  // CSS beats presentation attributes, so setting fill="" attributes has no
+  // visible effect. We instead tag each element with data-lane (derived from
+  // x-position so a column's top & bottom boxes share a lane) and inject our
+  // own <style> with !important, which wins over Mermaid's rule.
+  const xCentres = [];
+  actorRects.forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    xCentres.push(Math.round(x + w / 2));
+  });
+  // Assign a lane index to each distinct x centre, in left-to-right order.
+  const laneByX = new Map();
+  [...new Set(xCentres)].sort((a, b) => a - b).forEach((cx, i) => laneByX.set(cx, i));
+  const sortedUnique = [...laneByX.keys()].sort((a, b) => a - b);
+
+  actorRects.forEach((rect, i) => {
+    rect.setAttribute('data-lane', String(laneByX.get(xCentres[i]) ?? 0));
+  });
+
+  // Tag the vertical lifelines so each takes its object's colour. In Mermaid
+  // 0.16.x the lifelines are <line> elements where x1 === x2; match each to the
+  // nearest actor lane by its x position. Horizontal message arrows (x1 !== x2)
+  // are left untouched — they span two objects.
+  const laneXOf = (x) => {
+    let bestLane = 0, bestDist = Infinity;
+    sortedUnique.forEach((cx, idx) => {
+      const d = Math.abs(cx - x);
+      if(d < bestDist){ bestDist = d; bestLane = idx; }
+    });
+    return bestLane;
+  };
+
+  // Mermaid draws each lifeline starting a few px from the very top of the
+  // diagram (behind the top actor box) and relies on that box being opaque
+  // to hide the overlap — same at the bottom. Our actor boxes are now
+  // semi-transparent tinted badges, so that hidden overlap becomes visible.
+  // Trim each lifeline's real y1/y2 to the actual box edges instead.
+  const topEdgeByLane = new Map();
+  const bottomEdgeByLane = new Map();
+  svg.querySelectorAll('rect.actor-top').forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    const y = parseFloat(rect.getAttribute('y')) || 0;
+    const h = parseFloat(rect.getAttribute('height')) || 0;
+    topEdgeByLane.set(laneXOf(x + w / 2), y + h);
+  });
+  svg.querySelectorAll('rect.actor-bottom').forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    const y = parseFloat(rect.getAttribute('y')) || 0;
+    bottomEdgeByLane.set(laneXOf(x + w / 2), y);
+  });
+  svg.querySelectorAll('line').forEach(line => {
+    const x1 = parseFloat(line.getAttribute('x1'));
+    const x2 = parseFloat(line.getAttribute('x2'));
+    if(isNaN(x1) || isNaN(x2) || Math.abs(x1 - x2) >= 1) return; // vertical lifelines only
+    const lane = laneXOf(x1);
+    if(topEdgeByLane.has(lane)) line.setAttribute('y1', String(topEdgeByLane.get(lane)));
+    if(bottomEdgeByLane.has(lane)) line.setAttribute('y2', String(bottomEdgeByLane.get(lane)));
+  });
+
+  svg.querySelectorAll('line').forEach(line => {
+    const x1 = parseFloat(line.getAttribute('x1'));
+    const x2 = parseFloat(line.getAttribute('x2'));
+    if(isNaN(x1) || isNaN(x2)) return;
+    if(Math.abs(x1 - x2) < 1){          // vertical lifeline
+      line.setAttribute('data-lane', String(laneXOf(x1)));
+    }
+  });
+
+  // Tag activation rectangles (the thin bars showing object is active) with
+  // their owner's lane so they inherit the object colour.
+  svg.querySelectorAll('rect[class^="activation"]').forEach(rect => {
+    const x = parseFloat(rect.getAttribute('x')) || 0;
+    const w = parseFloat(rect.getAttribute('width')) || 0;
+    rect.setAttribute('data-lane', String(laneXOf(x + w / 2)));
+  });
+
+  // Message arrows + their text labels: colour them by their SOURCE object's
+  // lane (the actor nearest the arrow's start x1). The arrows themselves are
+  // invisible lines (stroke:none) whose visible parts are shared <marker>
+  // shapes (#arrowhead, #sequencenumber). Markers render in an isolated
+  // context and don't inherit colour from the line, so we clone the shared
+  // markers once per lane, tint each clone, and repoint every arrow's
+  // marker-start/marker-end to its source-lane clone.
+  const NS = 'http://www.w3.org/2000/svg';
+  let defs = svg.querySelector('defs');
+  if(!defs){
+    defs = document.createElementNS(NS, 'defs');
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  const tplArrow = svg.querySelector('#arrowhead');
+  const tplSeq   = svg.querySelector('#sequencenumber');
+  // Clear any clones from a previous render.
+  defs.querySelectorAll('[data-seq-clone]').forEach(el => el.remove());
+
+  const cloneMarker = (tpl, id, lane) => {
+    if(!tpl) return null;
+    const clone = tpl.cloneNode(true);
+    clone.setAttribute('id', id);
+    clone.setAttribute('data-seq-clone', '1');
+    const c = SEQ_PALETTE[lane % SEQ_PALETTE.length];
+    clone.querySelectorAll('path, circle').forEach(el => {
+      el.setAttribute('fill', c.fill);
+      el.setAttribute('stroke', c.fill);
+    });
+    defs.appendChild(clone);
+    return clone;
+  };
+  // Pre-create a coloured clone per lane for both marker kinds.
+  const lanesPresent = new Set();
+  svg.querySelectorAll('line').forEach(line => {
+    const me = line.getAttribute('marker-end') || line.getAttribute('marker-start');
+    if(!me) return;
+    const x1 = parseFloat(line.getAttribute('x1'));
+    if(isNaN(x1)) return;
+    lanesPresent.add(laneXOf(x1));
+  });
+  lanesPresent.forEach(lane => {
+    cloneMarker(tplArrow, 'arrowhead-l' + lane, lane);
+    cloneMarker(tplSeq,   'sequencenumber-l' + lane, lane);
+  });
+
+  // Repoint each message arrow to its source-lane marker, and tag the arrow
+  // + its label text with data-lane so the injected CSS tints the label.
+  svg.querySelectorAll('line').forEach(line => {
+    const me = line.getAttribute('marker-end');
+    const ms = line.getAttribute('marker-start');
+    if(!me && !ms) return;
+    const x1 = parseFloat(line.getAttribute('x1'));
+    if(isNaN(x1)) return;
+    const lane = laneXOf(x1);
+    if(me)  line.setAttribute('marker-end',   `url(#arrowhead-l${lane})`);
+    if(ms)  line.setAttribute('marker-start', `url(#sequencenumber-l${lane})`);
+    line.setAttribute('data-lane', String(lane));
+  });
+
+  // Match each message label to its arrow geometrically. Mermaid centres each
+  // label on its arrow's midpoint, so label.x ~= arrow.midX; the label sits a
+  // little ABOVE the arrow (label.y < arrow.y). We can't pair by document index
+  // because loop/note contexts emit extra <text> elements with no arrow, so the
+  // text and line counts differ. Instead, for each label find the best-matching
+  // arrow: midpoint x must be close (primary signal), and among those prefer the
+  // arrow closest to the label in y while still lying below it. A small x band
+  // is allowed (midpoint rounds differently than the label x).
+  const arrowList = [];
+  svg.querySelectorAll('line').forEach(line => {
+    if(line.getAttribute('marker-end') || line.getAttribute('marker-start')){
+      const x1 = parseFloat(line.getAttribute('x1')) || 0;
+      const x2 = parseFloat(line.getAttribute('x2')) || 0;
+      arrowList.push({
+        midX: (x1 + x2) / 2,
+        y: parseFloat(line.getAttribute('y1')) || 0,
+        lane: parseInt(line.getAttribute('data-lane'), 10)
+      });
+    }
+  });
+  svg.querySelectorAll('text.messageText').forEach(t => {
+    const tx = parseFloat(t.getAttribute('x')) || 0;
+    const ty = parseFloat(t.getAttribute('y')) || 0;
+    let bestLane = null, bestScore = Infinity;
+    arrowList.forEach(a => {
+      const dx = Math.abs(a.midX - tx);
+      if(dx > 12) return;                 // label not on this arrow's midpoint
+      // label is above the arrow; prefer the nearest arrow below it. Weight x
+      // heavily so the right arrow wins even when several share a band.
+      const dy = ty - a.y;                // +ve when arrow is below label
+      const penalty = dy < 0 ? 500 : 0;   // disfavour arrows above the label
+      const score = dx * 5 + Math.abs(dy) + penalty;
+      if(score < bestScore){ bestScore = score; bestLane = a.lane; }
+    });
+    if(bestLane !== null) t.setAttribute('data-lane', String(bestLane));
+  });
+
+  actorTexts.forEach(t => {
+    const x = parseFloat(t.getAttribute('x')) || 0;
+    let bestLane = 0, bestDist = Infinity;
+    sortedUnique.forEach((cx, idx) => {
+      const d = Math.abs(cx - x);
+      if(d < bestDist){ bestDist = d; bestLane = idx; }
+    });
+    t.setAttribute('data-lane', String(bestLane));
+  });
+
+  // Remove any prior injected style so repeated renders don't accumulate.
+  svg.querySelector('style#seq-colors')?.remove();
+  const rules = SEQ_PALETTE.map((c, i) => {
+    const tint = badgeTint(c.fill);
+    return (
+      // Lifelines & activation bars: solid colored lines — thin strokes
+      // read fine without the tinted "badge" treatment.
+      `svg [data-lane="${i}"]{fill:${c.fill}!important;stroke:${c.fill}!important;}` +
+      // Actor boxes: light tinted fill + colored border + pill-rounded
+      // corners, like an outlined chip rather than a solid block.
+      `svg rect.actor[data-lane="${i}"]{fill:${tint}!important;stroke:${c.fill}!important;stroke-width:2px!important;rx:16px!important;ry:16px!important;}` +
+      `svg text.actor[data-lane="${i}"]{fill:${c.fill}!important;font-weight:700!important;}` +
+      `svg text.actor[data-lane="${i}"]>tspan{fill:${c.fill}!important;font-weight:700!important;}` +
+      // Arrow message text sits on the cream canvas, so it uses the lane
+      // colour itself — readable on the background and tied to its source.
+      `svg text.messageText[data-lane="${i}"]{fill:${c.fill}!important;stroke:none!important;font-weight:600!important;}` +
+      `svg text.messageText[data-lane="${i}"]>tspan{fill:${c.fill}!important;}`
+    );
+  }).join('\n');
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.setAttribute('id', 'seq-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
+// Flowchart depth-coloring — each node's BFS depth from the root(s) picks
+// a color from the flow palette. The palette uses distinct hues per slot
+// (not a gradient), so nodes at different depths read as clearly different
+// colors rather than a smooth ramp.
+function colorizeFlowchart(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+  const FLOW_PALETTE = getFlowPalette();
+
+  // Flowchart nodes render with id="flowchart-<name>-<n>" — scoping to this
+  // prefix (rather than the generic g.node[data-id] shape) matters because
+  // state diagrams ALSO use g.node[data-id] with their own "state-" prefix;
+  // without this we'd misfire on state diagrams too.
+  const nodes = Array.from(svg.querySelectorAll('g.node[id^="flowchart-"]'));
+  if(!nodes.length) return;
+
+  const allIds = new Set(nodes.map(n => n.getAttribute('data-id')));
+  const adj = new Map();
+  const indeg = new Map();
+  allIds.forEach(id => { adj.set(id, []); indeg.set(id, 0); });
+
+  // Edge paths are rendered with id="L-<source>-<target>-<n>" and carry
+  // "LS-<source>" / "LE-<target>" classes — the classes are the reliable
+  // signal since node names themselves may contain hyphens.
+  const edgePaths = Array.from(svg.querySelectorAll('path[id^="L-"]'));
+  const edgeInfo = [];
+  edgePaths.forEach(path => {
+    const classes = (path.getAttribute('class') || '').split(/\s+/);
+    let src = null, tgt = null;
+    classes.forEach(c => {
+      if(c.startsWith('LS-')) src = c.slice(3);
+      if(c.startsWith('LE-')) tgt = c.slice(3);
+    });
+    if(src && tgt && allIds.has(src) && allIds.has(tgt)){
+      adj.get(src).push(tgt);
+      indeg.set(tgt, (indeg.get(tgt) || 0) + 1);
+      edgeInfo.push({ path, src, tgt });
+    }
+  });
+
+  // BFS depth from every zero-indegree node (there may be several parallel
+  // starts). Any node an edge never reaches becomes its own extra root, so
+  // disconnected clusters still get sensible (0-based) depths rather than
+  // being skipped.
+  const depth = new Map();
+  const bfsFrom = (startIds) => {
+    const queue = [...startIds];
+    startIds.forEach(id => { if(!depth.has(id)) depth.set(id, 0); });
+    while(queue.length){
+      const cur = queue.shift();
+      const d = depth.get(cur);
+      (adj.get(cur) || []).forEach(next => {
+        if(!depth.has(next)){ depth.set(next, d + 1); queue.push(next); }
+      });
+    }
+  };
+  let roots = [...allIds].filter(id => (indeg.get(id) || 0) === 0);
+  if(!roots.length && nodes.length) roots = [nodes[0].getAttribute('data-id')];
+  bfsFrom(roots);
+  allIds.forEach(id => { if(!depth.has(id)) bfsFrom([id]); });
+
+  nodes.forEach(n => {
+    const d = depth.get(n.getAttribute('data-id')) || 0;
+    n.setAttribute('data-depth', String(d % FLOW_PALETTE.length));
+  });
+
+  // Recolor arrowheads the same way colorizeSequence() does: SVG markers
+  // render in an isolated context and won't inherit color from the path
+  // that references them, so clone each referenced marker once per depth
+  // and repoint marker-start/marker-end at the tinted clone.
+  const NS = 'http://www.w3.org/2000/svg';
+  let defs = svg.querySelector('defs');
+  if(!defs){ defs = document.createElementNS(NS, 'defs'); svg.insertBefore(defs, svg.firstChild); }
+  defs.querySelectorAll('[data-flow-clone]').forEach(el => el.remove());
+  const cloneCache = new Map();
+  const ensureClone = (originalId, d) => {
+    const key = originalId + '__' + d;
+    if(cloneCache.has(key)) return cloneCache.get(key);
+    const tpl = svg.getElementById ? svg.getElementById(originalId) : svg.querySelector('#' + CSS.escape(originalId));
+    if(!tpl) return null;
+    const clone = tpl.cloneNode(true);
+    const cloneId = 'flowclone-' + d + '-' + originalId.replace(/[^a-zA-Z0-9]/g, '');
+    clone.setAttribute('id', cloneId);
+    clone.setAttribute('data-flow-clone', '1');
+    const c = FLOW_PALETTE[d % FLOW_PALETTE.length];
+    clone.querySelectorAll('path, circle').forEach(el => {
+      el.setAttribute('fill', c.fill);
+      el.setAttribute('stroke', c.fill);
+    });
+    defs.appendChild(clone);
+    cloneCache.set(key, cloneId);
+    return cloneId;
+  };
+
+  edgeInfo.forEach(({ path, src }) => {
+    const d = (depth.get(src) || 0) % FLOW_PALETTE.length;
+    path.setAttribute('data-depth', String(d));
+    ['marker-start', 'marker-end'].forEach(attr => {
+      const val = path.getAttribute(attr);
+      const m = val && val.match(/url\(#([^)]+)\)/);
+      if(!m) return;
+      const cloneId = ensureClone(m[1], d);
+      if(cloneId) path.setAttribute(attr, `url(#${cloneId})`);
+    });
+  });
+
+  // Edge labels ("Yes"/"No" etc.) render in the same left-to-right order as
+  // their edge paths, so pair them up by index to tint the label text too.
+  const edgeLabelGroups = Array.from(svg.querySelectorAll('.edgeLabels > .edgeLabel'));
+  edgeLabelGroups.forEach((g, i) => {
+    const info = edgeInfo[i];
+    if(!info) return;
+    g.setAttribute('data-depth', String(depth.get(info.src) % FLOW_PALETTE.length || 0));
+  });
+
+  svg.querySelector('style#flow-colors')?.remove();
+  const rules = FLOW_PALETTE.map((c, i) => {
+    const tint = badgeTint(c.fill);
+    return (
+      `svg g.node[data-depth="${i}"] > rect, svg g.node[data-depth="${i}"] > polygon, ` +
+      `svg g.node[data-depth="${i}"] > circle, svg g.node[data-depth="${i}"] > path{ fill:${tint}!important; stroke:${c.fill}!important; stroke-width:2px!important; }` +
+      `svg g.node[data-depth="${i}"] > rect{ rx:8px!important; ry:8px!important; }` +
+      `svg g.node[data-depth="${i}"] .nodeLabel{ color:${c.fill}!important; font-weight:600!important; }` +
+      `svg path[data-depth="${i}"]{ stroke:${c.fill}!important; }` +
+      `svg .edgeLabel[data-depth="${i}"] .edgeLabel{ color:${c.fill}!important; font-weight:600!important; }`
+    );
+  }).join('\n') +
+    // Subgraphs/clusters aren't part of the depth graph (they're containers,
+    // not nodes) — give them a soft neutral tint distinct from any node
+    // color so nesting reads clearly without competing with the gradient.
+    `\nsvg g.cluster rect{ fill:rgba(139,127,240,0.06)!important; stroke:rgba(139,127,240,0.35)!important; stroke-dasharray:4,3!important; }`;
+  const style = document.createElementNS(NS, 'style');
+  style.setAttribute('id', 'flow-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
+// State diagrams: Mermaid's SVG output for transitions doesn't encode
+// source/target (edges are just id="edge0", "edge1"...), unlike flowcharts.
+// So instead of reading the SVG, we parse the raw diagram source for
+// "A --> B" lines to rebuild the transition graph, then BFS depth from
+// [*] (the state machine's start) the same way colorizeFlowchart does.
+function colorizeState(sourceText){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+  // Exclude the [*] start/end pseudo-states (rendered as small solid
+  // circles with class "state-start"/"state-end") — they aren't real
+  // states, and coloring them would break the standard state-diagram
+  // convention of a plain filled dot marking the entry/exit point.
+  const nodes = Array.from(svg.querySelectorAll('g.node[id^="state-"]'))
+    .filter(n => !n.querySelector('.state-start, .state-end'));
+  if(!nodes.length) return;
+  const FLOW_PALETTE = getFlowPalette();
+
+  const allIds = new Set(nodes.map(n => n.getAttribute('data-id')));
+  const adj = new Map();
+  allIds.forEach(id => adj.set(id, []));
+
+  const transRe = /^\s*([\w.]+|\[\*\])\s*-->\s*([\w.]+|\[\*\])\s*(?::.*)?$/;
+  const transitions = [];
+  sourceText.split('\n').forEach(line => {
+    const m = line.match(transRe);
+    if(m) transitions.push({ src: m[1], tgt: m[2] });
+  });
+
+  const starts = new Set();
+  transitions.forEach(({ src, tgt }) => {
+    if(src === '[*]'){ if(allIds.has(tgt)) starts.add(tgt); return; }
+    if(tgt === '[*]') return;
+    if(allIds.has(src) && allIds.has(tgt)) adj.get(src).push(tgt);
+  });
+
+  const depth = new Map();
+  const bfsFrom = (startIds) => {
+    const queue = [...startIds];
+    startIds.forEach(id => { if(!depth.has(id)) depth.set(id, 0); });
+    while(queue.length){
+      const cur = queue.shift();
+      const d = depth.get(cur);
+      (adj.get(cur) || []).forEach(next => {
+        if(!depth.has(next)){ depth.set(next, d + 1); queue.push(next); }
+      });
+    }
+  };
+  let roots = [...starts];
+  if(!roots.length && nodes.length) roots = [nodes[0].getAttribute('data-id')];
+  bfsFrom(roots);
+  allIds.forEach(id => { if(!depth.has(id)) bfsFrom([id]); });
+
+  nodes.forEach(n => {
+    const d = depth.get(n.getAttribute('data-id')) || 0;
+    n.setAttribute('data-depth', String(d % FLOW_PALETTE.length));
+  });
+
+  // Transitions render in the same order they're declared, so pair each
+  // rendered edge path with its parsed transition by index to tint it and
+  // its arrowhead by the source state's depth color.
+  const NS = 'http://www.w3.org/2000/svg';
+  let defs = svg.querySelector('defs');
+  if(!defs){ defs = document.createElementNS(NS, 'defs'); svg.insertBefore(defs, svg.firstChild); }
+  defs.querySelectorAll('[data-state-clone]').forEach(el => el.remove());
+  const cache = new Map();
+  const ensureClone = (originalId, d) => {
+    const key = originalId + '__' + d;
+    if(cache.has(key)) return cache.get(key);
+    const tpl = svg.getElementById ? svg.getElementById(originalId) : svg.querySelector('#' + CSS.escape(originalId));
+    if(!tpl) return null;
+    const clone = tpl.cloneNode(true);
+    const cloneId = 'stateclone-' + d + '-' + originalId.replace(/[^a-zA-Z0-9]/g, '');
+    clone.setAttribute('id', cloneId);
+    clone.setAttribute('data-state-clone', '1');
+    const c = FLOW_PALETTE[d % FLOW_PALETTE.length];
+    clone.querySelectorAll('path, circle').forEach(el => { el.setAttribute('fill', c.fill); el.setAttribute('stroke', c.fill); });
+    defs.appendChild(clone);
+    cache.set(key, cloneId);
+    return cloneId;
+  };
+  const edgeEls = Array.from(svg.querySelectorAll('path.transition[id^="edge"]'));
+  edgeEls.forEach((path, i) => {
+    const t = transitions[i];
+    if(!t) return;
+    const d = t.src === '[*]' ? 0 : (depth.get(t.src) || 0) % FLOW_PALETTE.length;
+    path.setAttribute('data-depth', String(d));
+    ['marker-start', 'marker-end'].forEach(attr => {
+      const val = path.getAttribute(attr);
+      const m = val && val.match(/url\(#([^)]+)\)/);
+      if(!m) return;
+      const cloneId = ensureClone(m[1], d);
+      if(cloneId) path.setAttribute(attr, `url(#${cloneId})`);
+    });
+  });
+
+  svg.querySelector('style#state-colors')?.remove();
+  const rules = FLOW_PALETTE.map((c, i) => {
+    const tint = badgeTint(c.fill);
+    return (
+      `svg g.node[data-depth="${i}"] > rect, svg g.node[data-depth="${i}"] > polygon, ` +
+      `svg g.node[data-depth="${i}"] > circle, svg g.node[data-depth="${i}"] > path{ fill:${tint}!important; stroke:${c.fill}!important; stroke-width:2px!important; }` +
+      `svg g.node[data-depth="${i}"] > rect{ rx:14px!important; ry:14px!important; }` +
+      `svg g.node[data-depth="${i}"] .nodeLabel{ color:${c.fill}!important; font-weight:600!important; }` +
+      `svg path.transition[data-depth="${i}"]{ stroke:${c.fill}!important; }`
+    );
+  }).join('\n');
+  const style = document.createElementNS(NS, 'style');
+  style.setAttribute('id', 'state-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
+// Class diagrams: nodes render with id="classId-<Name>-<n>" and relation
+// edges render with id="id_<Source>_<Target>_<n>". There's no clean depth
+// concept for a class graph (inheritance direction varies by arrow type,
+// and diagrams aren't always trees), so each class gets a distinct color by
+// declaration order instead — relations are tinted by their source class.
+function colorizeClassDiagram(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+  const nodes = Array.from(svg.querySelectorAll('g.node[id^="classId-"]'));
+  if(!nodes.length) return;
+  const PAL = getSeqPalette();
+
+  const idxByName = new Map();
+  nodes.forEach((n, i) => {
+    const idx = i % PAL.length;
+    n.setAttribute('data-idx', String(idx));
+    idxByName.set(n.getAttribute('data-id'), idx);
+  });
+
+  // Edge id "id_Diagram_Flowchart_1" → source "Diagram", target "Flowchart".
+  // Assumes class names don't themselves contain underscores.
+  const edgePaths = Array.from(svg.querySelectorAll('path[id^="id_"]'));
+  const NS = 'http://www.w3.org/2000/svg';
+  let defs = svg.querySelector('defs');
+  if(!defs){ defs = document.createElementNS(NS, 'defs'); svg.insertBefore(defs, svg.firstChild); }
+  defs.querySelectorAll('[data-class-clone]').forEach(el => el.remove());
+  const cache = new Map();
+  const ensureClone = (originalId, idx) => {
+    const key = originalId + '__' + idx;
+    if(cache.has(key)) return cache.get(key);
+    const tpl = svg.getElementById ? svg.getElementById(originalId) : svg.querySelector('#' + CSS.escape(originalId));
+    if(!tpl) return null;
+    const clone = tpl.cloneNode(true);
+    const cloneId = 'classclone-' + idx + '-' + originalId.replace(/[^a-zA-Z0-9]/g, '');
+    clone.setAttribute('id', cloneId);
+    clone.setAttribute('data-class-clone', '1');
+    const c = PAL[idx % PAL.length];
+    clone.querySelectorAll('path, circle').forEach(el => { el.setAttribute('fill', c.fill); el.setAttribute('stroke', c.fill); });
+    defs.appendChild(clone);
+    cache.set(key, cloneId);
+    return cloneId;
+  };
+  edgePaths.forEach(path => {
+    const raw = path.id.replace(/^id_/, '');
+    const parts = raw.split('_');
+    if(parts.length < 3) return;
+    parts.pop();
+    const src = parts[0];
+    if(!idxByName.has(src)) return;
+    const idx = idxByName.get(src);
+    path.setAttribute('data-idx', String(idx));
+    ['marker-start', 'marker-end'].forEach(attr => {
+      const val = path.getAttribute(attr);
+      const m = val && val.match(/url\(#([^)]+)\)/);
+      if(!m) return;
+      const cloneId = ensureClone(m[1], idx);
+      if(cloneId) path.setAttribute(attr, `url(#${cloneId})`);
+    });
+  });
+
+  svg.querySelector('style#class-colors')?.remove();
+  const rules = PAL.map((c, i) => {
+    const tint = badgeTint(c.fill);
+    return (
+      `svg g.node[data-idx="${i}"] > rect, svg g.node[data-idx="${i}"] > polygon, ` +
+      `svg g.node[data-idx="${i}"] > circle, svg g.node[data-idx="${i}"] > path{ fill:${tint}!important; stroke:${c.fill}!important; stroke-width:2px!important; }` +
+      `svg g.node[data-idx="${i}"] > rect{ rx:8px!important; ry:8px!important; }` +
+      `svg g.node[data-idx="${i}"] line.divider{ stroke:${c.fill}!important; opacity:0.45; }` +
+      `svg g.node[data-idx="${i}"] .nodeLabel{ color:${c.fill}!important; font-weight:600!important; }` +
+      `svg path[data-idx="${i}"]{ stroke:${c.fill}!important; }`
+    );
+  }).join('\n');
+  const style = document.createElementNS(NS, 'style');
+  style.setAttribute('id', 'class-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
+// ER diagrams: entities render as <g id="entity-NAME-<uuid>"> with a real
+// SVG <text class="er entityLabel"> (not a foreignObject span, so a plain
+// `fill` handles contrast). Relationship lines carry no reference back to
+// their entities in the SVG, so — unlike the other colorizers — we can only
+// color the entity boxes themselves, not tint each relationship line by
+// which two entities it connects.
+function colorizeER(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg) return;
+  const entities = Array.from(svg.querySelectorAll('g[id^="entity-"]'));
+  if(!entities.length) return;
+  const PAL = getSeqPalette();
+
+  entities.forEach((g, i) => g.setAttribute('data-idx', String(i % PAL.length)));
+
+  svg.querySelector('style#er-colors')?.remove();
+  const rules = PAL.map((c, i) => {
+    const tint = badgeTint(c.fill);
+    return (
+      `svg g[id^="entity-"][data-idx="${i}"] rect.er.entityBox{ fill:${tint}!important; stroke:${c.fill}!important; stroke-width:2px!important; rx:8px!important; ry:8px!important; }` +
+      `svg g[id^="entity-"][data-idx="${i}"] text.er.entityLabel{ fill:${c.fill}!important; font-weight:600!important; }`
+    );
+  }).join('\n');
+  const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  style.setAttribute('id', 'er-colors');
+  style.textContent = rules;
+  svg.insertBefore(style, svg.firstChild);
+}
+
+let errorLine = null;
+let shouldFitOnNextRender = false;
+
+// --- Undo / redo history for the code editor. Checkpoints are taken once
+// per render (already debounced by typing speed), not per keystroke — that
+// keeps the stack a manageable size while still capturing every meaningful
+// pause in editing, the same granularity most text editors use. ---
+let codeHistory = [];
+let historyIndex = -1;
+let suppressHistoryPush = false;
+function pushHistory(code){
+  if(suppressHistoryPush) return;
+  if(codeHistory[historyIndex] === code) return;
+  codeHistory = codeHistory.slice(0, historyIndex + 1);
+  codeHistory.push(code);
+  if(codeHistory.length > 100) codeHistory.shift();
+  historyIndex = codeHistory.length - 1;
+  updateUndoRedoButtons();
+}
+function undoCode(){
+  if(historyIndex <= 0) return;
+  historyIndex--;
+  suppressHistoryPush = true;
+  loadCode(codeHistory[historyIndex], { fit: false });
+  suppressHistoryPush = false;
+  updateUndoRedoButtons();
+}
+function redoCode(){
+  if(historyIndex >= codeHistory.length - 1) return;
+  historyIndex++;
+  suppressHistoryPush = true;
+  loadCode(codeHistory[historyIndex], { fit: false });
+  suppressHistoryPush = false;
+  updateUndoRedoButtons();
+}
+function updateUndoRedoButtons(){
+  document.getElementById('undoBtn').disabled = historyIndex <= 0;
+  document.getElementById('redoBtn').disabled = historyIndex >= codeHistory.length - 1;
+}
+
+async function render(){
+  if(typeof window.mermaid === 'undefined') return;
+  const src = codeEl.value.trim();
+  pushHistory(codeEl.value);
+  updateLineNumbers();
+  renderHighlight();
+  if(!src){
+    hostEl.innerHTML = '';
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Empty';
+    errorLine = null;
+    updateLineNumbers();
+    return;
+  }
+  const id = 'g' + (++renderSeq);
+  try{
+    const { svg } = await mermaid.render(id, src);
+    hostEl.innerHTML = svg;
+    colorizeSequence();
+    colorizeFlowchart();
+    colorizeState(src);
+    colorizeClassDiagram();
+    colorizeER();
+    lastGoodSvg = hostEl.innerHTML;
+    errorBar.style.display = 'none';
+    statusEl.classList.remove('error');
+    statusText.textContent = 'Rendered';
+    errorLine = null;
+    updateLineNumbers();
+    autosave();
+    if(shouldFitOnNextRender){ shouldFitOnNextRender = false; fitToView(); }
+    syncEditorToDiagram();
+  }catch(err){
+    const msg = (err && err.message) ? err.message : 'Could not parse diagram.';
+    errorBar.style.display = 'block';
+    errorBar.textContent = msg.split('\n').slice(0,4).join('\n');
+    statusEl.classList.add('error');
+    statusText.textContent = 'Syntax error';
+    const lineMatch = msg.match(/line\s+(\d+)/i);
+    errorLine = lineMatch ? parseInt(lineMatch[1], 10) : null;
+    updateLineNumbers();
+    const stray = document.getElementById(id);
+    if(stray) stray.remove();
+  }
+}
+
+// ---------------------------------------------------------------------
+// NaN-safe SVG coordinate extraction (see NaN_Validation_Logic.md).
+//
+// The doc's original approach walked each SVG ancestor by hand, summing
+// getBBox().y plus any transform="translate(...)" found at every level.
+// Testing it against this app's actual bundled Mermaid confirmed two
+// real bugs in that approach, not just theoretical ones:
+//   1. Mermaid nests several *untransformed* wrapper groups (a real
+//      rendered flowchart node sits at root > g.nodes > g.node). Each
+//      wrapper's own getBBox() already reflects its transformed
+//      children's rendered position, so summing one more getBBox().y
+//      per level re-adds the same offset instead of computing it once —
+//      the box landed 2-3x further down/right than the real node.
+//   2. Every rendered diagram's <svg> carries a non-zero viewBox origin
+//      (e.g. viewBox="-50 -10 450 226" on a real sequence diagram) that
+//      manual attribute-parsing never accounted for at all.
+// getScreenCTM() asks the browser to compose the *entire* transform
+// chain itself — nested group transforms, the viewBox, and any CSS
+// transform on HTML ancestors (our own pan/zoom included) — so neither
+// failure mode can happen, regardless of how deep the nesting goes.
+// ---------------------------------------------------------------------
+function getElementScreenBox(el){
+  if(!el || !el.getBBox || !el.getScreenCTM || !el.ownerSVGElement) return null;
+  let box, ctm;
+  try{
+    box = el.getBBox();
+    ctm = el.getScreenCTM();
+  }catch(e){
+    return null; // getBBox/getScreenCTM can throw if the element isn't actually rendered yet.
+  }
+  if(!box || !ctm) return null;
+  if([box.x, box.y, box.width, box.height].some(v => isNaN(v) || !isFinite(v))) return null;
+
+  // Map all four corners (not just top-left) through the CTM, so this
+  // stays correct even if a future diagram type introduces rotation —
+  // today's content is axis-aligned, but this doesn't assume that.
+  const svgRoot = el.ownerSVGElement;
+  const pt = svgRoot.createSVGPoint();
+  const corners = [
+    [box.x, box.y], [box.x + box.width, box.y],
+    [box.x, box.y + box.height], [box.x + box.width, box.y + box.height]
+  ];
+  const screenPts = [];
+  for(const [x, y] of corners){
+    pt.x = x; pt.y = y;
+    const p = pt.matrixTransform(ctm);
+    if(!isFinite(p.x) || !isFinite(p.y)) return null;
+    screenPts.push(p);
+  }
+  const xs = screenPts.map(p => p.x), ys = screenPts.map(p => p.y);
+  const left = Math.min(...xs), top = Math.min(...ys);
+  const width = Math.max(...xs) - left, height = Math.max(...ys) - top;
+  if(!isFinite(left) || !isFinite(top) || !isFinite(width) || !isFinite(height)) return null;
+  return { left, top, width, height };
+}
+
+// ---------------------------------------------------------------------
+// Bi-directional editor <-> diagram sync (see
+// Bi_Directional_Sync_Implementation_Guide.md):
+//   A. Editor -> Diagram — moving the cursor highlights the matching node.
+//   B. Diagram -> Editor — clicking a node selects the matching source line.
+//
+// #diagram-selection-box lives inside #canvas-inner as a sibling of
+// #diagram-host (see the CSS comment above it), so it's carried along by
+// the exact same `translate(...) scale(zoom)` transform the diagram
+// itself gets from applyTransform(). getElementScreenBox already returns
+// true on-screen pixels (it composes that same CSS transform via
+// getScreenCTM), so positioning the box is just "subtract #canvas-inner's
+// own screen position, then undo its scale" — panX/panY never need to be
+// read directly.
+// ---------------------------------------------------------------------
+const selectionBox = document.getElementById('diagram-selection-box');
+
+// Places the box over one SVG element, or several unioned together (used
+// for a message: its label and its arrow are two separate elements with
+// no shared wrapper — see syncEditorToDiagram below). Validates every
+// measurement first — a broken box is worse than no box, so any
+// NaN/non-finite value just hides it instead.
+function positionSelectionBox(elements){
+  const els = Array.isArray(elements) ? elements : [elements];
+  let screenBox = null;
+  for(const el of els){
+    const b = getElementScreenBox(el);
+    if(!b) continue;
+    if(!screenBox){
+      screenBox = b;
+    }else{
+      const left = Math.min(screenBox.left, b.left);
+      const top = Math.min(screenBox.top, b.top);
+      const right = Math.max(screenBox.left + screenBox.width, b.left + b.width);
+      const bottom = Math.max(screenBox.top + screenBox.height, b.top + b.height);
+      screenBox = { left, top, width: right - left, height: bottom - top };
+    }
+  }
+  if(!screenBox || screenBox.height === 0){
+    selectionBox.style.display = 'none';
+    return;
+  }
+  if(!zoom || !isFinite(zoom) || zoom <= 0){
+    selectionBox.style.display = 'none';
+    return;
+  }
+
+  const innerRect = innerEl.getBoundingClientRect();
+  const left = (screenBox.left - innerRect.left) / zoom;
+  const top = (screenBox.top - innerRect.top) / zoom;
+  const width = screenBox.width / zoom;
+  const height = screenBox.height / zoom;
+  if([left, top, width, height].some(v => isNaN(v) || !isFinite(v))){
+    selectionBox.style.display = 'none';
+    return;
+  }
+
+  selectionBox.style.display = 'block';
+  selectionBox.style.left = left + 'px';
+  selectionBox.style.top = top + 'px';
+  selectionBox.style.width = width + 'px';
+  selectionBox.style.height = height + 'px';
+}
+
+// Direction A: reads the current line under the cursor and highlights
+// whichever rendered SVG node's text matches it.
+function syncEditorToDiagram(){
+  const svgEl = hostEl.querySelector('svg');
+  if(!svgEl){ selectionBox.style.display = 'none'; return; }
+
+  const text = codeEl.value;
+  const cursorIndex = codeEl.selectionStart;
+  const lineStart = text.lastIndexOf('\n', cursorIndex - 1) + 1;
+  let lineEnd = text.indexOf('\n', cursorIndex);
+  if(lineEnd === -1) lineEnd = text.length;
+  const currentLineText = text.substring(lineStart, lineEnd).trim();
+
+  if(!currentLineText){ selectionBox.style.display = 'none'; return; }
+
+  // Sequence-diagram message lines (`A->>B: text`) contain both actors'
+  // names as substrings of the source line, and actor labels render
+  // earlier in the SVG than message labels do — so scanning every <text>
+  // node in document order would match a short actor name (checked
+  // second, below) before ever reaching the message it's actually part
+  // of. Message labels are checked first and specifically so a message
+  // line always matches its own arrow rather than an actor it mentions.
+  const messageTextNodes = svgEl.querySelectorAll('text.messageText');
+  for(const node of messageTextNodes){
+    const t = node.textContent;
+    if(t && (t.includes(currentLineText) || currentLineText.includes(t))){
+      // Confirmed against real rendered output: Mermaid always draws a
+      // message's label immediately before its arrow (a <line> for a
+      // normal message, a <path> for a self-message loop) as the very
+      // next sibling — there's no shared wrapper element to select
+      // instead, so the box has to be the union of both elements.
+      const arrow = node.nextElementSibling;
+      const hasArrow = arrow && (arrow.getAttribute('class') || '').includes('messageLine');
+      positionSelectionBox(hasArrow ? [node, arrow] : [node]);
+      return;
+    }
+  }
+
+  const svgTextNodes = svgEl.querySelectorAll('text');
+  let matchedElement = null;
+  for(const node of svgTextNodes){
+    const t = node.textContent;
+    if(t && (t.includes(currentLineText) || currentLineText.includes(t))){
+      // A .node group (flowchart/state/class/ER) or, failing that, the
+      // element right before the text (typically the actor rect in
+      // sequence diagrams) — covers every diagram type this editor renders.
+      matchedElement = node.closest('.node') || node.previousElementSibling;
+      break;
+    }
+  }
+
+  if(!matchedElement){ selectionBox.style.display = 'none'; return; }
+  positionSelectionBox(matchedElement);
+}
+codeEl.addEventListener('keyup', syncEditorToDiagram);
+codeEl.addEventListener('click', syncEditorToDiagram);
+
+// Direction B: clicking a rendered node selects the matching text in
+// the editor, then re-runs Direction A to draw the box over it.
+function handleDiagramNodeClick(event){
+  // Sequence-diagram messages are flat children of the <svg> — unlike
+  // every other diagram element here, there's no wrapping .node or even
+  // a plain <g> around a label+arrow pair, so closest('.node')/closest('g')
+  // below would silently miss clicks on them entirely. Resolve a message
+  // hit first: clicking the label matches directly, clicking the arrow
+  // (<line> or <path>, for a self-message loop) looks at the label drawn
+  // right before it.
+  let messageLabel = event.target.closest('text.messageText');
+  if(!messageLabel){
+    const arrowHit = event.target.closest('line, path');
+    if(arrowHit && (arrowHit.getAttribute('class') || '').includes('messageLine')){
+      const prev = arrowHit.previousElementSibling;
+      if(prev && prev.classList && prev.classList.contains('messageText')) messageLabel = prev;
+    }
+  }
+  if(messageLabel){
+    const msgText = messageLabel.textContent.trim();
+    if(msgText){
+      const editorText = codeEl.value;
+      const matchIndex = editorText.indexOf(msgText);
+      if(matchIndex !== -1){
+        codeEl.focus();
+        codeEl.setSelectionRange(matchIndex, matchIndex + msgText.length);
+        syncEditorToDiagram();
+      }
+    }
+    return;
+  }
+
+  const clickedNode = event.target.closest('.node') || event.target.closest('g');
+  if(!clickedNode) return;
+
+  const textElement = clickedNode.querySelector('text');
+  if(!textElement) return;
+  const nodeText = textElement.textContent.trim();
+  if(!nodeText) return;
+
+  const editorText = codeEl.value;
+  const matchIndex = editorText.indexOf(nodeText);
+  if(matchIndex !== -1){
+    codeEl.focus();
+    codeEl.setSelectionRange(matchIndex, matchIndex + nodeText.length);
+    syncEditorToDiagram();
+  }
+}
+hostEl.addEventListener('click', handleDiagramNodeClick);
+
+let debounceTimer;
+const autoUpdateToggle = document.getElementById('autoUpdateToggle');
+codeEl.addEventListener('input', () => {
+  updateLineNumbers();
+  renderHighlight();
+  if(!autoUpdateToggle.checked) return;
+  clearTimeout(debounceTimer);
+  // Scale the debounce with source size — large diagrams re-parse/re-layout
+  // more slowly, so waiting a little longer avoids stacking renders while
+  // still feeling instant for typical small diagrams.
+  const delay = Math.min(900, 250 + Math.floor(codeEl.value.length / 8));
+  debounceTimer = setTimeout(render, delay);
+});
+
+codeEl.addEventListener('keydown', (e) => {
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    codeEl.value = codeEl.value.slice(0,s) + '  ' + codeEl.value.slice(en);
+    codeEl.selectionStart = codeEl.selectionEnd = s+2;
+    renderHighlight();
+    return;
+  }
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && e.key === 'Enter'){
+    e.preventDefault();
+    clearTimeout(debounceTimer);
+    render();
+  } else if(mod && (e.key === 's' || e.key === 'S')){
+    e.preventDefault();
+    // Ctrl+S exports SVG directly (matching the original quick-export shortcut).
+    if(lastGoodSvg){
+      const svgEl = hostEl.querySelector('svg');
+      if(svgEl){
+        const clone = svgEl.cloneNode(true);
+        clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        const serialized = new XMLSerializer().serializeToString(clone);
+        const url = URL.createObjectURL(new Blob([serialized], {type:'image/svg+xml;charset=utf-8'}));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'diagram.svg'; a.click();
+        URL.revokeObjectURL(url);
+        toast('SVG downloaded');
+      }
+    }
+  } else if(mod && e.key === '/'){
+    e.preventDefault();
+    const s = codeEl.selectionStart, en = codeEl.selectionEnd;
+    const lineStart = codeEl.value.lastIndexOf('\n', s - 1) + 1;
+    const lineEnd = codeEl.value.indexOf('\n', en);
+    const stop = lineEnd === -1 ? codeEl.value.length : lineEnd;
+    const block = codeEl.value.slice(lineStart, stop);
+    const lines = block.split('\n');
+    const allCommented = lines.every(l => /^\s*%%/.test(l) || l.trim() === '');
+    const toggled = lines.map(l => {
+      if(l.trim() === '') return l;
+      return allCommented ? l.replace(/^(\s*)%%\s?/, '$1') : l.replace(/^(\s*)/, '$1%% ');
+    }).join('\n');
+    codeEl.value = codeEl.value.slice(0, lineStart) + toggled + codeEl.value.slice(stop);
+    renderHighlight();
+    updateLineNumbers();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(render, 250);
+  } else if(mod && !e.shiftKey && (e.key === 'z' || e.key === 'Z')){
+    e.preventDefault();
+    undoCode();
+  } else if(mod && ((e.shiftKey && (e.key === 'z' || e.key === 'Z')) || e.key === 'y' || e.key === 'Y')){
+    e.preventDefault();
+    redoCode();
+  }
+});
+
+document.getElementById('undoBtn').addEventListener('click', undoCode);
+document.getElementById('redoBtn').addEventListener('click', redoCode);
+
+function loadCode(text, { fit = true } = {}){
+  codeEl.value = text;
+  updateLineNumbers();
+  renderHighlight();
+  shouldFitOnNextRender = fit;
+  render();
+}
+
+examplePicker.addEventListener('change', () => {
+  const name = examplePicker.value;
+  if(EXAMPLES[name]) loadCode(EXAMPLES[name]);
+});
+
+function applyCanvasTheme(){
+  const val = themePicker.value;
+  const isConsole = val === 'console';
+  const isClassic = val === 'classic';
+  const isDark = val === 'dark';
+  // Console layers background-only overrides on top of Dark (shares its
+  // text/token colors). Classic is fully independent — it has its own
+  // original violet/pink/amber palette, not a background swap on Dark's
+  // mermaid.ai-matched tokens — so it gets its own class, not theme-dark.
+  previewPane.classList.toggle('canvas-dark', isDark || isConsole);
+  previewPane.classList.toggle('canvas-console', isConsole);
+  previewPane.classList.toggle('canvas-classic', isClassic);
+  const mainEl = document.getElementById('main');
+  mainEl.classList.toggle('theme-dark', isDark || isConsole);
+  mainEl.classList.toggle('theme-console-bg', isConsole);
+  mainEl.classList.toggle('theme-classic', isClassic);
+  if(typeof window.mermaid === 'undefined') return;
+  // Mermaid's own built-in theme covers everything our colorizers don't
+  // touch (default text/line colors on class/state/ER elements outside our
+  // overrides) — 'dark' gives light-on-dark defaults so those elements stay
+  // legible against a dark canvas instead of rendering black-on-black.
+  const isDarkFamily = isDark || isConsole || isClassic;
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: isDarkFamily ? 'dark' : 'default', fontFamily: 'var(--font-ui)' });
+}
+
+themePicker.addEventListener('change', () => {
+  applyCanvasTheme();
+  render();
+});
+
+palettePicker.addEventListener('change', () => { if(lastGoodSvg) render(); });
+paletteReverse.addEventListener('change', () => { if(lastGoodSvg) render(); });
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  codeEl.value = '';
+  updateLineNumbers();
+  renderHighlight();
+  render();
+});
+
+// Toast
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// --- Persistence: autosave the current diagram, keep a small history of
+// recent diagrams, and support sharing via a URL fragment. All local to
+// this browser (no server involved) — this is a real downloaded file, so
+// localStorage genuinely persists across sessions rather than being wiped.
+const STORAGE_KEY = 'flowsmith:autosave';
+const RECENT_KEY = 'flowsmith:recent';
+const MAX_RECENT = 12;
+
+function autosave(){
+  try{ localStorage.setItem(STORAGE_KEY, codeEl.value); }catch(e){ /* storage unavailable — ignore */ }
+  saveToRecent(codeEl.value);
+}
+
+function loadRecent(){
+  try{ return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); }catch(e){ return []; }
+}
+
+function saveToRecent(code){
+  if(!code.trim()) return;
+  try{
+    let list = loadRecent();
+    list = list.filter(item => item.code !== code);
+    list.unshift({ code, ts: Date.now() });
+    list = list.slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+  }catch(e){ /* ignore */ }
+}
+
+function renderRecentPanel(){
+  const panel = document.getElementById('recentPanel');
+  const list = loadRecent();
+  panel.innerHTML = '';
+  if(!list.length){
+    const empty = document.createElement('div');
+    empty.className = 'recent-empty';
+    empty.textContent = 'No saved diagrams yet — one is kept here automatically each time you edit.';
+    panel.appendChild(empty);
+    return;
+  }
+  list.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'recent-item';
+    const firstLine = item.code.split('\n').find(l => l.trim()) || '(untitled)';
+    const when = new Date(item.ts).toLocaleString();
+    div.textContent = firstLine.trim().slice(0, 42) + ' — ' + when;
+    div.title = firstLine.trim();
+    div.addEventListener('click', () => {
+      loadCode(item.code);
+      document.getElementById('recentPanel').classList.remove('open');
+      toast('Loaded from recent');
+    });
+    panel.appendChild(div);
+  });
+}
+
+document.getElementById('recentToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('recentPanel');
+  if(!panel.classList.contains('open')) renderRecentPanel();
+  panel.classList.toggle('open');
+});
+document.addEventListener('click', () => { document.getElementById('recentPanel').classList.remove('open'); });
+document.getElementById('recentPanel').addEventListener('click', (e) => e.stopPropagation());
+
+// --- Export modal ---
+// State for the export dialog: which format radio is active and which
+// background swatch is active. Background accepts the keywords 'white',
+// 'black', 'transparent', or a raw hex string from the custom color picker.
+let exportFormat = 'png';
+let exportBg = 'white';
+const exportModal = document.getElementById('exportModal');
+const exportPreviewBox = document.getElementById('exportPreviewBox');
+
+function openExportModal(){
+  exportModal.classList.add('open');
+  exportModal.setAttribute('aria-hidden', 'false');
+  updateExportPreview();
+}
+function closeExportModal(){
+  exportModal.classList.remove('open');
+  exportModal.setAttribute('aria-hidden', 'true');
+}
+document.getElementById('exportToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  openExportModal();
+});
+document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
+document.getElementById('exportCancelBtn').addEventListener('click', closeExportModal);
+exportModal.addEventListener('click', (e) => {
+  if(e.target === exportModal) closeExportModal();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && exportModal.classList.contains('open')) closeExportModal();
+});
+
+// Format radio cards: clicking a card selects it.
+document.querySelectorAll('#exportModal .em-format').forEach(opt => {
+  const input = opt.querySelector('input[type="radio"]');
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('#exportModal .em-format').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    input.checked = true;
+    exportFormat = input.value;
+  });
+});
+
+// Background swatches: clicking selects white/black/transparent/custom.
+document.querySelectorAll('#exportModal .em-swatch').forEach(swatch => {
+  swatch.addEventListener('click', (e) => {
+    // The custom-color swatch is a <label> wrapping the color input — defer
+    // to the input's own handler (below) so the picker dialog opens.
+    if(swatch.classList.contains('color-picker-swatch') && e.target !== document.getElementById('exportCustomColor')){
+      return;
+    }
+    document.querySelectorAll('#exportModal .em-swatch').forEach(s => s.classList.remove('active'));
+    swatch.classList.add('active');
+    exportBg = swatch.dataset.bg || 'white';
+    updateExportPreview();
+  });
+});
+document.getElementById('exportCustomColor').addEventListener('input', (e) => {
+  const hex = e.target.value;
+  const pickerSwatch = e.target.closest('.em-swatch');
+  document.querySelectorAll('#exportModal .em-swatch').forEach(s => s.classList.remove('active'));
+  pickerSwatch.classList.add('active');
+  pickerSwatch.style.background = hex;
+  pickerSwatch.dataset.bg = hex;
+  exportBg = hex;
+  updateExportPreview();
+});
+
+// Live preview: clone the current diagram SVG into the preview box, and
+// paint the box's background to match the selected swatch so the user sees
+// exactly what they'll get (including a checkerboard for transparent).
+function updateExportPreview(){
+  const svg = hostEl.querySelector('svg');
+  if(!svg){
+    exportPreviewBox.innerHTML = '<div class="em-preview-placeholder">No diagram available to preview</div>';
+    return;
+  }
+  const clone = svg.cloneNode(true);
+  clone.style.maxWidth = '100%';
+  clone.style.maxHeight = '100%';
+  clone.style.width = '';
+  clone.style.height = '';
+  if(exportBg === 'transparent'){
+    exportPreviewBox.style.background = 'repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 50% / 10px 10px';
+  }else if(exportBg === 'white'){
+    exportPreviewBox.style.background = '#ffffff';
+  }else if(exportBg === 'black'){
+    exportPreviewBox.style.background = '#000000';
+  }else{
+    exportPreviewBox.style.background = exportBg;
+  }
+  exportPreviewBox.innerHTML = '';
+  exportPreviewBox.appendChild(clone);
+}
+
+document.getElementById('exportConfirmBtn').addEventListener('click', () => handleExportConfirm());
+
+const settingsTrigger = document.getElementById('settingsTrigger');
+const settingsPopup = document.getElementById('settingsPopup');
+function closeSettingsPopup(){
+  settingsPopup.classList.remove('open');
+  settingsTrigger.setAttribute('aria-pressed', 'false');
+}
+settingsTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const opening = !settingsPopup.classList.contains('open');
+  settingsPopup.classList.toggle('open', opening);
+  settingsTrigger.setAttribute('aria-pressed', String(opening));
+});
+document.addEventListener('click', closeSettingsPopup);
+settingsPopup.addEventListener('click', (e) => e.stopPropagation());
+
+document.getElementById('validateBtn').addEventListener('click', async () => {
+  clearTimeout(debounceTimer);
+  await render();
+  if(errorBar.style.display === 'block'){
+    toast('Syntax error — see details below the editor');
+  } else {
+    toast('Diagram is valid');
+  }
+});
+
+document.getElementById('fitBtn').addEventListener('click', () => {
+  if(!lastGoodSvg){ toast('Nothing to fit yet'); return; }
+  fitToView();
+});
+
+document.getElementById('shareBtn').addEventListener('click', async () => {
+  try{
+    const encoded = btoa(encodeURIComponent(codeEl.value));
+    const url = location.origin + location.pathname + '#d=' + encoded;
+    await navigator.clipboard.writeText(url);
+    toast('Share link copied — anyone opening it (with these two files) sees this diagram');
+  }catch(e){
+    toast('Could not build share link');
+  }
+});
+
+async function copyCodeToClipboard(){
+  try{
+    await navigator.clipboard.writeText(codeEl.value);
+    toast('Code copied to clipboard');
+  }catch(e){ toast('Could not copy'); }
+}
+document.getElementById('copyCodeBtn').addEventListener('click', copyCodeToClipboard);
+document.getElementById('copyCodeBtn2').addEventListener('click', copyCodeToClipboard);
+
+// Export dispatch: routes the active format (png/svg/pdf/mmd) to the right
+// builder, applies the selected background, and downloads the result. PNG
+// and PDF share the svgToCanvas rasterizer; SVG serializes the live SVG;
+// MMD just writes the editor's source text.
+function resolveBgHex(){
+  if(exportBg === 'white') return '#ffffff';
+  if(exportBg === 'black') return '#000000';
+  if(exportBg === 'transparent') return null;
+  return exportBg;
+}
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function handleExportConfirm(){
+  if(!lastGoodSvg && exportFormat !== 'mmd'){ toast('Nothing to export yet'); return; }
+  const bgHex = resolveBgHex();
+  const scale = parseInt(document.getElementById('exportScale').value, 10) || 2;
+  if(exportFormat === 'svg'){
+    const svgEl = hostEl.querySelector('svg');
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    if(bgHex) clone.style.background = bgHex; else clone.style.background = 'none';
+    const serialized = new XMLSerializer().serializeToString(clone);
+    downloadBlob(new Blob([serialized], {type:'image/svg+xml;charset=utf-8'}), 'diagram.svg');
+    toast('SVG downloaded'); closeExportModal();
+  }else if(exportFormat === 'mmd'){
+    downloadBlob(new Blob([codeEl.value], {type:'text/plain;charset=utf-8'}), 'diagram.mmd');
+    toast('MMD source downloaded'); closeExportModal();
+  }else if(exportFormat === 'png'){
+    svgToCanvas({ scale, bgHex }, (canvas) => {
+      canvas.toBlob(blob => { downloadBlob(blob, 'diagram.png'); toast('PNG downloaded'); }, 'image/png');
+    });
+    closeExportModal();
+  }else if(exportFormat === 'pdf'){
+    // PDF wraps a JPEG — transparency isn't meaningful, so always fill bg.
+    svgToCanvas({ scale: 2, bgHex: bgHex || '#ffffff' }, (canvas, bbox) => {
+      canvas.toBlob(async (blob) => {
+        const buf = new Uint8Array(await blob.arrayBuffer());
+        const ptWidth = Math.round(bbox.width * 0.75);   // CSS px @ 96dpi -> pt
+        const ptHeight = Math.round(bbox.height * 0.75);
+        const pdfBytes = buildImagePdf(buf, canvas.width, canvas.height, ptWidth, ptHeight);
+        downloadBlob(new Blob([pdfBytes], {type:'application/pdf'}), 'diagram.pdf');
+        toast('PDF downloaded');
+      }, 'image/jpeg', 0.92);
+    });
+    closeExportModal();
+  }
+}
+
+// Shared rasterizer: renders the current SVG to a canvas at the given
+// pixel scale, with an optional solid background fill (null = transparent).
+// Used by PNG and PDF export so they can't drift apart.
+function svgToCanvas({ scale, bgHex }, cb){
+  if(!lastGoodSvg){ toast('Nothing to export yet'); return; }
+  const svgEl = hostEl.querySelector('svg');
+  const bbox = svgEl.getBoundingClientRect();
+  const img = new Image();
+  const svgBlob = new Blob([lastGoodSvg], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bbox.width * scale));
+    canvas.height = Math.max(1, Math.round(bbox.height * scale));
+    const ctx = canvas.getContext('2d');
+    if(bgHex){
+      ctx.fillStyle = bgHex;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, bbox.width, bbox.height);
+    URL.revokeObjectURL(url);
+    cb(canvas, bbox);
+  };
+  img.onerror = () => { toast('Image export failed'); URL.revokeObjectURL(url); };
+  img.src = url;
+}
+
+// Hand-rolled single-page PDF wrapping a JPEG via the DCTDecode filter.
+// JPEG bytes can be embedded in a PDF image stream completely as-is, so
+// this needs no external library — just correct PDF object/xref bytes.
+function buildImagePdf(jpegBytes, pixelWidth, pixelHeight, ptWidth, ptHeight){
+  const enc = new TextEncoder();
+  const chunks = [];
+  let pos = 0;
+  const offsets = [];
+  function push(part){
+    const bytes = typeof part === 'string' ? enc.encode(part) : part;
+    chunks.push(bytes);
+    pos += bytes.length;
+  }
+  push('%PDF-1.4\n');
+  offsets[1] = pos; push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  offsets[2] = pos; push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+  offsets[3] = pos; push(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptWidth} ${ptHeight}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+  offsets[4] = pos; push(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+  push(jpegBytes);
+  push('\nendstream\nendobj\n');
+  const content = `q ${ptWidth} 0 0 ${ptHeight} 0 0 cm /Im0 Do Q`;
+  offsets[5] = pos; push(`5 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`);
+  const xrefStart = pos;
+  push('xref\n0 6\n0000000000 65535 f \n');
+  for(let i=1;i<=5;i++) push(String(offsets[i]).padStart(10,'0') + ' 00000 n \n');
+  push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+  const total = chunks.reduce((a,c)=>a+c.length,0);
+  const out = new Uint8Array(total);
+  let o = 0;
+  for(const c of chunks){ out.set(c, o); o += c.length; }
+  return out;
+}
+
+// Zoom / pan
+function setZoom(z, cx, cy){
+  zoom = Math.min(5, Math.max(0.2, z));
+  applyTransform();
+}
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.15));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.15));
+
+scrollEl.addEventListener('wheel', (e) => {
+  if(e.ctrlKey || e.metaKey || true){
+    e.preventDefault();
+    setZoom(zoom + (e.deltaY < 0 ? 0.08 : -0.08));
+  }
+}, { passive:false });
+
+// Hand tool: toggles whether click-drag pans the canvas. Starts active
+// (matching the default "always draggable" behavior); toggling it off is
+// mainly useful once you want to click into the diagram itself without
+// nudging the view — there's no separate "select" mode here, so turning it
+// off just parks the cursor as a plain pointer.
+const handBtn = document.getElementById('handBtn');
+let handToolActive = true;
+function setHandTool(active){
+  handToolActive = active;
+  handBtn.setAttribute('aria-pressed', String(active));
+  scrollEl.style.cursor = active ? 'grab' : 'default';
+}
+handBtn.addEventListener('click', () => setHandTool(!handToolActive));
+
+let isDragging = false, dragStartX=0, dragStartY=0, panStartX=0, panStartY=0;
+scrollEl.addEventListener('mousedown', (e) => {
+  if(!handToolActive) return;
+  isDragging = true;
+  scrollEl.classList.add('grabbing');
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX = panX; panStartY = panY;
+});
+window.addEventListener('mousemove', (e) => {
+  if(!isDragging) return;
+  panX = panStartX + (e.clientX - dragStartX);
+  panY = panStartY + (e.clientY - dragStartY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isDragging = false; scrollEl.classList.remove('grabbing'); });
+
+// Fullscreen: targets #preview-pane specifically, not the whole app — this
+// gives a true "diagram only" presentation mode with no toolbars in view.
+// Falls back through vendor-prefixed APIs for older/other browser engines.
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const previewPane = document.getElementById('preview-pane');
+const fsIconExpand = fullscreenBtn.innerHTML;
+const fsIconCompress = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v3a2 2 0 0 1-2 2H4"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+
+function getFullscreenElement(){
+  return document.fullscreenElement || document.webkitFullscreenElement ||
+    document.mozFullScreenElement || document.msFullscreenElement || null;
+}
+function requestFullscreenCompat(el){
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen ||
+    el.mozRequestFullScreen || el.msRequestFullscreen;
+  if(!fn) return Promise.reject(new Error('Fullscreen API unavailable'));
+  return fn.call(el);
+}
+function exitFullscreenCompat(){
+  const fn = document.exitFullscreen || document.webkitExitFullscreen ||
+    document.mozCancelFullScreen || document.msExitFullscreen;
+  if(!fn) return Promise.reject(new Error('Fullscreen API unavailable'));
+  return fn.call(document);
+}
+
+fullscreenBtn.addEventListener('click', () => {
+  if(!getFullscreenElement()){
+    requestFullscreenCompat(previewPane).catch(() => toast('Fullscreen not available — your browser or this preview may block it'));
+  } else {
+    exitFullscreenCompat().catch(() => {});
+  }
+});
+
+// While in fullscreen, the toolbar/hint bar stay hidden until the mouse
+// actually moves, then fade back out after a short idle period — same
+// pattern as a video player's controls, so there's still a discoverable
+// way to exit or zoom without needing to know the Esc shortcut.
+let chromeHideTimer = null;
+function revealChromeBriefly(){
+  previewPane.classList.add('chrome-visible');
+  clearTimeout(chromeHideTimer);
+  chromeHideTimer = setTimeout(() => previewPane.classList.remove('chrome-visible'), 1800);
+}
+previewPane.addEventListener('mousemove', () => {
+  if(previewPane.classList.contains('is-fullscreen')) revealChromeBriefly();
+});
+
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    const fsEl = getFullscreenElement();
+    const active = fsEl === previewPane;
+    fullscreenBtn.innerHTML = active ? fsIconCompress : fsIconExpand;
+    fullscreenBtn.title = active ? 'Exit fullscreen' : 'Fullscreen';
+    previewPane.classList.toggle('is-fullscreen', active);
+    if(active) revealChromeBriefly();
+    else { previewPane.classList.remove('chrome-visible'); clearTimeout(chromeHideTimer); }
+  });
+});
+
+// Resizer
+const resizer = document.getElementById('resizer');
+const editorPane = document.getElementById('editor-pane');
+let resizing = false;
+
+function clampWidth(px){
+  const mainRect = document.getElementById('main').getBoundingClientRect();
+  return Math.min(Math.max(px, mainRect.width * 0.35), mainRect.width * 0.9);
+}
+
+resizer.addEventListener('mousedown', () => { resizing = true; resizer.classList.add('active'); });
+window.addEventListener('mousemove', (e) => {
+  if(!resizing) return;
+  const editorRect = editorPane.getBoundingClientRect();
+  editorPane.style.width = clampWidth(e.clientX - editorRect.left) + 'px';
+});
+window.addEventListener('mouseup', () => {
+  resizing = false;
+  resizer.classList.remove('active');
+});
+
+// Toggle source pane visibility. The close (X) lives in editor-head itself
+// (only visible while the source pane shows); a floating "Show code" button
+// appears over the canvas once hidden, so there's always a discoverable way
+// back regardless of which state you're in.
+const hideSourceBtn = document.getElementById('hideSourceBtn');
+const showSourceBtn = document.getElementById('showSourceBtn');
+let sourceHidden = false;
+function setSourceHidden(hidden){
+  sourceHidden = hidden;
+  editorPane.style.display = hidden ? 'none' : '';
+  resizer.style.display = hidden ? 'none' : '';
+  showSourceBtn.style.display = hidden ? '' : 'none';
+}
+hideSourceBtn.addEventListener('click', () => setSourceHidden(true));
+
+// Editor font size — scales the textarea, the syntax-highlight overlay, and
+// the line-number gutter together so they stay pixel-aligned with each
+// other. line-height is set as a unitless 1.6 in CSS, which already scales
+// proportionally with font-size, so nothing extra is needed there.
+let editorFontSize = 13;
+const fontSizeLabel = document.getElementById('fontSizeLabel');
+const fontSizeTrigger = document.getElementById('fontSizeTrigger');
+const fontSizePopup = document.getElementById('fontSizePopup');
+const fontSizeSlider = document.getElementById('fontSizeSlider');
+function applyFontSize(){
+  const px = editorFontSize + 'px';
+  codeEl.style.fontSize = px;
+  highlightCode.style.fontSize = px;
+  lineNumbersEl.style.fontSize = px;
+  fontSizeLabel.textContent = px;
+  fontSizeSlider.value = String(editorFontSize);
+}
+fontSizeTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  fontSizePopup.classList.toggle('open');
+});
+fontSizeSlider.addEventListener('input', () => {
+  editorFontSize = parseInt(fontSizeSlider.value, 10);
+  applyFontSize();
+});
+document.addEventListener('click', () => fontSizePopup.classList.remove('open'));
+fontSizePopup.addEventListener('click', (e) => e.stopPropagation());
+applyFontSize();
+showSourceBtn.addEventListener('click', () => setSourceHidden(false));
+
+// init
+function loadInitialCode(){
+  // 1. A shared link (#d=<base64>) wins if present.
+  const hashMatch = location.hash.match(/#d=(.+)/);
+  if(hashMatch){
+    try{
+      const decoded = decodeURIComponent(atob(hashMatch[1]));
+      if(decoded.trim()) return { code: decoded, source: 'link' };
+    }catch(e){ /* malformed hash — fall through */ }
+  }
+  // 2. Otherwise resume whatever was last open in this browser.
+  try{
+    const saved = localStorage.getItem('flowsmith:autosave');
+    if(saved && saved.trim()) return { code: saved, source: 'autosave' };
+  }catch(e){ /* storage unavailable — fall through */ }
+  // 3. First run: the flowchart example.
+  return { code: EXAMPLES['Flowchart'], source: 'example' };
+}
+
+const initial = loadInitialCode();
+codeEl.value = initial.code;
+examplePicker.value = Object.keys(EXAMPLES).find(k => EXAMPLES[k] === initial.code) || '';
+updateLineNumbers();
+renderHighlight();
+applyTransform();
+shouldFitOnNextRender = true;
+
+if(typeof mermaid === 'undefined'){
+  showLoadFailure();
+} else {
+  document.getElementById('boot-overlay').remove();
+  applyCanvasTheme();
+  if(initial.source === 'link') toast('Loaded diagram from share link');
+  render();
+}
+</script>
+</body>
+</html>

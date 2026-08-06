@@ -1,0 +1,100 @@
+<!-- ================================================================= -->
+<!-- MERMAID / SVG EXPORT MODAL POPUP COMPONENT                        -->
+<!-- Copy this HTML structure into your project body or template.       -->
+<!-- ================================================================= -->
+
+<div id="exportModalOverlay" class="export-modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+  <div class="export-modal">
+    <!-- Header -->
+    <div class="export-modal-header">
+      <h2 id="exportModalTitle">Export Diagram</h2>
+      <button class="icon-btn" id="closeExportBtn" aria-label="Close export dialog" title="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Body Content -->
+    <div class="export-modal-body">
+      <!-- Left Column: Export Options -->
+      <div class="export-modal-left">
+        <!-- Export Format Selection -->
+        <div class="export-section">
+          <h3>Export Format</h3>
+          <div class="format-list">
+            <label class="format-option active">
+              <input type="radio" name="exportFormat" value="png" checked>
+              <div class="format-text">
+                <div class="format-title">PNG</div>
+                <div class="format-desc">High quality raster image (2x HD)</div>
+              </div>
+            </label>
+            <label class="format-option">
+              <input type="radio" name="exportFormat" value="svg">
+              <div class="format-text">
+                <div class="format-title">SVG</div>
+                <div class="format-desc">Scalable vector graphics</div>
+              </div>
+            </label>
+            <label class="format-option">
+              <input type="radio" name="exportFormat" value="mmd">
+              <div class="format-text">
+                <div class="format-title">MMD</div>
+                <div class="format-desc">Mermaid syntax source code</div>
+              </div>
+            </label>
+            <label class="format-option disabled">
+              <input type="radio" name="exportFormat" value="pdf" disabled>
+              <div class="format-text">
+                <div class="format-title">PDF</div>
+                <div class="format-desc">Vector PDF document (Coming soon)</div>
+              </div>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Background Color Selection -->
+        <div class="export-section">
+          <h3>Background Color</h3>
+          <div class="bg-color-options">
+            <button type="button" class="bg-swatch active" style="background: #ffffff;" data-bg="white" title="White Background"></button>
+            <button type="button" class="bg-swatch" style="background: #000000;" data-bg="black" title="Black Background"></button>
+            <button type="button" class="bg-swatch transparent-swatch" data-bg="transparent" title="Transparent Background"></button>
+            <label class="bg-swatch color-picker-swatch" title="Custom Background Color">
+              <input type="color" id="exportCustomColorPicker" value="#0e8f7d" style="opacity: 0; width: 0; height: 0; position: absolute;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Helper / Info Box -->
+        <div class="export-share-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <span>Diagrams are exported directly from client memory. No server upload required.</span>
+        </div>
+      </div>
+      
+      <!-- Right Column: Live Preview -->
+      <div class="export-modal-right">
+        <h3>Preview</h3>
+        <div class="export-preview-box" id="exportPreviewBox">
+          <!-- Cloned SVG preview will be injected dynamically here -->
+          <div class="export-preview-placeholder">No preview available</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer Controls -->
+    <div class="export-modal-footer">
+      <button type="button" class="export-btn-cancel" id="exportCancelBtn">Cancel</button>
+      <button type="button" class="export-btn-confirm" id="exportConfirmBtn">Export</button>
+    </div>
+  </div>
+</div>
