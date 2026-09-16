@@ -1,6 +1,6 @@
 // --------------------------------------------------------------
 // PLAYLIST CONFIG
-// Exported from TubeVault on 8/4/2026, 12:25:59 PM
+// Exported from TubeVault on 8/24/2026, 6:19:27 PM
 //
 // Each playlist: id, name, color, videoIds, videos (full details)
 // To apply as defaults: replace unity3d-playlist.js and clear localStorage.
@@ -11,7 +11,7 @@ const DEFAULT_PLAYLISTS = [
     id: 'mrwxiyxk61xy',
     name: 'Unity3D Maths',
     color: '#FFA726',
-    videoIds: ['mrwxihdvwowj'],
+    videoIds: ['msob6sdai2dr'],
     videos: [
     {
       url: 'https://www.youtube.com/watch?v=OPDl2uVaN_Q',
@@ -27,7 +27,7 @@ const DEFAULT_PLAYLISTS = [
     id: 'ms2urrqvitqc',
     name: 'Tiled',
     color: '#FF7043',
-    videoIds: ['ms2upihit2hs', 'ms2uwu97kk23', 'ms79jbxv7frz'],
+    videoIds: ['msob6sdayrqs', 'msob6sdaq04x'],
     videos: [
     {
       url: 'https://www.youtube.com/watch?v=N6xqCwblyiw&t=10s',

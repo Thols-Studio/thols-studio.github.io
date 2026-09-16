@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 8/4/2026, 12:25:59 PM
+// Exported from TubeVault on 8/24/2026, 6:19:27 PM
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -163,5 +163,20 @@ const DEFAULT_COLLECTIONS = [
       ]
     },
     ungrouped: []
+  },
+  {
+    id: 'creative-creation',
+    name: 'Creative Creation',
+    color: '#29B6F6',
+    groups: {},
+    ungrouped: [
+      {
+        url: 'https://www.youtube.com/watch?v=INLvPFlA0JM',
+        videoId: 'INLvPFlA0JM',
+        title: 'Create This New Ai Niche & Go Viral In 48hrs | 100% FREE Tool',
+        channel: 'Cash-Coach',
+        note: ''
+      },
+    ]
   }
 ];

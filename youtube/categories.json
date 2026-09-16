@@ -4,6 +4,7 @@
     { "id": "gamedesign", "name": "GameDesign", "color": "#29B6F6" },
     { "id": "blender",   "name": "Blender",   "color": "#AB47BC" },
     { "id": "csharp",   "name": "CSharp",   "color": "#AB46BC" },
-    { "id": "ai",   "name": "AI",   "color": "#AB45BC" }
+    { "id": "ai",   "name": "AI",   "color": "#AB45BC" },
+     { "id": "affinity",   "name": "Affinity",   "color": "#AB44BC" }
   ]
 }
