@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 9/16/2026, 7:20:02 PM
+// Exported from TubeVault on 11/24/2026, 11:07:05 AM
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -46,6 +46,16 @@ const DEFAULT_COLLECTIONS = [
     name: 'Unity2D',
     color: '#29B6F6',
     groups: {
+      'Course': [
+        {
+          url: 'https://www.youtube.com/watch?v=_aHDvtOvLrM&list=PLmJfqIDHKVuBi2G3Vfrpiey9eIVf39piK&index=1',
+          videoId: '_aHDvtOvLrM',
+          playlistId: 'PLmJfqIDHKVuBi2G3Vfrpiey9eIVf39piK',
+          title: 'YouTube Video',
+          channel: '',
+          note: ''
+        },
+      ],
       'Spline': [
         {
           url: 'https://www.youtube.com/watch?v=AYXViWy2N6g&list=PLZ1QII7yudbdsmhI3xLaoNAHiFXYztjkX&index=7',
@@ -88,6 +98,15 @@ const DEFAULT_COLLECTIONS = [
     name: 'Unity CLI',
     color: '#66BB6A',
     groups: {
+      'UI Tool Kit': [
+        {
+          url: 'https://www.youtube.com/watch?v=SwuGB3quO2k',
+          videoId: 'SwuGB3quO2k',
+          title: 'Prototyping UI Toolkit with Unity CLI',
+          channel: 'Unity',
+          note: ''
+        },
+      ],
       'CLI': [
         {
           url: 'https://www.youtube.com/watch?v=IDKpGHg6BVc',

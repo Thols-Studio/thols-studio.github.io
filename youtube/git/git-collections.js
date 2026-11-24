@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────
 // COLLECTIONS CONFIG
-// Exported from TubeVault on 9/16/2026, 7:02:14 PM
+// Exported from TubeVault on 11/24/2026, 10:52:19 AM
 //
 // STRUCTURE — easy to browse/edit in any JSON editor:
 //   DEFAULT_COLLECTIONS
@@ -39,6 +39,22 @@ const DEFAULT_COLLECTIONS = [
     name: 'Git',
     color: '#AB47BC',
     groups: {
+      'Setup': [
+        {
+          url: 'https://www.youtube.com/watch?v=c5TSRxrDEK8&t=677s',
+          videoId: 'c5TSRxrDEK8',
+          title: 'you need to learn Git RIGHT NOW!!',
+          channel: 'NetworkChuck',
+          note: ''
+        },
+        {
+          url: 'https://www.youtube.com/shorts/oZPcwkaR6TQ',
+          videoId: 'oZPcwkaR6TQ',
+          title: 'YouTube Video',
+          channel: '',
+          note: ''
+        },
+      ],
       'Claude': [
         {
           url: 'https://www.youtube.com/watch?v=nFMGnHdpoXY',

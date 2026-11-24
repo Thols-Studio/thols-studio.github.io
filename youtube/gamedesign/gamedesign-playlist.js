@@ -1,6 +1,6 @@
 // --------------------------------------------------------------
 // PLAYLIST CONFIG
-// Exported from TubeVault on 9/16/2026, 7:20:37 PM
+// Exported from TubeVault on 11/24/2026, 10:53:39 AM
 //
 // Each playlist: id, name, color, videoIds, videos (full details)
 // To apply as defaults: replace gamedesign-playlist.js and clear localStorage.
